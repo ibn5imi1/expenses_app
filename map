@@ -1,0 +1,10 @@
+college-expenses/
+├── package.json
+├── electron-main.js
+├── preload.js
+├── db.js
+├── export.js
+└── renderer/
+    ├── index.html
+    ├── css/style.css
+    └── js/main.js
