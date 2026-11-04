@@ -35,13 +35,14 @@ app.whenReady().then(() => {
   ipcMain.handle("getLoanTypes", () => db.getLoanTypes());
   ipcMain.handle("addLoanType", (e, name) => db.addLoanType(name));
   ipcMain.handle('updateLoanType', (e, id, name) => db.updateLoanType(id, name));
-ipcMain.handle('deleteLoanType', (e, id) => db.deleteLoanType(id));
+  ipcMain.handle('deleteLoanType', (e, id) => db.deleteLoanType(id));
   ipcMain.handle("getLoans", () => db.getLoans());
   ipcMain.handle("addLoan", (e, data) => db.addLoan(data, currentUser));
   ipcMain.handle("updateLoan", (e, id, data) =>
     db.updateLoan(id, data, currentUser),
   );
   ipcMain.handle("deleteLoan", (e, id) => db.deleteLoan(id));
+  ipcMain.handle('getCash', () => db.getCash());
 
   createWindow();
 });

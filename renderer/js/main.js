@@ -9,6 +9,7 @@ function showPage(name) {
     navLinks.forEach(link => {
         link.classList.toggle('active', link.dataset.page === name);
     });
+    if (name === 'cash') loadCash();
 }
 
 navLinks.forEach(link => {
@@ -18,6 +19,7 @@ navLinks.forEach(link => {
 document.getElementById('refresh-btn').addEventListener('click', () => {
     loadExpenses();
     loadLoans();
+    loadCash();
 });
 showPage('expenses');
 
@@ -106,10 +108,7 @@ function createDatePicker(input, iconBtn) {
 }
 
 
-document.getElementById('date-icon').addEventListener('click', e => {
-    e.stopPropagation();
-    datePicker.open();
-});
+const datePicker = createDatePicker(dateInput, document.getElementById('date-icon'));
 
 // '2026-11-04' ← '4/11/2026'
 function formatDate(iso) {
@@ -236,8 +235,7 @@ function validateExpense() {
         badFields[0].focus();
         return false;
     }
-    const type = db.prepare('SELECT id FROM loan_types WHERE id = ?').get(d.loanTypeId);
-    if (!type) throw new Error('نوع السلفة غير موجود');
+    
     return true;
 }
 
@@ -678,6 +676,56 @@ function renderLoans() {
 async function loadLoans() {
     loans = await window.api.getLoans();
     renderLoans();
+}
+
+
+
+/* ================= القاصة ================= */
+const cashBody = document.getElementById('cash-body');
+const cashTotalLoans = document.getElementById('cash-total-loans');
+const cashTotalSpent = document.getElementById('cash-total-spent');
+const cashTotalRemaining = document.getElementById('cash-total-remaining');
+
+// تقريب إلى خانتين عشريتين لتفادي فروق الكسور، مع فواصل الآلاف
+function formatMoney(n) {
+    return (Math.round(n * 100) / 100).toLocaleString('en-US');
+}
+
+function setRemaining(cell, value) {
+    cell.textContent = formatMoney(value);
+    cell.classList.toggle('negative', value < 0);   // الأحمر عند تجاوز السلفة
+}
+
+function renderCash(rows) {
+    cashBody.innerHTML = '';
+
+    let totalLoans = 0;
+    let totalSpent = 0;
+
+    rows.forEach(r => {
+        const remaining = r.loans_total - r.spent_total;
+        totalLoans += r.loans_total;
+        totalSpent += r.spent_total;
+
+        const tr = document.createElement('tr');
+        tr.appendChild(createCell(r.name));
+        tr.appendChild(createCell(formatMoney(r.loans_total)));
+        tr.appendChild(createCell(formatMoney(r.spent_total)));
+
+        const remainingTd = createCell('');
+        setRemaining(remainingTd, remaining);
+        tr.appendChild(remainingTd);
+
+        cashBody.appendChild(tr);
+    });
+
+    cashTotalLoans.textContent = formatMoney(totalLoans);
+    cashTotalSpent.textContent = formatMoney(totalSpent);
+    setRemaining(cashTotalRemaining, totalLoans - totalSpent);
+}
+
+async function loadCash() {
+    renderCash(await window.api.getCash());
 }
 
 /* ---------- تشغيل أولي ---------- */

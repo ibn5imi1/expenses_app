@@ -339,3 +339,19 @@ main {
     font-size: var(--small-font-size);
 }
 /* end loans section */
+
+/* start cash section */
+.col-cash-type { width: 34%; }
+.col-cash-num  { width: 22%; }
+
+.table tfoot td {
+    background-color: var(--table-head-color);
+    border-top: 2px solid var(--off-white-color);
+    font-weight: 700;
+}
+
+.negative {
+    color: var(--red-color);
+    font-weight: 700;
+}
+/* end cash section */

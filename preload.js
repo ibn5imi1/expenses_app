@@ -15,4 +15,5 @@ contextBridge.exposeInMainWorld("api", {
   deleteLoan: (id) => ipcRenderer.invoke("deleteLoan", id),
   updateLoanType: (id, name) => ipcRenderer.invoke("updateLoanType", id, name),
 deleteLoanType: (id) => ipcRenderer.invoke("deleteLoanType", id),
+getCash: () => ipcRenderer.invoke("getCash"),
 });

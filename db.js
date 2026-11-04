@@ -103,6 +103,8 @@ function validateExpense(d) {
 
     const dest = db.prepare('SELECT id FROM destinations WHERE id = ?').get(d.destinationId);
     if (!dest) throw new Error('جهة الصرف غير موجودة');
+    const type = db.prepare('SELECT id FROM loan_types WHERE id = ?').get(d.loanTypeId);
+if (!type) throw new Error('نوع السلفة غير موجود');
 }
 
 function getExpenses() {
@@ -263,10 +265,23 @@ function deleteLoan(id) {
     db.prepare('DELETE FROM loans WHERE id = ?').run(id);
 }
 
+/* ---------- القاصة ---------- */
+// لكل نوع سلفة: مجموع السلف ومجموع المصروفات المخصومة منه
+function getCash() {
+    return db.prepare(`
+        SELECT t.id, t.name, t.is_fixed,
+               COALESCE((SELECT SUM(amount) FROM loans    WHERE loan_type_id = t.id), 0) AS loans_total,
+               COALESCE((SELECT SUM(amount) FROM expenses WHERE loan_type_id = t.id), 0) AS spent_total
+        FROM loan_types t
+        ORDER BY t.id
+    `).all();
+}
+
 module.exports = {
     init, getDestinations,
     getExpenses, addExpense, updateExpense, deleteExpense,
-     getLoanTypes, addLoanType, updateLoanType, deleteLoanType,
+    getLoanTypes, addLoanType, updateLoanType, deleteLoanType,
     getLoans, addLoan, updateLoan, deleteLoan,
+    getCash,
 };
 
