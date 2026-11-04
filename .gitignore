@@ -1,0 +1,31 @@
+# المكتبات (تُعاد بـ npm install)
+node_modules/
+
+# ملفات البناء (ناتج npm run dist)
+dist/
+out/
+
+# قواعد البيانات: لا ترفع بيانات حقيقية أبداً
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# النسخ الاحتياطية وملفات Excel المصدّرة
+backup-*
+*.xlsx
+
+# متغيرات البيئة والمفاتيح
+.env
+.env.*
+
+# السجلات
+npm-debug.log*
+*.log
+
+# ملفات الأنظمة والمحررات
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

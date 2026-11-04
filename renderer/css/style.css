@@ -1,3 +1,341 @@
-h1 {
-    background-color: red;
+:root {
+    /* colors */
+    --green-color: #1f5c4d;
+    --red-color: #b3402f;
+    --red-soft-color: #f8e7e4;
+    --gold-color: #b88a2a;
+    --white-color: #fff;
+    --off-white-color: #d9e0db;
+    --background-color: #eef1ed;
+    --table-head-color: #f4f7f5;
+    --font-color: #1d2b26;
+    --muted-color: #66756f;
+
+    /* fonts */
+    --font-main: "Segoe UI", Tahoma, Arial, sans-serif;
+    --main-font-size: 15px;
+    --small-font-size: 13px;
+
+    /* shapes */
+    --radius-small: 6px;
+    --radius-large: 10px;
 }
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: var(--font-main);
+    font-size: var(--main-font-size);
+    color: var(--font-color);
+    background-color: var(--background-color);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* start navbar */
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 0 20px;
+    background-color: var(--green-color);
+}
+
+.brand {
+    color: var(--white-color);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.nav-links {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.nav-link {
+    padding: 15px 14px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: none;
+    color: var(--off-white-color);
+    font: inherit;
+    cursor: pointer;
+}
+
+.nav-link:hover {
+    color: var(--white-color);
+}
+
+.nav-link.active {
+    color: var(--white-color);
+    border-bottom-color: var(--gold-color);
+}
+
+.user-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-inline-start: auto;
+    color: var(--white-color);
+    white-space: nowrap;
+}
+
+.user-name {
+    font-weight: 700;
+}
+/* end navbar */
+
+main {
+    max-width: 1200px;
+    margin: 22px auto;
+    padding: 0 20px;
+}
+
+.card {
+    margin-bottom: 20px;
+    padding: 20px;
+    background-color: var(--white-color);
+    border: 1px solid var(--off-white-color);
+    border-radius: var(--radius-large);
+}
+
+.card h2 {
+    margin: 0 0 16px;
+    font-size: 18px;
+}
+
+/* start form */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px 16px;
+}
+
+.span-full { grid-column: 1 / -1; }
+
+.field label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: var(--small-font-size);
+    color: var(--muted-color);
+}
+
+.field input,
+.field select,
+.field textarea {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--off-white-color);
+    border-radius: var(--radius-small);
+    font: inherit;
+    background-color: var(--white-color);
+}
+
+.field textarea {
+    resize: vertical;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus,
+.nav-link:focus-visible,
+.btn:focus-visible {
+    outline: 2px solid var(--gold-color);
+    outline-offset: 1px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.invalid {
+    border-color: var(--red-color) !important;
+    background-color: var(--red-soft-color) !important;
+}
+
+.form-error {
+    padding: 10px 12px;
+    border: 1px solid var(--red-color);
+    border-radius: var(--radius-small);
+    background-color: var(--red-soft-color);
+    color: var(--red-color);
+}
+
+/* شكل التقويم المنسدل */
+.flatpickr-calendar {
+    font-family: var(--font-main);
+}
+
+.flatpickr-day.selected {
+    background-color: var(--green-color);
+    border-color: var(--green-color);
+}
+
+.date-wrap {
+    position: relative;
+}
+
+.field .date-wrap input {
+    padding-inline-end: 38px;
+    cursor: pointer;
+}
+
+.date-icon {
+    position: absolute;
+    top: 50%;
+    inset-inline-end: 10px;
+    transform: translateY(-50%);
+    display: flex;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--muted-color);
+    cursor: pointer;
+}
+
+.date-icon:hover {
+    color: var(--green-color);
+}
+/* end form */
+
+/* start buttons */
+.btn {
+    padding: 9px 20px;
+    border: 1px solid var(--green-color);
+    border-radius: var(--radius-small);
+    background-color: var(--green-color);
+    color: var(--white-color);
+    font: inherit;
+    cursor: pointer;
+}
+
+.btn:hover {
+    opacity: .9;
+}
+
+.btn-light {
+    background-color: var(--white-color);
+    color: var(--green-color);
+}
+
+.btn-danger {
+    border-color: var(--red-color);
+    background-color: var(--white-color);
+    color: var(--red-color);
+}
+
+.btn-small {
+    padding: 4px 10px;
+    font-size: var(--small-font-size);
+}
+/* end buttons */
+
+/* start table */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.table th,
+.table td {
+    padding: 9px 10px;
+    text-align: right;
+    vertical-align: top;
+    border-bottom: 1px solid var(--off-white-color);
+}
+
+.table th {
+    background-color: var(--table-head-color);
+    color: var(--muted-color);
+    font-size: var(--small-font-size);
+}
+
+.table td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.col-amount  { width: 10%; }
+.col-date    { width: 12%; }
+.col-details { width: 50%; }
+.col-note    { width: 14%; }
+.col-actions { width: 14%; }
+
+.row-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.table td.details-cell {
+    white-space: pre-wrap;
+}
+
+.field textarea {
+    resize: vertical;
+    overflow: hidden;
+    min-height: 80px;
+}
+
+.table tbody tr:hover {
+    background-color: var(--table-head-color);
+}
+/* end table */
+
+/* start loans section */
+/* فورم بثلاثة أعمدة (صفحة السلف) */
+.form-grid.cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+/* فورم أفقي صغير (إضافة نوع سلفة) */
+.inline-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+.inline-form .field {
+    width: 320px;
+}
+
+.inline-form + .form-error {
+    margin-top: 12px;
+}
+
+/* أعمدة جدول السلف */
+.col-loan-amount  { width: 18%; }
+.col-loan-date    { width: 16%; }
+.col-source       { width: 30%; }
+.col-type         { width: 20%; }
+.col-loan-actions { width: 16%; }
+
+.form-grid.cols-5 {
+    grid-template-columns: repeat(5, 1fr);
+}
+
+.type-table {
+    margin-top: 16px;
+}
+
+.col-type-name    { width: 70%; }
+.col-type-actions { width: 30%; }
+
+.badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background-color: var(--table-head-color);
+    color: var(--muted-color);
+    font-size: var(--small-font-size);
+}
+/* end loans section */

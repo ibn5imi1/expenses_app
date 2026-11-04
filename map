@@ -1,10 +1,18 @@
 college-expenses/
-├── package.json
+├── node_modules
 ├── electron-main.js
 ├── preload.js
 ├── db.js
+├── package-lock.json
+├── package.json
 ├── export.js
+├── map
 └── renderer/
     ├── index.html
     ├── css/style.css
-    └── js/main.js
+    ├── js/main.js
+    └── lib
+        ├── flatpickr.js
+        └──flatpickr.min.css
+
+    

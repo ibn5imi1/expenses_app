@@ -1,0 +1,34 @@
+{
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^13.0.3",
+    "electron": "^45.2.2",
+    "exceljs": "^4.4.0",
+    "flatpickr": "^4.6.13"
+  },
+  "name": "expenses_app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "electron .",
+    "postinstall": "electron-builder install-app-deps",
+    "dist": "electron-builder",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ibn5imi1/expenses_app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ibn5imi1/expenses_app/issues"
+  },
+  "homepage": "https://github.com/ibn5imi1/expenses_app#readme",
+  "devDependencies": {
+    "electron-builder": "^26.18.0"
+  }
+}

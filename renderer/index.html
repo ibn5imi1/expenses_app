@@ -1,11 +1,286 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مصروفات</title>
-</head>
-<body>
-    
-</body>
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="lib/flatpickr.min.css" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <title>مصروفات كلية العمارة</title>
+  </head>
+  <body>
+    <!-- start nav -->
+    <nav class="navbar">
+      <span class="brand">مصروفات كلية العمارة</span>
+
+      <div class="nav-links">
+        <button class="nav-link" data-page="expenses">المصروفات</button>
+        <button class="nav-link" data-page="cash">القاصة</button>
+        <button class="nav-link" data-page="loans">السلف</button>
+        <button class="nav-link" data-page="destinations">جهات الصرف</button>
+        <button class="nav-link" data-page="summary">الخلاصة</button>
+        <button class="nav-link" data-page="expenses-report">
+          كشف المصروفات
+        </button>
+        <button class="nav-link" data-page="loans-report">كشف السلف</button>
+        <button class="nav-link" data-page="settings">الاعدادات</button>
+        <button class="nav-link" id="refresh-btn">تحديث البيانات</button>
+        <button class="nav-link admin-only" data-page="admin">الادمن</button>
+      </div>
+
+      <div class="user-box">
+        <span class="user-name" id="current-user"></span>
+        <button class="btn btn-light btn-small" id="logout-btn">
+          تسجيل الخروج
+        </button>
+      </div>
+    </nav>
+    <!-- end nav -->
+
+    <!-- start main -->
+    <main>
+      <!-- start page expenses section -->
+      <section class="page" id="page-expenses">
+        <div class="card">
+          <h2>إضافة مصروف</h2>
+
+          <form id="expense-form" class="form-grid cols-5" novalidate>
+            <div class="field">
+              <label for="expense-amount">المبلغ</label>
+              <input
+                type="text"
+                id="expense-amount"
+                inputmode="decimal"
+                autocomplete="off"
+              />
+            </div>
+
+            <div class="field">
+              <label for="expense-date">التاريخ</label>
+              <div class="date-wrap">
+                <input type="text" id="expense-date" />
+                <button
+                  type="button"
+                  class="date-icon"
+                  id="date-icon"
+                  aria-label="اختيار التاريخ"
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="expense-destination">جهة الصرف</label>
+              <select id="expense-destination"></select>
+            </div>
+
+            <div class="field">
+              <label for="expense-loan-type">نوع السلفة (يُخصم منها)</label>
+              <select id="expense-loan-type"></select>
+            </div>
+
+            <div class="field">
+              <label for="expense-note">ملاحظات</label>
+              <input type="text" id="expense-note" />
+            </div>
+
+            <div class="field span-full">
+              <label for="expense-details">التفاصيل</label>
+              <textarea id="expense-details" rows="3"></textarea>
+            </div>
+
+            <div class="form-error span-full hidden" id="expense-error"></div>
+
+            <div class="form-actions span-full">
+              <button type="submit" class="btn" id="expense-submit">
+                حفظ المصروف
+              </button>
+              <button
+                type="button"
+                class="btn btn-light hidden"
+                id="expense-cancel"
+              >
+                إلغاء التعديل
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2>آخر المصروفات</h2>
+
+          <table class="table" id="expenses-table">
+            <colgroup>
+              <col class="col-amount" />
+              <col class="col-date" />
+              <col class="col-details" />
+              <col class="col-note" />
+              <col class="col-actions" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>المبلغ</th>
+                <th>التاريخ</th>
+                <th>التفاصيل</th>
+                <th>ملاحظات</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="expenses-body">
+              <!-- تُملأ لاحقاً من main.js -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <!-- end page expenses section -->
+
+      <!-- start page loans section -->
+      <section class="page hidden" id="page-loans">
+        <div class="card">
+          <h2>إضافة سلفة</h2>
+
+          <form id="loan-form" class="form-grid cols-3" novalidate>
+            <div class="field">
+              <label for="loan-amount">مقدار السلفة</label>
+              <input
+                type="text"
+                id="loan-amount"
+                inputmode="decimal"
+                autocomplete="off"
+              />
+            </div>
+
+            <div class="field">
+              <label for="loan-date">التاريخ</label>
+              <div class="date-wrap">
+                <input type="text" id="loan-date" />
+                <button
+                  type="button"
+                  class="date-icon"
+                  id="loan-date-icon"
+                  aria-label="اختيار التاريخ"
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="loan-source">المصدر</label>
+              <input type="text" id="loan-source" />
+            </div>
+
+            <div class="field">
+              <label for="loan-type">نوع السلفة</label>
+              <select id="loan-type"></select>
+            </div>
+
+            <div class="form-error span-full hidden" id="loan-error"></div>
+
+            <div class="form-actions span-full">
+              <button type="submit" class="btn" id="loan-submit">
+                حفظ السلفة
+              </button>
+              <button
+                type="button"
+                class="btn btn-light hidden"
+                id="loan-cancel"
+              >
+                إلغاء التعديل
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+    <h2>أنواع السلف</h2>
+
+    <form id="loan-type-form" class="inline-form" novalidate>
+        <div class="field">
+            <label for="loan-type-name">اسم النوع</label>
+            <input type="text" id="loan-type-name">
+        </div>
+        <button type="submit" class="btn" id="loan-type-submit">إضافة النوع</button>
+        <button type="button" class="btn btn-light hidden" id="loan-type-cancel">إلغاء</button>
+    </form>
+    <div class="form-error hidden" id="loan-type-error"></div>
+
+    <table class="table type-table">
+        <colgroup>
+            <col class="col-type-name">
+            <col class="col-type-actions">
+        </colgroup>
+        <thead>
+            <tr>
+                <th>النوع</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="loan-types-body"></tbody>
+    </table>
+</div>
+
+        <div class="card">
+          <h2>آخر السلف</h2>
+
+          <table class="table">
+            <colgroup>
+              <col class="col-loan-amount" />
+              <col class="col-loan-date" />
+              <col class="col-source" />
+              <col class="col-type" />
+              <col class="col-loan-actions" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>المقدار</th>
+                <th>التاريخ</th>
+                <th>المصدر</th>
+                <th>النوع</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="loans-body"></tbody>
+          </table>
+        </div>
+      </section>
+      <!-- end page loans section -->
+    </main>
+    <!-- end main -->
+
+    <script src="lib/flatpickr.js"></script>
+    <script src="js/main.js"></script>
+  </body>
 </html>
