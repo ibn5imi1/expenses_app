@@ -9,7 +9,11 @@ function showPage(name) {
     navLinks.forEach(link => {
         link.classList.toggle('active', link.dataset.page === name);
     });
+
+    // تحديث بيانات الصفحة عند فتحها
     if (name === 'cash') loadCash();
+    if (name === 'destinations') reloadDestinations();
+    if (name === 'summary') loadSummary();
 }
 
 navLinks.forEach(link => {
@@ -20,7 +24,11 @@ document.getElementById('refresh-btn').addEventListener('click', () => {
     loadExpenses();
     loadLoans();
     loadCash();
+    reloadDestinations();
+    reloadLoanTypes();
+    loadSummary();
 });
+
 showPage('expenses');
 
 /* ---------- حالة الصفحة ---------- */
@@ -28,7 +36,7 @@ let destinations = [];
 let expenses = [];
 let editingId = null;   // رقم المصروف الذي يجري تعديله، أو null عند الإضافة
 
-/* ---------- عناصر الفورم ---------- */
+/* ---------- عناصر فورم المصروفات ---------- */
 const expenseLoanTypeSelect = document.getElementById('expense-loan-type');
 const expenseForm = document.getElementById('expense-form');
 const amountInput = document.getElementById('expense-amount');
@@ -74,6 +82,11 @@ function attachAmountFormat(input) {
 
 attachAmountFormat(amountInput);
 
+// تقريب إلى خانتين عشريتين لتفادي فروق الكسور، مع فواصل الآلاف
+function formatMoney(n) {
+    return (Math.round(n * 100) / 100).toLocaleString('en-US');
+}
+
 /* ---------- التاريخ ---------- */
 const MONTHS = [
     'كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران',
@@ -107,7 +120,6 @@ function createDatePicker(input, iconBtn) {
     return picker;
 }
 
-
 const datePicker = createDatePicker(dateInput, document.getElementById('date-icon'));
 
 // '2026-11-04' ← '4/11/2026'
@@ -123,6 +135,8 @@ function formatDateTime(iso) {
     const mm = String(t.getMinutes()).padStart(2, '0');
     return `${t.getDate()}/${t.getMonth() + 1}/${t.getFullYear()} ${hh}:${mm}`;
 }
+
+// نص التلميح: من أضاف ومن عدّل
 function auditTitle(row) {
     const lines = [`تمت الإضافة بواسطة ${row.created_by} — ${formatDateTime(row.created_at)}`];
     if (row.updated_by) {
@@ -131,13 +145,37 @@ function auditTitle(row) {
     return lines.join('\n');
 }
 
-/* ---------- جهة الصرف ---------- */
+/* ---------- أدوات مشتركة للجداول ---------- */
+function createCell(text, className) {
+    const td = document.createElement('td');
+    td.textContent = text;   // textContent يمنع تنفيذ أي HTML داخل النص
+    if (className) td.className = className;
+    return td;
+}
+
+function createButton(text, className, onClick) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = className;
+    btn.textContent = text;
+    btn.addEventListener('click', onClick);
+    return btn;
+}
+
+// رسالة الخطأ الأصلية بدون مقدمة Electron
+function cleanError(err) {
+    return String(err.message || err)
+        .replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
+}
+
+/* ---------- جهة الصرف (قائمة فورم المصروفات) ---------- */
 function setDefaultDestination() {
     const fixed = destinations.find(d => d.is_fixed);   // الكلية
     if (fixed) destinationSelect.value = fixed.id;
 }
 
 function fillDestinations() {
+    const current = destinationSelect.value;   // نحافظ على الاختيار الحالي
     destinationSelect.innerHTML = '';
     destinations.forEach(d => {
         const option = document.createElement('option');
@@ -145,7 +183,12 @@ function fillDestinations() {
         option.textContent = d.name;
         destinationSelect.appendChild(option);
     });
-    setDefaultDestination();
+
+    if (current && destinations.some(d => String(d.id) === current)) {
+        destinationSelect.value = current;
+    } else {
+        setDefaultDestination();
+    }
 }
 
 /* ---------- حقل التفاصيل يكبر مع الكتابة ---------- */
@@ -156,7 +199,7 @@ function autoGrow(el) {
 
 detailsInput.addEventListener('input', () => autoGrow(detailsInput));
 
-/* ---------- الفورم: إعادة الضبط والتعديل ---------- */
+/* ---------- فورم المصروفات: إعادة الضبط والتعديل ---------- */
 function clearErrors() {
     errorBox.classList.add('hidden');
     expenseForm.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
@@ -175,7 +218,7 @@ function resetExpenseForm() {
     detailsInput.style.height = 'auto';
     datePicker.setDate(new Date());
     setDefaultDestination();
-     setDefaultType(expenseLoanTypeSelect);
+    setDefaultType(expenseLoanTypeSelect);
     clearErrors();
 }
 
@@ -184,9 +227,9 @@ function startEdit(expense) {
     amountInput.value = formatAmount(expense.amount);
     datePicker.setDate(expense.date);
     destinationSelect.value = expense.destination_id;
+    expenseLoanTypeSelect.value = expense.loan_type_id;
     noteInput.value = expense.note;
     detailsInput.value = expense.details;
-    expenseLoanTypeSelect.value = expense.loan_type_id;
     autoGrow(detailsInput);
 
     submitBtn.textContent = 'تحديث المصروف';
@@ -219,14 +262,14 @@ function validateExpense() {
         badFields.push(destinationSelect);
     }
 
+    if (!expenseLoanTypeSelect.value) {
+        missing.push('نوع السلفة');
+        badFields.push(expenseLoanTypeSelect);
+    }
+
     if (!detailsInput.value.trim()) {
         missing.push('التفاصيل');
         badFields.push(detailsInput);
-    }
-
-        if (!expenseLoanTypeSelect.value) {
-        missing.push('نوع السلفة');
-        badFields.push(expenseLoanTypeSelect);
     }
 
     if (missing.length) {
@@ -235,7 +278,6 @@ function validateExpense() {
         badFields[0].focus();
         return false;
     }
-    
     return true;
 }
 
@@ -245,10 +287,10 @@ expenseForm.addEventListener('submit', async e => {
     if (!validateExpense()) return;
 
     const data = {
-        loanTypeId: Number(expenseLoanTypeSelect.value),
         amount: parseAmount(amountInput.value),
         date: dateInput.value,                          // YYYY-MM-DD
         destinationId: Number(destinationSelect.value),
+        loanTypeId: Number(expenseLoanTypeSelect.value),
         note: noteInput.value.trim(),
         details: detailsInput.value.trim(),
     };
@@ -270,22 +312,6 @@ expenseForm.addEventListener('submit', async e => {
 expenseForm.addEventListener('input', e => e.target.classList.remove('invalid'));
 
 /* ---------- عرض المصروفات ---------- */
-function createCell(text, className) {
-    const td = document.createElement('td');
-    td.textContent = text;   // textContent يمنع تنفيذ أي HTML داخل النص
-    if (className) td.className = className;
-    return td;
-}
-
-function createButton(text, className, onClick) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = className;
-    btn.textContent = text;
-    btn.addEventListener('click', onClick);
-    return btn;
-}
-
 async function removeExpense(id) {
     if (!confirm('هل تريد حذف هذا المصروف؟')) return;
     try {
@@ -312,13 +338,7 @@ function renderExpenses() {
 
     expenses.forEach(e => {
         const tr = document.createElement('tr');
-
-        // التلميح عند وقوف المؤشر على الصف
-        const lines = [`تمت الإضافة بواسطة ${e.created_by} — ${formatDateTime(e.created_at)}`];
-        if (e.updated_by) {
-            lines.push(`تم التعديل بواسطة ${e.updated_by} — ${formatDateTime(e.updated_at)}`);
-        }
-        tr.title = lines.join('\n');
+        tr.title = auditTitle(e);   // التلميح عند وقوف المؤشر على الصف
 
         tr.appendChild(createCell(e.amount.toLocaleString('en-US')));
 
@@ -348,7 +368,6 @@ async function loadExpenses() {
     renderExpenses();
 }
 
-
 /* ================= السلف ================= */
 let loanTypes = [];
 let loans = [];
@@ -363,12 +382,13 @@ const loanErrorBox = document.getElementById('loan-error');
 const loanSubmitBtn = document.getElementById('loan-submit');
 const loanCancelBtn = document.getElementById('loan-cancel');
 const loansBody = document.getElementById('loans-body');
-const loanTypeSubmitBtn = document.getElementById('loan-type-submit');
-const loanTypeCancelBtn = document.getElementById('loan-type-cancel');
-const loanTypesBody = document.getElementById('loan-types-body');
+
 const loanTypeForm = document.getElementById('loan-type-form');
 const loanTypeNameInput = document.getElementById('loan-type-name');
 const loanTypeErrorBox = document.getElementById('loan-type-error');
+const loanTypeSubmitBtn = document.getElementById('loan-type-submit');
+const loanTypeCancelBtn = document.getElementById('loan-type-cancel');
+const loanTypesBody = document.getElementById('loan-types-body');
 
 attachAmountFormat(loanAmountInput);
 const loanDatePicker = createDatePicker(loanDateInput, document.getElementById('loan-date-icon'));
@@ -403,7 +423,7 @@ function fillTypeSelect(select) {
     }
 }
 
-// تحديث القائمتين (السلف والمصروفات) وجدول الأنواع
+// تحديث قائمتي السلف والمصروفات وجدول الأنواع
 function fillLoanTypes() {
     fillTypeSelect(loanTypeSelect);
     fillTypeSelect(expenseLoanTypeSelect);
@@ -413,12 +433,6 @@ function fillLoanTypes() {
 async function reloadLoanTypes() {
     loanTypes = await window.api.getLoanTypes();
     fillLoanTypes();
-}
-
-// رسالة الخطأ الأصلية بدون مقدمة Electron
-function cleanError(err) {
-    return String(err.message || err)
-        .replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 }
 
 function clearLoanTypeError() {
@@ -524,7 +538,7 @@ loanTypeForm.addEventListener('submit', async e => {
 loanTypeCancelBtn.addEventListener('click', resetLoanTypeForm);
 loanTypeNameInput.addEventListener('input', () => loanTypeNameInput.classList.remove('invalid'));
 
-/* ---------- الفورم ---------- */
+/* ---------- فورم السلف ---------- */
 function clearLoanErrors() {
     loanErrorBox.classList.add('hidden');
     loanForm.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
@@ -678,18 +692,11 @@ async function loadLoans() {
     renderLoans();
 }
 
-
-
 /* ================= القاصة ================= */
 const cashBody = document.getElementById('cash-body');
 const cashTotalLoans = document.getElementById('cash-total-loans');
 const cashTotalSpent = document.getElementById('cash-total-spent');
 const cashTotalRemaining = document.getElementById('cash-total-remaining');
-
-// تقريب إلى خانتين عشريتين لتفادي فروق الكسور، مع فواصل الآلاف
-function formatMoney(n) {
-    return (Math.round(n * 100) / 100).toLocaleString('en-US');
-}
 
 function setRemaining(cell, value) {
     cell.textContent = formatMoney(value);
@@ -728,6 +735,191 @@ async function loadCash() {
     renderCash(await window.api.getCash());
 }
 
+/* ================= جهات الصرف ================= */
+let editingDestinationId = null;
+
+const destinationForm = document.getElementById('destination-form');
+const destinationNameInput = document.getElementById('destination-name');
+const destinationErrorBox = document.getElementById('destination-error');
+const destinationSubmitBtn = document.getElementById('destination-submit');
+const destinationCancelBtn = document.getElementById('destination-cancel');
+const destinationsBody = document.getElementById('destinations-body');
+const destinationsTotalCount = document.getElementById('destinations-total-count');
+const destinationsTotalSum = document.getElementById('destinations-total-sum');
+
+function clearDestinationError() {
+    destinationErrorBox.classList.add('hidden');
+    destinationNameInput.classList.remove('invalid');
+}
+
+function showDestinationError(message) {
+    destinationErrorBox.textContent = message;
+    destinationErrorBox.classList.remove('hidden');
+}
+
+function resetDestinationForm() {
+    destinationForm.reset();
+    editingDestinationId = null;
+    destinationSubmitBtn.textContent = 'إضافة الجهة';
+    destinationCancelBtn.classList.add('hidden');
+    clearDestinationError();
+}
+
+function startDestinationEdit(dest) {
+    editingDestinationId = dest.id;
+    destinationNameInput.value = dest.name;
+    destinationSubmitBtn.textContent = 'تحديث الجهة';
+    destinationCancelBtn.classList.remove('hidden');
+    clearDestinationError();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    destinationNameInput.focus();
+}
+
+async function reloadDestinations() {
+    destinations = await window.api.getDestinations();
+    fillDestinations();
+    renderDestinations();
+}
+
+async function removeDestination(dest) {
+    if (!confirm(`هل تريد حذف الجهة «${dest.name}»؟`)) return;
+    try {
+        await window.api.deleteDestination(dest.id);
+        if (editingDestinationId === dest.id) resetDestinationForm();
+        await reloadDestinations();
+    } catch (err) {
+        console.error(err);
+        showDestinationError(cleanError(err));
+    }
+}
+
+function renderDestinations() {
+    destinationsBody.innerHTML = '';
+
+    let totalCount = 0;
+    let totalSum = 0;
+
+    destinations.forEach(d => {
+        totalCount += d.expenses_count;
+        totalSum += d.expenses_total;
+
+        const tr = document.createElement('tr');
+        tr.appendChild(createCell(d.name));
+        tr.appendChild(createCell(String(d.expenses_count)));
+        tr.appendChild(createCell(formatMoney(d.expenses_total)));
+
+        const actionsTd = document.createElement('td');
+        if (d.is_fixed) {
+            const badge = document.createElement('span');
+            badge.className = 'badge';
+            badge.textContent = 'ثابت';
+            actionsTd.appendChild(badge);
+        } else {
+            const box = document.createElement('div');
+            box.className = 'row-actions';
+            box.appendChild(createButton('تعديل', 'btn btn-light btn-small', () => startDestinationEdit(d)));
+            box.appendChild(createButton('حذف', 'btn btn-danger btn-small', () => removeDestination(d)));
+            actionsTd.appendChild(box);
+        }
+        tr.appendChild(actionsTd);
+
+        destinationsBody.appendChild(tr);
+    });
+
+    destinationsTotalCount.textContent = String(totalCount);
+    destinationsTotalSum.textContent = formatMoney(totalSum);
+}
+
+destinationForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    clearDestinationError();
+
+    const name = destinationNameInput.value.replace(/\s+/g, ' ').trim();
+    let message = '';
+
+    if (!name) {
+        message = 'اكتب اسم الجهة';
+    } else if (destinations.some(d => d.name === name && d.id !== editingDestinationId)) {
+        message = 'هذه الجهة موجودة مسبقاً';
+    }
+
+    if (message) {
+        destinationNameInput.classList.add('invalid');
+        showDestinationError(message);
+        destinationNameInput.focus();
+        return;
+    }
+
+    try {
+        if (editingDestinationId) {
+            await window.api.updateDestination(editingDestinationId, name);
+        } else {
+            await window.api.addDestination(name);
+        }
+        resetDestinationForm();
+        await reloadDestinations();
+    } catch (err) {
+        console.error(err);
+        showDestinationError(cleanError(err));
+    }
+});
+
+destinationCancelBtn.addEventListener('click', resetDestinationForm);
+destinationNameInput.addEventListener('input', () => destinationNameInput.classList.remove('invalid'));
+
+/* ================= الخلاصة ================= */
+const summaryExpenses = document.getElementById('summary-expenses');
+const summaryLoans = document.getElementById('summary-loans');
+const summaryTotal = document.getElementById('summary-total');
+const summaryHint = document.getElementById('summary-hint');
+const summaryBody = document.getElementById('summary-body');
+const summaryTotalCount = document.getElementById('summary-total-count');
+const summaryTotalSum = document.getElementById('summary-total-sum');
+
+function renderSummary(dests, cash) {
+    summaryBody.innerHTML = '';
+
+    let totalCount = 0;
+    let totalExpenses = 0;
+
+    dests.forEach(d => {
+        totalCount += d.expenses_count;
+        totalExpenses += d.expenses_total;
+
+        const tr = document.createElement('tr');
+        tr.appendChild(createCell(d.name));
+        tr.appendChild(createCell(String(d.expenses_count)));
+        tr.appendChild(createCell(formatMoney(d.expenses_total)));
+        summaryBody.appendChild(tr);
+    });
+
+    const totalLoans = cash.reduce((sum, t) => sum + t.loans_total, 0);
+    const difference = Math.round((totalExpenses - totalLoans) * 100) / 100;
+
+    summaryTotalCount.textContent = String(totalCount);
+    summaryTotalSum.textContent = formatMoney(totalExpenses);
+
+    summaryExpenses.textContent = formatMoney(totalExpenses);
+    summaryLoans.textContent = formatMoney(totalLoans);
+    summaryTotal.textContent = formatMoney(difference);
+
+    if (difference > 0) {
+        summaryHint.textContent = `المصروفات أكثر من السلف بمقدار ${formatMoney(difference)}`;
+    } else if (difference < 0) {
+        summaryHint.textContent = `تبقى من السلف ${formatMoney(Math.abs(difference))}`;
+    } else {
+        summaryHint.textContent = 'المصروفات تساوي السلف';
+    }
+}
+
+async function loadSummary() {
+    const [dests, cash] = await Promise.all([
+        window.api.getDestinations(),
+        window.api.getCash(),
+    ]);
+    renderSummary(dests, cash);
+}
+
 /* ---------- تشغيل أولي ---------- */
 async function init() {
     destinations = await window.api.getDestinations();
@@ -735,6 +927,7 @@ async function init() {
 
     loanTypes = await window.api.getLoanTypes();   // قبل المصروفات
     fillLoanTypes();
+    renderDestinations();
 
     await loadExpenses();
     await loadLoans();

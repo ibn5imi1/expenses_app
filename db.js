@@ -17,6 +17,12 @@ function init() {
             is_fixed INTEGER NOT NULL DEFAULT 0
         );
 
+        CREATE TABLE IF NOT EXISTS loan_types (
+            id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            name     TEXT NOT NULL UNIQUE,
+            is_fixed INTEGER NOT NULL DEFAULT 0
+        );
+
         CREATE TABLE IF NOT EXISTS expenses (
             id             INTEGER PRIMARY KEY AUTOINCREMENT,
             amount         REAL NOT NULL,
@@ -24,18 +30,11 @@ function init() {
             date           TEXT NOT NULL,
             note           TEXT NOT NULL DEFAULT '',
             destination_id INTEGER NOT NULL REFERENCES destinations(id),
-            destination_id INTEGER NOT NULL REFERENCES destinations(id),
             loan_type_id   INTEGER REFERENCES loan_types(id),
             created_by     TEXT NOT NULL,
             created_at     TEXT NOT NULL,
             updated_by     TEXT,
             updated_at     TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS loan_types (
-            id       INTEGER PRIMARY KEY AUTOINCREMENT,
-            name     TEXT NOT NULL UNIQUE,
-            is_fixed INTEGER NOT NULL DEFAULT 0
         );
 
         CREATE TABLE IF NOT EXISTS loans (
@@ -60,7 +59,7 @@ function init() {
     migrate();
 }
 
-// جهات الصرف الأساسية تُدخل مرة واحدة فقط عندما يكون الجدول فارغاً
+// البيانات الأساسية تُدخل مرة واحدة فقط عندما تكون الجداول فارغة
 function seed() {
     db.transaction(() => {
         if (db.prepare('SELECT COUNT(*) AS c FROM destinations').get().c === 0) {
@@ -74,25 +73,86 @@ function seed() {
         }
 
         db.prepare(`
-            INSERT INTO settings (key, value) VALUES ('schema_version', '3')
+            INSERT INTO settings (key, value) VALUES ('schema_version', '4')
             ON CONFLICT(key) DO UPDATE SET value = excluded.value
         `).run();
     })();
 }
 
-// ترحيل القواعد القديمة: إضافة عمود نوع السلفة للمصروفات
+// ترحيل القواعد القديمة
 function migrate() {
-    const cols = db.prepare('PRAGMA table_info(expenses)').all().map(c => c.name);
-    if (!cols.includes('loan_type_id')) {
+    const hasColumn = (table, column) =>
+        db.prepare(`PRAGMA table_info(${table})`).all().some(c => c.name === column);
+
+    // عمود نوع السلفة في المصروفات
+    if (!hasColumn('expenses', 'loan_type_id')) {
         db.exec('ALTER TABLE expenses ADD COLUMN loan_type_id INTEGER REFERENCES loan_types(id)');
     }
 
     const fixed = db.prepare('SELECT id FROM loan_types WHERE is_fixed = 1').get();
     db.prepare('UPDATE expenses SET loan_type_id = ? WHERE loan_type_id IS NULL').run(fixed.id);
+
+    // عمود قديم من نسخة سابقة في جهات الصرف: لم نعد نستخدمه
+    if (hasColumn('destinations', 'loan_type_id')) {
+        db.prepare('UPDATE destinations SET loan_type_id = NULL').run();
+    }
 }
+
+function isConstraintError(err) {
+    return String(err.code).startsWith('SQLITE_CONSTRAINT');
+}
+
 /* ---------- جهات الصرف ---------- */
 function getDestinations() {
-    return db.prepare('SELECT id, name, is_fixed FROM destinations ORDER BY id').all();
+    return db.prepare(`
+        SELECT d.id, d.name, d.is_fixed,
+               (SELECT COUNT(*) FROM expenses WHERE destination_id = d.id) AS expenses_count,
+               COALESCE((SELECT SUM(amount) FROM expenses WHERE destination_id = d.id), 0) AS expenses_total
+        FROM destinations d
+        ORDER BY d.id
+    `).all();
+}
+
+function cleanDestinationName(name) {
+    const clean = String(name || '').replace(/\s+/g, ' ').trim();
+    if (!clean) throw new Error('اسم الجهة مطلوب');
+    return clean;
+}
+
+function addDestination(name) {
+    const clean = cleanDestinationName(name);
+    try {
+        return db.prepare('INSERT INTO destinations (name, is_fixed) VALUES (?, 0)').run(clean).lastInsertRowid;
+    } catch (err) {
+        if (isConstraintError(err)) throw new Error('هذه الجهة موجودة مسبقاً');
+        throw err;
+    }
+}
+
+function updateDestination(id, name) {
+    const clean = cleanDestinationName(name);
+
+    const dest = db.prepare('SELECT is_fixed FROM destinations WHERE id = ?').get(id);
+    if (!dest) throw new Error('الجهة غير موجودة');
+    if (dest.is_fixed) throw new Error('لا يمكن تعديل هذه الجهة');
+
+    try {
+        db.prepare('UPDATE destinations SET name = ? WHERE id = ?').run(clean, id);
+    } catch (err) {
+        if (isConstraintError(err)) throw new Error('هذه الجهة موجودة مسبقاً');
+        throw err;
+    }
+}
+
+function deleteDestination(id) {
+    const dest = db.prepare('SELECT is_fixed FROM destinations WHERE id = ?').get(id);
+    if (!dest) throw new Error('الجهة غير موجودة');
+    if (dest.is_fixed) throw new Error('لا يمكن حذف هذه الجهة');
+
+    const count = db.prepare('SELECT COUNT(*) AS c FROM expenses WHERE destination_id = ?').get(id).c;
+    if (count) throw new Error(`لا يمكن حذف جهة لديها ${count} مصروف`);
+
+    db.prepare('DELETE FROM destinations WHERE id = ?').run(id);
 }
 
 /* ---------- المصروفات ---------- */
@@ -103,8 +163,9 @@ function validateExpense(d) {
 
     const dest = db.prepare('SELECT id FROM destinations WHERE id = ?').get(d.destinationId);
     if (!dest) throw new Error('جهة الصرف غير موجودة');
+
     const type = db.prepare('SELECT id FROM loan_types WHERE id = ?').get(d.loanTypeId);
-if (!type) throw new Error('نوع السلفة غير موجود');
+    if (!type) throw new Error('نوع السلفة غير موجود');
 }
 
 function getExpenses() {
@@ -173,10 +234,6 @@ function cleanTypeName(name) {
     const clean = String(name || '').replace(/\s+/g, ' ').trim();
     if (!clean) throw new Error('اسم النوع مطلوب');
     return clean;
-}
-
-function isConstraintError(err) {
-    return String(err.code).startsWith('SQLITE_CONSTRAINT');
 }
 
 function addLoanType(name) {
@@ -278,10 +335,10 @@ function getCash() {
 }
 
 module.exports = {
-    init, getDestinations,
+    init,
+    getDestinations, addDestination, updateDestination, deleteDestination,
     getExpenses, addExpense, updateExpense, deleteExpense,
     getLoanTypes, addLoanType, updateLoanType, deleteLoanType,
     getLoans, addLoan, updateLoan, deleteLoan,
     getCash,
 };
-

@@ -26,8 +26,9 @@
           كشف المصروفات
         </button>
         <button class="nav-link" data-page="loans-report">كشف السلف</button>
-        <button class="nav-link" data-page="settings">الاعدادات</button>
         <button class="nav-link" id="refresh-btn">تحديث البيانات</button>
+        <button class="nav-link" data-page="settings">الاعدادات</button>
+
         <button class="nav-link admin-only" data-page="admin">الادمن</button>
       </div>
 
@@ -225,32 +226,40 @@
         </div>
 
         <div class="card">
-    <h2>أنواع السلف</h2>
+          <h2>أنواع السلف</h2>
 
-    <form id="loan-type-form" class="inline-form" novalidate>
-        <div class="field">
-            <label for="loan-type-name">اسم النوع</label>
-            <input type="text" id="loan-type-name">
-        </div>
-        <button type="submit" class="btn" id="loan-type-submit">إضافة النوع</button>
-        <button type="button" class="btn btn-light hidden" id="loan-type-cancel">إلغاء</button>
-    </form>
-    <div class="form-error hidden" id="loan-type-error"></div>
+          <form id="loan-type-form" class="inline-form" novalidate>
+            <div class="field">
+              <label for="loan-type-name">اسم النوع</label>
+              <input type="text" id="loan-type-name" />
+            </div>
+            <button type="submit" class="btn" id="loan-type-submit">
+              إضافة النوع
+            </button>
+            <button
+              type="button"
+              class="btn btn-light hidden"
+              id="loan-type-cancel"
+            >
+              إلغاء
+            </button>
+          </form>
+          <div class="form-error hidden" id="loan-type-error"></div>
 
-    <table class="table type-table">
-        <colgroup>
-            <col class="col-type-name">
-            <col class="col-type-actions">
-        </colgroup>
-        <thead>
-            <tr>
+          <table class="table type-table">
+            <colgroup>
+              <col class="col-type-name" />
+              <col class="col-type-actions" />
+            </colgroup>
+            <thead>
+              <tr>
                 <th>النوع</th>
                 <th></th>
-            </tr>
-        </thead>
-        <tbody id="loan-types-body"></tbody>
-    </table>
-</div>
+              </tr>
+            </thead>
+            <tbody id="loan-types-body"></tbody>
+          </table>
+        </div>
 
         <div class="card">
           <h2>آخر السلف</h2>
@@ -279,38 +288,145 @@
       <!-- end page loans section -->
 
       <!-- start page cash section -->
-<section class="page hidden" id="page-cash">
-    <div class="card">
-        <h2>القاصة</h2>
+      <section class="page hidden" id="page-cash">
+        <div class="card">
+          <h2>القاصة</h2>
 
-        <table class="table">
+          <table class="table">
             <colgroup>
-                <col class="col-cash-type">
-                <col class="col-cash-num">
-                <col class="col-cash-num">
-                <col class="col-cash-num">
+              <col class="col-cash-type" />
+              <col class="col-cash-num" />
+              <col class="col-cash-num" />
+              <col class="col-cash-num" />
             </colgroup>
             <thead>
-                <tr>
-                    <th>نوع السلفة</th>
-                    <th>صافي السلفة</th>
-                    <th>المصروف منها</th>
-                    <th>المتبقي</th>
-                </tr>
+              <tr>
+                <th>نوع السلفة</th>
+                <th>صافي السلفة</th>
+                <th>المصروف منها</th>
+                <th>المتبقي</th>
+              </tr>
             </thead>
             <tbody id="cash-body"></tbody>
             <tfoot>
-                <tr>
-                    <td>المجموع</td>
-                    <td id="cash-total-loans"></td>
-                    <td id="cash-total-spent"></td>
-                    <td id="cash-total-remaining"></td>
-                </tr>
+              <tr>
+                <td>المجموع</td>
+                <td id="cash-total-loans"></td>
+                <td id="cash-total-spent"></td>
+                <td id="cash-total-remaining"></td>
+              </tr>
             </tfoot>
-        </table>
-    </div>
-</section>
-<!-- end page cash section -->
+          </table>
+        </div>
+      </section>
+      <!-- end page cash section -->
+
+      <!-- start page destinations section -->
+      <section class="page hidden" id="page-destinations">
+        <div class="card">
+          <h2>إضافة جهة صرف</h2>
+
+          <form id="destination-form" class="inline-form" novalidate>
+            <div class="field">
+              <label for="destination-name">اسم الجهة</label>
+              <input type="text" id="destination-name" autocomplete="off" />
+            </div>
+
+            <button type="submit" class="btn" id="destination-submit">
+              إضافة الجهة
+            </button>
+            <button
+              type="button"
+              class="btn btn-light hidden"
+              id="destination-cancel"
+            >
+              إلغاء
+            </button>
+          </form>
+          <div class="form-error hidden" id="destination-error"></div>
+        </div>
+
+        <div class="card">
+          <h2>جهات الصرف</h2>
+
+          <table class="table">
+            <colgroup>
+              <col class="col-dest-name" />
+              <col class="col-dest-count" />
+              <col class="col-dest-total" />
+              <col class="col-dest-actions" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>الجهة</th>
+                <th>عدد المصروفات</th>
+                <th>مجموع المصروفات</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="destinations-body"></tbody>
+            <tfoot>
+              <tr>
+                <td>المجموع</td>
+                <td id="destinations-total-count"></td>
+                <td id="destinations-total-sum"></td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+      <!-- end page destinations section -->
+
+      <!-- start page summary section -->
+      <section class="page hidden" id="page-summary">
+        <div class="stats">
+          <div class="stat">
+            <span class="stat-label">مجموع المصروفات</span>
+            <strong class="stat-value" id="summary-expenses"></strong>
+          </div>
+
+          <div class="stat">
+            <span class="stat-label">مجموع السلف</span>
+            <strong class="stat-value" id="summary-loans"></strong>
+          </div>
+
+          <div class="stat stat-main">
+            <span class="stat-label">المجموع الكلي (المصروفات − السلف)</span>
+            <strong class="stat-value" id="summary-total"></strong>
+          </div>
+        </div>
+
+        <p class="summary-hint" id="summary-hint"></p>
+
+        <div class="card">
+          <h2>المصروفات حسب الجهة</h2>
+
+          <table class="table">
+            <colgroup>
+              <col class="col-sum-name" />
+              <col class="col-sum-count" />
+              <col class="col-sum-total" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>جهة الصرف</th>
+                <th>عدد المصروفات</th>
+                <th>المجموع</th>
+              </tr>
+            </thead>
+            <tbody id="summary-body"></tbody>
+            <tfoot>
+              <tr>
+                <td>الإجمالي</td>
+                <td id="summary-total-count"></td>
+                <td id="summary-total-sum"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+      <!-- end page summary section -->
     </main>
     <!-- end main -->
 

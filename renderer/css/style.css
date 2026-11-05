@@ -355,3 +355,79 @@ main {
     font-weight: 700;
 }
 /* end cash section */
+
+/* start page destinations section */
+.col-dest-name {
+    width: 40%;
+}
+
+.col-dest-count {
+    width: 18%;
+}
+
+.col-dest-total {
+    width: 24%;
+}
+
+.col-dest-actions {
+    width: 18%;
+}
+/* end page destinations section */
+
+/* start page summary section */
+.stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.stat {
+    padding: 16px 20px;
+    background-color: var(--white-color);
+    border: 1px solid var(--off-white-color);
+    border-radius: var(--radius-large);
+}
+
+.stat-label {
+    display: block;
+    font-size: var(--small-font-size);
+    color: var(--muted-color);
+}
+
+.stat-value {
+    display: block;
+    margin-top: 6px;
+    font-size: 24px;
+}
+
+.stat-main {
+    background-color: var(--green-color);
+    border-color: var(--green-color);
+}
+
+.stat-main .stat-label {
+    color: var(--off-white-color);
+}
+
+.stat-main .stat-value {
+    color: var(--white-color);
+}
+
+.summary-hint {
+    margin: 0 0 20px;
+    color: var(--muted-color);
+}
+
+.col-sum-name {
+    width: 50%;
+}
+
+.col-sum-count {
+    width: 20%;
+}
+
+.col-sum-total {
+    width: 30%;
+}
+/* end page summary section */
