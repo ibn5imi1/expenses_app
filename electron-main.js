@@ -1,6 +1,7 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const db = require('./db');
+const { saveReport } = require('./export');
 
 // مؤقتاً حتى نبني صفحة تسجيل الدخول
 // المستخدم يحمله الجزء الخلفي، فلا تستطيع الواجهة انتحال اسم غيرها
@@ -50,6 +51,30 @@ app.whenReady().then(() => {
 
   // القاصة
   ipcMain.handle('getCash', () => db.getCash());
+
+  // الكشوفات
+  ipcMain.handle('getExpensesReport', (e, filters) => db.getExpensesReport(filters));
+  ipcMain.handle('getLoansReport', (e, filters) => db.getLoansReport(filters));
+
+  ipcMain.handle('exportReport', async (e, report) => {
+    const win = BrowserWindow.fromWebContents(e.sender);
+    const result = await dialog.showSaveDialog(win, {
+      title: 'حفظ الكشف',
+      defaultPath: report.fileName,
+      filters: [{ name: 'Excel', extensions: ['xlsx'] }],
+    });
+    if (result.canceled || !result.filePath) return { saved: false };
+
+    await saveReport(report, result.filePath);
+    return { saved: true, fileName: path.basename(result.filePath) };
+  });
+
+  // الطباعة عبر نافذة الطباعة، ونعرف منها هل تمت أم أُلغيت
+  ipcMain.handle('printPage', e => new Promise(resolve => {
+    e.sender.print({ silent: false, printBackground: true }, (success, reason) => {
+      resolve({ success, cancelled: !success && /cancel/i.test(String(reason)) });
+    });
+  }));
 
   createWindow();
 });

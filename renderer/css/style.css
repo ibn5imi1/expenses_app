@@ -10,6 +10,8 @@
     --table-head-color: #f4f7f5;
     --font-color: #1d2b26;
     --muted-color: #66756f;
+    --green-soft-color: #e6f2ee;
+    --grid-color: #b7c2bc;
 
     /* fonts */
     --font-main: "Segoe UI", Tahoma, Arial, sans-serif;
@@ -431,3 +433,226 @@ main {
     width: 30%;
 }
 /* end page summary section */
+
+/* ---------- الكشوفات ---------- */
+.report-form {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px 16px;
+    align-items: end;
+}
+
+.report-form+div {
+    margin-top: 12px;
+}
+
+.group-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: var(--small-font-size);
+    color: var(--muted-color);
+}
+
+.check-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 22px;
+}
+
+.check-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.check-item input {
+    width: auto;
+    margin: 0;
+}
+
+.check-actions {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.link-btn {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--green-color);
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.report-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.report-head h2 {
+    margin: 0;
+}
+
+.report-sub {
+    margin: 4px 0 0;
+    color: var(--muted-color);
+}
+
+.report-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.form-success {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--green-color);
+    border-radius: var(--radius-small);
+    background-color: var(--green-soft-color);
+    color: var(--green-color);
+}
+
+.btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+
+
+/* جداول الكشوفات بخطوط وأعمدة */
+.grid-table th,
+.grid-table td {
+    border: 1px solid var(--grid-color);
+}
+
+.col-r-amount {
+    width: 16%;
+}
+
+.col-r-date {
+    width: 14%;
+}
+
+.col-r-details {
+    width: 50%;
+}
+
+.col-r-note {
+    width: 20%;
+}
+
+.col-lr-amount {
+    width: 20%;
+}
+
+.col-lr-date {
+    width: 18%;
+}
+
+.col-lr-source {
+    width: 38%;
+}
+
+.col-lr-type {
+    width: 24%;
+}
+
+/* رسالة التأكيد */
+.toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    z-index: 100;
+    min-width: 260px;
+    max-width: 80%;
+    padding: 12px 22px;
+    border-radius: var(--radius-small);
+    background-color: var(--green-color);
+    color: var(--white-color);
+    text-align: center;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 10px);
+    transition: opacity .25s, transform .25s;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+.toast-error {
+    background-color: var(--red-color);
+}
+
+/* الطباعة: الكشف فقط بخطوط وأعمدة */
+@media print {
+
+    .navbar,
+    .noprint,
+    .toast {
+        display: none !important;
+    }
+
+    body {
+        background-color: #fff;
+        color: #000;
+    }
+
+    main {
+        max-width: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .card {
+        border: 0;
+        padding: 0;
+    }
+
+    .report-head h2 {
+        font-size: 18px;
+    }
+
+    .report-sub {
+        color: #000;
+    }
+
+    .grid-table {
+        font-size: 13px;
+    }
+
+    .grid-table th,
+    .grid-table td {
+        border: 1px solid #000;
+        color: #000;
+    }
+
+    .grid-table th,
+    .grid-table tfoot td {
+        background-color: #e9eeeb;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .grid-table thead {
+        display: table-header-group;
+    }
+
+    /* يتكرر الرأس في كل صفحة */
+    .grid-table tfoot {
+        display: table-row-group;
+    }
+
+    /* المجموع في آخر صفحة فقط */
+    .grid-table tr {
+        break-inside: avoid;
+    }
+}

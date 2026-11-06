@@ -334,6 +334,49 @@ function getCash() {
     `).all();
 }
 
+/* ---------- الكشوفات ---------- */
+function assertDate(value, label) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value))) throw new Error(`${label} غير صحيح`);
+}
+
+function cleanIds(list) {
+    return (Array.isArray(list) ? list : []).map(Number).filter(Number.isInteger);
+}
+
+function getExpensesReport(f) {
+    assertDate(f.from, 'تاريخ البداية');
+    assertDate(f.to, 'تاريخ النهاية');
+
+    const ids = cleanIds(f.destinationIds);
+    if (!ids.length) return [];
+
+    return db.prepare(`
+        SELECT e.id, e.amount, e.details, e.date, e.note, d.name AS destination
+        FROM expenses e
+        JOIN destinations d ON d.id = e.destination_id
+        WHERE e.destination_id IN (${ids.map(() => '?').join(',')})
+          AND e.date >= ? AND e.date <= ?
+        ORDER BY e.date ASC, e.id ASC
+    `).all(...ids, f.from, f.to);
+}
+
+function getLoansReport(f) {
+    assertDate(f.from, 'تاريخ البداية');
+    assertDate(f.to, 'تاريخ النهاية');
+
+    const ids = cleanIds(f.loanTypeIds);
+    if (!ids.length) return [];
+
+    return db.prepare(`
+        SELECT l.id, l.amount, l.date, l.source, t.name AS loan_type
+        FROM loans l
+        JOIN loan_types t ON t.id = l.loan_type_id
+        WHERE l.loan_type_id IN (${ids.map(() => '?').join(',')})
+          AND l.date >= ? AND l.date <= ?
+        ORDER BY l.date ASC, l.id ASC
+    `).all(...ids, f.from, f.to);
+}
+
 module.exports = {
     init,
     getDestinations, addDestination, updateDestination, deleteDestination,
@@ -341,4 +384,5 @@ module.exports = {
     getLoanTypes, addLoanType, updateLoanType, deleteLoanType,
     getLoans, addLoan, updateLoan, deleteLoan,
     getCash,
+    getExpensesReport, getLoansReport,
 };

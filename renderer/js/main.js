@@ -20,14 +20,37 @@ navLinks.forEach(link => {
     link.addEventListener('click', () => showPage(link.dataset.page));
 });
 
-document.getElementById('refresh-btn').addEventListener('click', () => {
-    loadExpenses();
-    loadLoans();
-    loadCash();
-    reloadDestinations();
-    reloadLoanTypes();
-    loadSummary();
-});
+/* ---------- تحديث البيانات ---------- */
+let refreshing = false;
+
+async function refreshAll() {
+    if (refreshing) return;   // لا نكرر التحديث إذا ضغط المستخدم مرتين
+    refreshing = true;
+
+    try {
+        await Promise.all([
+            reloadDestinations(),
+            reloadLoanTypes(),
+            loadExpenses(),
+            loadLoans(),
+            loadCash(),
+            loadSummary(),
+        ]);
+
+        // إذا كان كشف معروضاً، نعيد عرضه بالأرقام الجديدة
+        if (!expensesReportResult.classList.contains('hidden')) expensesReportForm.requestSubmit();
+        if (!loansReportResult.classList.contains('hidden')) loansReportForm.requestSubmit();
+
+        showToast('تم تحديث البيانات');
+    } catch (err) {
+        console.error(err);
+        showToast('تعذر تحديث البيانات', true);
+    } finally {
+        refreshing = false;
+    }
+}
+
+document.getElementById('refresh-btn').addEventListener('click', refreshAll);
 
 showPage('expenses');
 
@@ -102,8 +125,8 @@ const arabicIraq = {
     firstDayOfWeek: 6,
 };
 
-function createDatePicker(input, iconBtn) {
-    const picker = flatpickr(input, {
+function createDatePicker(input, iconBtn, extra = {}) {
+    const picker = flatpickr(input, Object.assign({
         locale: arabicIraq,
         dateFormat: 'Y-m-d',
         altInput: true,
@@ -111,7 +134,7 @@ function createDatePicker(input, iconBtn) {
         defaultDate: 'today',
         disableMobile: true,
         onChange: () => picker.altInput.classList.remove('invalid'),
-    });
+    }, extra));
 
     iconBtn.addEventListener('click', e => {
         e.stopPropagation();
@@ -119,7 +142,6 @@ function createDatePicker(input, iconBtn) {
     });
     return picker;
 }
-
 const datePicker = createDatePicker(dateInput, document.getElementById('date-icon'));
 
 // '2026-11-04' ← '4/11/2026'
@@ -189,6 +211,8 @@ function fillDestinations() {
     } else {
         setDefaultDestination();
     }
+
+    fillCheckList(reportDestinations, destinations);
 }
 
 /* ---------- حقل التفاصيل يكبر مع الكتابة ---------- */
@@ -427,6 +451,7 @@ function fillTypeSelect(select) {
 function fillLoanTypes() {
     fillTypeSelect(loanTypeSelect);
     fillTypeSelect(expenseLoanTypeSelect);
+    fillCheckList(loanReportTypes, loanTypes);
     renderLoanTypes();
 }
 
@@ -919,6 +944,308 @@ async function loadSummary() {
     ]);
     renderSummary(dests, cash);
 }
+
+/* ================= الكشوفات: أدوات مشتركة ================= */
+function toISO(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function monthStartISO() {
+    const now = new Date();
+    return toISO(new Date(now.getFullYear(), now.getMonth(), 1));
+}
+
+// قائمة اختيارات تحافظ على ما حدده المستخدم، والعناصر الجديدة تظهر محددة
+function fillCheckList(container, items) {
+    const known = new Set((container.dataset.known || '').split(',').filter(Boolean));
+    const checked = new Set([...container.querySelectorAll('input:checked')].map(i => i.value));
+
+    container.innerHTML = '';
+    items.forEach(item => {
+        const label = document.createElement('label');
+        label.className = 'check-item';
+
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.value = item.id;
+        box.checked = !known.has(String(item.id)) || checked.has(String(item.id));
+
+        const text = document.createElement('span');
+        text.textContent = item.name;
+
+        label.append(box, text);
+        container.appendChild(label);
+    });
+    container.dataset.known = items.map(i => i.id).join(',');
+}
+
+function getCheckedIds(container) {
+    return [...container.querySelectorAll('input:checked')].map(i => Number(i.value));
+}
+
+function setAllChecked(container, state) {
+    container.querySelectorAll('input').forEach(i => { i.checked = state; });
+}
+
+function showNote(el, text) {
+    el.textContent = text;
+    el.className = 'form-error noprint';
+}
+
+function hideNote(el) {
+    el.className = 'hidden';
+}
+
+function sumAmounts(rows) {
+    return Math.round(rows.reduce((s, r) => s + r.amount, 0) * 100) / 100;
+}
+
+function periodText(from, to) {
+    return `من ${formatDate(from)} إلى ${formatDate(to)}`;
+}
+
+function createDateCell(iso) {
+    const td = document.createElement('td');
+    const bdi = document.createElement('bdi');
+    bdi.textContent = formatDate(iso);
+    td.appendChild(bdi);
+    return td;
+}
+
+/* ---------- رسالة التأكيد (تظهر وتختفي وحدها) ---------- */
+const toastEl = document.getElementById('toast');
+let toastTimer = null;
+
+function showToast(message, isError = false) {
+    toastEl.textContent = message;
+    toastEl.classList.toggle('toast-error', isError);
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 3000);
+}
+
+async function exportReport(report) {
+    if (!report) return;
+    try {
+        const result = await window.api.exportReport(report);
+        if (result.saved) showToast(`تم تصدير ملف Excel: ${result.fileName}`);
+    } catch (err) {
+        console.error(err);
+        showToast('تعذر حفظ الملف، تأكد أنه غير مفتوح في Excel', true);
+    }
+}
+
+async function printReport() {
+    try {
+        const result = await window.api.printPage();
+        if (result.success) {
+            showToast('تمت الطباعة');
+        } else if (!result.cancelled) {
+            showToast('تعذرت الطباعة', true);
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('تعذرت الطباعة', true);
+    }
+}
+
+/* ================= كشف المصروفات ================= */
+const reportDestinations = document.getElementById('report-destinations');
+const expensesReportForm = document.getElementById('expenses-report-form');
+const expFromInput = document.getElementById('exp-from');
+const expToInput = document.getElementById('exp-to');
+const expensesReportError = document.getElementById('expenses-report-error');
+const expensesReportResult = document.getElementById('expenses-report-result');
+const expensesReportTitle = document.getElementById('expenses-report-title');
+const expensesReportSubtitle = document.getElementById('expenses-report-subtitle');
+const expensesReportBody = document.getElementById('expenses-report-body');
+const expensesReportTotal = document.getElementById('expenses-report-total');
+const expensesReportCount = document.getElementById('expenses-report-count');
+const expensesReportExcelBtn = document.getElementById('expenses-report-excel');
+
+createDatePicker(expFromInput, document.getElementById('exp-from-icon'), { defaultDate: monthStartISO() });
+createDatePicker(expToInput, document.getElementById('exp-to-icon'));
+
+let expensesReport = null;   // آخر كشف معروض (للتصدير)
+
+function renderExpensesReport(rows, ids, from, to) {
+    const names = destinations.filter(d => ids.includes(d.id)).map(d => d.name).join('، ');
+    const title = `كشف مصروفات: ${names}`;
+    const subtitle = periodText(from, to);
+    const total = sumAmounts(rows);
+
+    expensesReportTitle.textContent = title;
+    expensesReportSubtitle.textContent = subtitle;
+
+    expensesReportBody.innerHTML = '';
+    if (!rows.length) {
+        const tr = document.createElement('tr');
+        const td = createCell('لا توجد مصروفات في هذه الفترة');
+        td.colSpan = 4;
+        tr.appendChild(td);
+        expensesReportBody.appendChild(tr);
+    }
+
+    rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.appendChild(createCell(r.amount.toLocaleString('en-US')));
+        tr.appendChild(createDateCell(r.date));
+        tr.appendChild(createCell(r.details, 'details-cell'));
+        tr.appendChild(createCell(r.note));
+        expensesReportBody.appendChild(tr);
+    });
+
+    expensesReportTotal.textContent = formatMoney(total);
+    expensesReportCount.textContent = `المجموع — عدد المصروفات: ${rows.length}`;
+
+    expensesReport = {
+        title,
+        subtitle,
+        fileName: `expenses-report-${from}-to-${to}.xlsx`,
+        columns: [
+            { header: 'المبلغ', width: 16 },
+            { header: 'التاريخ', width: 14 },
+            { header: 'التفاصيل', width: 60 },
+            { header: 'ملاحظات', width: 26 },
+        ],
+        rows: rows.map(r => [r.amount, formatDate(r.date), r.details, r.note]),
+        total: [total, `المجموع — عدد المصروفات: ${rows.length}`, '', ''],
+    };
+
+    expensesReportExcelBtn.disabled = !rows.length;
+    expensesReportResult.classList.remove('hidden');
+}
+
+expensesReportForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    hideNote(expensesReportError);
+
+    const ids = getCheckedIds(reportDestinations);
+    const from = expFromInput.value;
+    const to = expToInput.value;
+
+    if (!ids.length) {
+        showNote(expensesReportError, 'اختر جهة صرف واحدة على الأقل');
+        return;
+    }
+    if (from > to) {
+        showNote(expensesReportError, 'تاريخ البداية بعد تاريخ النهاية');
+        return;
+    }
+
+    try {
+        const rows = await window.api.getExpensesReport({ destinationIds: ids, from, to });
+        renderExpensesReport(rows, ids, from, to);
+    } catch (err) {
+        console.error(err);
+        showNote(expensesReportError, cleanError(err));
+    }
+});
+
+document.getElementById('report-dest-all').addEventListener('click', () => setAllChecked(reportDestinations, true));
+document.getElementById('report-dest-none').addEventListener('click', () => setAllChecked(reportDestinations, false));
+document.getElementById('expenses-report-print').addEventListener('click', printReport);
+expensesReportExcelBtn.addEventListener('click', () => exportReport(expensesReport));
+
+/* ================= كشف السلف ================= */
+const loanReportTypes = document.getElementById('report-loan-types');
+const loansReportForm = document.getElementById('loans-report-form');
+const loanFromInput = document.getElementById('loan-from');
+const loanToInput = document.getElementById('loan-to');
+const loansReportError = document.getElementById('loans-report-error');
+const loansReportResult = document.getElementById('loans-report-result');
+const loansReportTitle = document.getElementById('loans-report-title');
+const loansReportSubtitle = document.getElementById('loans-report-subtitle');
+const loansReportBody = document.getElementById('loans-report-body');
+const loansReportTotal = document.getElementById('loans-report-total');
+const loansReportCount = document.getElementById('loans-report-count');
+const loansReportExcelBtn = document.getElementById('loans-report-excel');
+
+createDatePicker(loanFromInput, document.getElementById('loan-from-icon'), { defaultDate: monthStartISO() });
+createDatePicker(loanToInput, document.getElementById('loan-to-icon'));
+
+let loansReport = null;
+
+function renderLoansReport(rows, ids, from, to) {
+    const names = loanTypes.filter(t => ids.includes(t.id)).map(t => t.name).join('، ');
+    const title = `كشف السلف المستلمة: ${names}`;
+    const subtitle = periodText(from, to);
+    const total = sumAmounts(rows);
+
+    loansReportTitle.textContent = title;
+    loansReportSubtitle.textContent = subtitle;
+
+    loansReportBody.innerHTML = '';
+    if (!rows.length) {
+        const tr = document.createElement('tr');
+        const td = createCell('لا توجد سلف في هذه الفترة');
+        td.colSpan = 4;
+        tr.appendChild(td);
+        loansReportBody.appendChild(tr);
+    }
+
+    rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.appendChild(createCell(r.amount.toLocaleString('en-US')));
+        tr.appendChild(createDateCell(r.date));
+        tr.appendChild(createCell(r.source));
+        tr.appendChild(createCell(r.loan_type));
+        loansReportBody.appendChild(tr);
+    });
+
+    loansReportTotal.textContent = formatMoney(total);
+    loansReportCount.textContent = `المجموع — عدد السلف: ${rows.length}`;
+
+    loansReport = {
+        title,
+        subtitle,
+        fileName: `loans-report-${from}-to-${to}.xlsx`,
+        columns: [
+            { header: 'المبلغ', width: 18 },
+            { header: 'التاريخ', width: 14 },
+            { header: 'المصدر', width: 40 },
+            { header: 'النوع', width: 22 },
+        ],
+        rows: rows.map(r => [r.amount, formatDate(r.date), r.source, r.loan_type]),
+        total: [total, `المجموع — عدد السلف: ${rows.length}`, '', ''],
+    };
+
+    loansReportExcelBtn.disabled = !rows.length;
+    loansReportResult.classList.remove('hidden');
+}
+
+loansReportForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    hideNote(loansReportError);
+
+    const ids = getCheckedIds(loanReportTypes);
+    const from = loanFromInput.value;
+    const to = loanToInput.value;
+
+    if (!ids.length) {
+        showNote(loansReportError, 'اختر نوع سلفة واحداً على الأقل');
+        return;
+    }
+    if (from > to) {
+        showNote(loansReportError, 'تاريخ البداية بعد تاريخ النهاية');
+        return;
+    }
+
+    try {
+        const rows = await window.api.getLoansReport({ loanTypeIds: ids, from, to });
+        renderLoansReport(rows, ids, from, to);
+    } catch (err) {
+        console.error(err);
+        showNote(loansReportError, cleanError(err));
+    }
+});
+
+document.getElementById('report-type-all').addEventListener('click', () => setAllChecked(loanReportTypes, true));
+document.getElementById('report-type-none').addEventListener('click', () => setAllChecked(loanReportTypes, false));
+document.getElementById('loans-report-print').addEventListener('click', printReport);
+loansReportExcelBtn.addEventListener('click', () => exportReport(loansReport));
+
+
 
 /* ---------- تشغيل أولي ---------- */
 async function init() {

@@ -27,4 +27,10 @@ contextBridge.exposeInMainWorld('api', {
 
   // القاصة
   getCash: () => ipcRenderer.invoke('getCash'),
+
+  // الكشوفات
+  getExpensesReport: filters => ipcRenderer.invoke('getExpensesReport', filters),
+  getLoansReport: filters => ipcRenderer.invoke('getLoansReport', filters),
+  exportReport: report => ipcRenderer.invoke('exportReport', report),
+  printPage: () => ipcRenderer.invoke('printPage'),
 });

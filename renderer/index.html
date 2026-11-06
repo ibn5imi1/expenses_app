@@ -427,9 +427,274 @@
         </div>
       </section>
       <!-- end page summary section -->
+
+      <!-- start page expenses report section -->
+      <section class="page hidden" id="page-expenses-report">
+        <div class="card noprint">
+          <h2>كشف المصروفات</h2>
+
+          <form id="expenses-report-form" class="report-form" novalidate>
+            <div class="report-group span-full">
+              <span class="group-label"
+                >جهات الصرف (يمكن اختيار أكثر من جهة)</span
+              >
+              <div class="check-list" id="report-destinations"></div>
+              <div class="check-actions">
+                <button type="button" class="link-btn" id="report-dest-all">
+                  تحديد الكل
+                </button>
+                <button type="button" class="link-btn" id="report-dest-none">
+                  إلغاء التحديد
+                </button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="exp-from">من تاريخ</label>
+              <div class="date-wrap">
+                <input type="text" id="exp-from" />
+                <button
+                  type="button"
+                  class="date-icon"
+                  id="exp-from-icon"
+                  aria-label="اختيار التاريخ"
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="exp-to">إلى تاريخ</label>
+              <div class="date-wrap">
+                <input type="text" id="exp-to" />
+                <button
+                  type="button"
+                  class="date-icon"
+                  id="exp-to-icon"
+                  aria-label="اختيار التاريخ"
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn">عرض الكشف</button>
+            </div>
+          </form>
+          <div class="hidden" id="expenses-report-error"></div>
+        </div>
+
+        <div class="card hidden" id="expenses-report-result">
+          <div class="report-head">
+            <div>
+              <h2 id="expenses-report-title"></h2>
+              <p class="report-sub" id="expenses-report-subtitle"></p>
+            </div>
+            <div class="report-buttons noprint">
+              <button
+                type="button"
+                class="btn btn-light"
+                id="expenses-report-print"
+              >
+                طباعة
+              </button>
+              <button type="button" class="btn" id="expenses-report-excel">
+                تصدير Excel
+              </button>
+            </div>
+          </div>
+
+          <table class="table grid-table">
+            <colgroup>
+              <col class="col-r-amount" />
+              <col class="col-r-date" />
+              <col class="col-r-details" />
+              <col class="col-r-note" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>المبلغ</th>
+                <th>التاريخ</th>
+                <th>التفاصيل</th>
+                <th>ملاحظات</th>
+              </tr>
+            </thead>
+            <tbody id="expenses-report-body"></tbody>
+            <tfoot>
+              <tr>
+                <td id="expenses-report-total"></td>
+                <td colspan="3" id="expenses-report-count"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+      <!-- end page expenses report section -->
+
+      <!-- start page loans report section -->
+      <section class="page hidden" id="page-loans-report">
+        <div class="card noprint">
+          <h2>كشف السلف</h2>
+
+          <form id="loans-report-form" class="report-form" novalidate>
+            <div class="report-group span-full">
+              <span class="group-label">أنواع السلف</span>
+              <div class="check-list" id="report-loan-types"></div>
+              <div class="check-actions">
+                <button type="button" class="link-btn" id="report-type-all">
+                  تحديد الكل
+                </button>
+                <button type="button" class="link-btn" id="report-type-none">
+                  إلغاء التحديد
+                </button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="loan-from">من تاريخ</label>
+              <div class="date-wrap">
+                <input type="text" id="loan-from" />
+                <button
+                  type="button"
+                  class="date-icon"
+                  id="loan-from-icon"
+                  aria-label="اختيار التاريخ"
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="loan-to">إلى تاريخ</label>
+              <div class="date-wrap">
+                <input type="text" id="loan-to" />
+                <button
+                  type="button"
+                  class="date-icon"
+                  id="loan-to-icon"
+                  aria-label="اختيار التاريخ"
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn">عرض الكشف</button>
+            </div>
+          </form>
+          <div class="hidden" id="loans-report-error"></div>
+        </div>
+
+        <div class="card hidden" id="loans-report-result">
+          <div class="report-head">
+            <div>
+              <h2 id="loans-report-title"></h2>
+              <p class="report-sub" id="loans-report-subtitle"></p>
+            </div>
+            <div class="report-buttons noprint">
+              <button
+                type="button"
+                class="btn btn-light"
+                id="loans-report-print"
+              >
+                طباعة
+              </button>
+              <button type="button" class="btn" id="loans-report-excel">
+                تصدير Excel
+              </button>
+            </div>
+          </div>
+
+          <table class="table grid-table">
+            <colgroup>
+              <col class="col-lr-amount" />
+              <col class="col-lr-date" />
+              <col class="col-lr-source" />
+              <col class="col-lr-type" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>المبلغ</th>
+                <th>التاريخ</th>
+                <th>المصدر</th>
+                <th>النوع</th>
+              </tr>
+            </thead>
+            <tbody id="loans-report-body"></tbody>
+            <tfoot>
+              <tr>
+                <td id="loans-report-total"></td>
+                <td colspan="3" id="loans-report-count"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+      <!-- end page loans report section -->
     </main>
     <!-- end main -->
 
+    <div class="toast noprint" id="toast" role="status"></div>
     <script src="lib/flatpickr.js"></script>
     <script src="js/main.js"></script>
   </body>
