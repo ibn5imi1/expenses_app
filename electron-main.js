@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const db = require('./db');
 const { saveReport } = require('./export');
-
+const { RECOVERY_KEY_HASH } = require('./recovery');
 // المستخدم المسجل دخوله: { id, username, role } أو null
 // يحمله الجزء الخلفي فقط، فلا تستطيع الواجهة انتحال اسم أو صلاحية
 let session = null;

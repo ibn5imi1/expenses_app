@@ -2,6 +2,7 @@ college-expenses/
 ├── node_modules
 ├── electron-main.js
 ├── preload.js
+├── recovery.js
 ├── db.js
 ├── package-lock.json
 ├── package.json
