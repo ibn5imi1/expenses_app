@@ -358,7 +358,7 @@ function renderExpenses() {
     if (!expenses.length) {
         const tr = document.createElement('tr');
         const td = createCell('لا توجد مصروفات بعد');
-        td.colSpan = 5;
+        td.colSpan = 6;
         tr.appendChild(td);
         expensesBody.appendChild(tr);
         return;
@@ -366,26 +366,14 @@ function renderExpenses() {
 
     expenses.forEach(e => {
         const tr = document.createElement('tr');
-        tr.title = auditTitle(e);   // التلميح عند وقوف المؤشر على الصف
+        tr.title = auditTitle(e);   // من أضاف ومن عدّل
 
-        tr.appendChild(createCell(e.amount.toLocaleString('en-US')));
-
-        const dateTd = document.createElement('td');
-        const bdi = document.createElement('bdi');   // يحمي ترتيب الأرقام في الصفحة العربية
-        bdi.textContent = formatDate(e.date);
-        dateTd.appendChild(bdi);
-        tr.appendChild(dateTd);
-
+        tr.appendChild(createCell(e.amount.toLocaleString('en-US'), 'num-cell'));
+        tr.appendChild(createDateCell(e.date));
         tr.appendChild(createCell(e.details, 'details-cell'));
         tr.appendChild(createCell(e.note));
-
-        const actionsTd = document.createElement('td');
-        const box = document.createElement('div');
-        box.className = 'row-actions';
-        box.appendChild(createButton('تعديل', 'btn btn-light btn-small', () => startEdit(e)));
-        box.appendChild(createButton('حذف', 'btn btn-danger btn-small', () => removeExpense(e.id)));
-        actionsTd.appendChild(box);
-        tr.appendChild(actionsTd);
+        tr.appendChild(createDeductionCell(e.loan_type));
+        tr.appendChild(createActionsCell(() => startEdit(e), () => removeExpense(e.id)));
 
         expensesBody.appendChild(tr);
     });
@@ -400,6 +388,7 @@ async function loadExpenses() {
 let loanTypes = [];
 let loans = [];
 let editingLoanId = null;
+let returnToLoansReport = false;   // هل بدأ تعديل السلفة من كشف السلف؟
 
 const loanForm = document.getElementById('loan-form');
 const loanAmountInput = document.getElementById('loan-amount');
@@ -581,6 +570,7 @@ function showLoanError(message) {
 function resetLoanForm() {
     loanForm.reset();
     editingLoanId = null;
+    returnToLoansReport = false;
     loanSubmitBtn.textContent = 'حفظ السلفة';
     loanCancelBtn.classList.add('hidden');
     loanDatePicker.setDate(new Date());
@@ -589,6 +579,7 @@ function resetLoanForm() {
 }
 
 function startLoanEdit(loan) {
+    returnToLoansReport = false;
     editingLoanId = loan.id;
     loanAmountInput.value = formatAmount(loan.amount);
     loanDatePicker.setDate(loan.date);
@@ -602,7 +593,11 @@ function startLoanEdit(loan) {
     loanAmountInput.focus();
 }
 
-loanCancelBtn.addEventListener('click', resetLoanForm);
+loanCancelBtn.addEventListener('click', () => {
+    const backToReport = returnToLoansReport;
+    resetLoanForm();
+    if (backToReport) showPage('loans-report');
+});
 loanForm.addEventListener('input', e => e.target.classList.remove('invalid'));
 
 function validateLoanForm() {
@@ -650,6 +645,8 @@ loanForm.addEventListener('submit', async e => {
         loanTypeId: Number(loanTypeSelect.value),
     };
 
+    const backToReport = returnToLoansReport;
+
     try {
         if (editingLoanId) {
             await window.api.updateLoan(editingLoanId, data);
@@ -658,6 +655,12 @@ loanForm.addEventListener('submit', async e => {
         }
         resetLoanForm();
         await loadLoans();
+
+        if (backToReport) {
+            showPage('loans-report');
+            loansReportForm.requestSubmit();   // يعيد عرض الكشف بالبيانات المحدثة
+            showToast('تم تعديل السلفة');
+        }
     } catch (err) {
         console.error(err);
         showLoanError('تعذر الحفظ، حاول مرة أخرى');
@@ -719,6 +722,39 @@ function renderLoans() {
 async function loadLoans() {
     loans = await window.api.getLoans();
     renderLoans();
+}
+// خلية سلفة الاستقطاع: شارة واضحة
+function createDeductionCell(name, className = '') {
+    const td = document.createElement('td');
+    td.className = `ded-cell ${className}`.trim();
+
+    const badge = document.createElement('span');
+    badge.className = 'ded-badge';
+    badge.textContent = name;
+    td.appendChild(badge);
+    return td;
+}
+
+function createDateCell(iso) {
+    const td = document.createElement('td');
+    td.className = 'date-cell';
+    const bdi = document.createElement('bdi');   // يحمي ترتيب الأرقام في الصفحة العربية
+    bdi.textContent = formatDate(iso);
+    td.appendChild(bdi);
+    return td;
+}
+
+// خلية أزرار التعديل والحذف (موحّدة في كل الجداول)
+function createActionsCell(onEdit, onDelete, className = '') {
+    const td = document.createElement('td');
+    td.className = `actions-cell ${className}`.trim();
+
+    const box = document.createElement('div');
+    box.className = 'row-actions';
+    box.appendChild(createButton('تعديل', 'btn btn-light btn-small', onEdit));
+    box.appendChild(createButton('حذف', 'btn btn-danger btn-small', onDelete));
+    td.appendChild(box);
+    return td;
 }
 
 /* ================= القاصة ================= */
@@ -1008,13 +1044,7 @@ function periodText(from, to) {
     return `من ${formatDate(from)} إلى ${formatDate(to)}`;
 }
 
-function createDateCell(iso) {
-    const td = document.createElement('td');
-    const bdi = document.createElement('bdi');
-    bdi.textContent = formatDate(iso);
-    td.appendChild(bdi);
-    return td;
-}
+
 
 /* ---------- رسالة التأكيد (تظهر وتختفي وحدها) ---------- */
 const toastEl = document.getElementById('toast');
@@ -1085,17 +1115,26 @@ function renderExpensesReport(rows, ids, from, to) {
     if (!rows.length) {
         const tr = document.createElement('tr');
         const td = createCell('لا توجد مصروفات في هذه الفترة');
-        td.colSpan = 4;
+        td.colSpan = 6;
         tr.appendChild(td);
         expensesReportBody.appendChild(tr);
     }
 
     rows.forEach(r => {
         const tr = document.createElement('tr');
-        tr.appendChild(createCell(r.amount.toLocaleString('en-US')));
+        tr.title = auditTitle(r);   // من أضاف ومن عدّل عند وقوف المؤشر
+
+        tr.appendChild(createCell(r.amount.toLocaleString('en-US'), 'num-cell'));
         tr.appendChild(createDateCell(r.date));
         tr.appendChild(createCell(r.details, 'details-cell'));
         tr.appendChild(createCell(r.note));
+        tr.appendChild(createDeductionCell(r.loan_type));   // شاشة وطباعة
+        tr.appendChild(createActionsCell(
+            () => editFromReport(r),
+            () => removeFromReport(r),
+            'noprint'                                        // الأزرار لا تُطبع
+        ));
+
         expensesReportBody.appendChild(tr);
     });
 
@@ -1111,9 +1150,10 @@ function renderExpensesReport(rows, ids, from, to) {
             { header: 'التاريخ', width: 14 },
             { header: 'التفاصيل', width: 60 },
             { header: 'ملاحظات', width: 26 },
+            { header: 'سلفة الاستقطاع', width: 22 },
         ],
-        rows: rows.map(r => [r.amount, formatDate(r.date), r.details, r.note]),
-        total: [total, `المجموع — عدد المصروفات: ${rows.length}`, '', ''],
+        rows: rows.map(r => [r.amount, formatDate(r.date), r.details, r.note, r.loan_type]),
+        total: [total, `المجموع — عدد المصروفات: ${rows.length}`, '', '', ''],
     };
 
     expensesReportExcelBtn.disabled = !rows.length;
@@ -1183,17 +1223,25 @@ function renderLoansReport(rows, ids, from, to) {
     if (!rows.length) {
         const tr = document.createElement('tr');
         const td = createCell('لا توجد سلف في هذه الفترة');
-        td.colSpan = 4;
+        td.colSpan = 5;
         tr.appendChild(td);
         loansReportBody.appendChild(tr);
     }
 
     rows.forEach(r => {
         const tr = document.createElement('tr');
-        tr.appendChild(createCell(r.amount.toLocaleString('en-US')));
+        tr.title = auditTitle(r);   // من أضاف ومن عدّل عند وقوف المؤشر
+
+        tr.appendChild(createCell(r.amount.toLocaleString('en-US'), 'num-cell'));
         tr.appendChild(createDateCell(r.date));
         tr.appendChild(createCell(r.source));
         tr.appendChild(createCell(r.loan_type));
+        tr.appendChild(createActionsCell(
+            () => editLoanFromReport(r),
+            () => removeLoanFromReport(r),
+            'noprint'                    // الأزرار لا تُطبع
+        ));
+
         loansReportBody.appendChild(tr);
     });
 
@@ -1216,6 +1264,28 @@ function renderLoansReport(rows, ids, from, to) {
 
     loansReportExcelBtn.disabled = !rows.length;
     loansReportResult.classList.remove('hidden');
+}
+
+// التعديل من كشف السلف: ننتقل لصفحة السلف، وبعد الحفظ نعود للكشف
+function editLoanFromReport(row) {
+    showPage('loans');
+    startLoanEdit(row);
+    returnToLoansReport = true;   // بعد startLoanEdit لأنها تصفّره
+}
+
+async function removeLoanFromReport(row) {
+    if (!confirm('هل تريد حذف هذه السلفة؟')) return;
+
+    try {
+        await window.api.deleteLoan(row.id);
+        if (editingLoanId === row.id) resetLoanForm();
+        await loadLoans();
+        loansReportForm.requestSubmit();   // يحدّث الكشف والمجموع
+        showToast('تم حذف السلفة');
+    } catch (err) {
+        console.error(err);
+        showToast('تعذر حذف السلفة', true);
+    }
 }
 
 loansReportForm.addEventListener('submit', async e => {

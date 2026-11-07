@@ -1,6 +1,7 @@
 :root {
     /* colors */
     --green-color: #1f5c4d;
+    --green-soft-color: #e6f2ee;
     --red-color: #b3402f;
     --red-soft-color: #f8e7e4;
     --gold-color: #b88a2a;
@@ -8,10 +9,10 @@
     --off-white-color: #d9e0db;
     --background-color: #eef1ed;
     --table-head-color: #f4f7f5;
+    --zebra-color: #fafcfb;
+    --grid-color: #b7c2bc;
     --font-color: #1d2b26;
     --muted-color: #66756f;
-    --green-soft-color: #e6f2ee;
-    --grid-color: #b7c2bc;
 
     /* fonts */
     --font-main: "Segoe UI", Tahoma, Arial, sans-serif;
@@ -39,7 +40,7 @@ body {
     display: none !important;
 }
 
-/* start navbar */
+/* ---------- النافبار ---------- */
 .navbar {
     position: sticky;
     top: 0;
@@ -93,8 +94,8 @@ body {
 .user-name {
     font-weight: 700;
 }
-/* end navbar */
 
+/* ---------- المحتوى العام ---------- */
 main {
     max-width: 1200px;
     margin: 22px auto;
@@ -114,14 +115,24 @@ main {
     font-size: 18px;
 }
 
-/* start form */
+/* ---------- الفورمات ---------- */
 .form-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 14px 16px;
 }
 
-.span-full { grid-column: 1 / -1; }
+.form-grid.cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.form-grid.cols-5 {
+    grid-template-columns: repeat(5, 1fr);
+}
+
+.span-full {
+    grid-column: 1 / -1;
+}
 
 .field label {
     display: block;
@@ -143,6 +154,8 @@ main {
 
 .field textarea {
     resize: vertical;
+    overflow: hidden;
+    min-height: 80px;
 }
 
 .field input:focus,
@@ -172,7 +185,47 @@ main {
     color: var(--red-color);
 }
 
-/* شكل التقويم المنسدل */
+.form-success {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--green-color);
+    border-radius: var(--radius-small);
+    background-color: var(--green-soft-color);
+    color: var(--green-color);
+}
+
+/* فورم أفقي صغير */
+.inline-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+.inline-form .field {
+    width: 320px;
+}
+
+.inline-form+.form-error {
+    margin-top: 12px;
+}
+
+/* نماذج عمودية (الإعدادات والأدمن) */
+.stack {
+    display: grid;
+    gap: 14px;
+}
+
+.narrow {
+    max-width: 460px;
+    margin-inline: auto;
+}
+
+.medium {
+    max-width: 720px;
+    margin-inline: auto;
+}
+
+/* ---------- التقويم ---------- */
 .flatpickr-calendar {
     font-family: var(--font-main);
 }
@@ -207,9 +260,34 @@ main {
 .date-icon:hover {
     color: var(--green-color);
 }
-/* end form */
 
-/* start buttons */
+/* ---------- إظهار كلمة المرور ---------- */
+.password-wrap {
+    position: relative;
+}
+
+.field .password-wrap input {
+    padding-inline-end: 40px;
+}
+
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    inset-inline-end: 10px;
+    transform: translateY(-50%);
+    display: flex;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--muted-color);
+    cursor: pointer;
+}
+
+.password-toggle:hover {
+    color: var(--green-color);
+}
+
+/* ---------- الأزرار ---------- */
 .btn {
     padding: 9px 20px;
     border: 1px solid var(--green-color);
@@ -224,6 +302,11 @@ main {
     opacity: .9;
 }
 
+.btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
 .btn-light {
     background-color: var(--white-color);
     color: var(--green-color);
@@ -236,12 +319,22 @@ main {
 }
 
 .btn-small {
-    padding: 4px 10px;
+    padding: 4px 12px;
     font-size: var(--small-font-size);
+    white-space: nowrap;
 }
-/* end buttons */
 
-/* start table */
+.link-btn {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--green-color);
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* ---------- الجداول ---------- */
 .table {
     width: 100%;
     border-collapse: collapse;
@@ -250,7 +343,7 @@ main {
 
 .table th,
 .table td {
-    padding: 9px 10px;
+    padding: 10px;
     text-align: right;
     vertical-align: top;
     border-bottom: 1px solid var(--off-white-color);
@@ -260,6 +353,7 @@ main {
     background-color: var(--table-head-color);
     color: var(--muted-color);
     font-size: var(--small-font-size);
+    white-space: nowrap;
 }
 
 .table td {
@@ -267,70 +361,55 @@ main {
     overflow-wrap: anywhere;
 }
 
-.col-amount  { width: 10%; }
-.col-date    { width: 12%; }
-.col-details { width: 50%; }
-.col-note    { width: 14%; }
-.col-actions { width: 14%; }
-
-.row-actions {
-    display: flex;
-    gap: 6px;
+.table th.center,
+.table td.center {
+    text-align: center;
 }
 
+/* خلايا جداول المصروفات والسلف (موحّدة في الجداول الثلاثة) */
 .table td.details-cell {
     white-space: pre-wrap;
 }
 
-.field textarea {
-    resize: vertical;
-    overflow: hidden;
-    min-height: 80px;
+.table td.num-cell {
+    font-weight: 700;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.table td.date-cell {
+    white-space: nowrap;
+}
+
+.table td.ded-cell,
+.table td.actions-cell {
+    text-align: center;
+}
+
+/* تظليل خفيف لكل صف ثانٍ، ثم التمرير فوقه */
+.data-table tbody tr:nth-child(even) {
+    background-color: var(--zebra-color);
 }
 
 .table tbody tr:hover {
     background-color: var(--table-head-color);
 }
-/* end table */
 
-/* start loans section */
-/* فورم بثلاثة أعمدة (صفحة السلف) */
-.form-grid.cols-3 {
-    grid-template-columns: repeat(3, 1fr);
+.table tfoot td {
+    background-color: var(--table-head-color);
+    border-top: 2px solid var(--off-white-color);
+    font-weight: 700;
 }
 
-/* فورم أفقي صغير (إضافة نوع سلفة) */
-.inline-form {
+.row-actions {
     display: flex;
-    align-items: flex-end;
-    gap: 12px;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 
-.inline-form .field {
-    width: 320px;
+.actions-cell .row-actions {
+    justify-content: center;
 }
-
-.inline-form + .form-error {
-    margin-top: 12px;
-}
-
-/* أعمدة جدول السلف */
-.col-loan-amount  { width: 18%; }
-.col-loan-date    { width: 16%; }
-.col-source       { width: 30%; }
-.col-type         { width: 20%; }
-.col-loan-actions { width: 16%; }
-
-.form-grid.cols-5 {
-    grid-template-columns: repeat(5, 1fr);
-}
-
-.type-table {
-    margin-top: 16px;
-}
-
-.col-type-name    { width: 70%; }
-.col-type-actions { width: 30%; }
 
 .badge {
     display: inline-block;
@@ -340,25 +419,143 @@ main {
     color: var(--muted-color);
     font-size: var(--small-font-size);
 }
-/* end loans section */
 
-/* start cash section */
-.col-cash-type { width: 34%; }
-.col-cash-num  { width: 22%; }
-
-.table tfoot td {
-    background-color: var(--table-head-color);
-    border-top: 2px solid var(--off-white-color);
-    font-weight: 700;
+/* شارة سلفة الاستقطاع */
+.ded-badge {
+    display: inline-block;
+    max-width: 100%;
+    padding: 3px 12px;
+    border-radius: 999px;
+    background-color: var(--green-soft-color);
+    border: 1px solid var(--green-color);
+    color: var(--green-color);
+    font-size: var(--small-font-size);
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: center;
 }
 
 .negative {
     color: var(--red-color);
     font-weight: 700;
 }
-/* end cash section */
 
-/* start page destinations section */
+.type-table {
+    margin-top: 16px;
+}
+
+/* ---------- عروض الأعمدة ---------- */
+/* آخر 100 مصروف */
+.col-amount {
+    width: 11%;
+}
+
+.col-date {
+    width: 11%;
+}
+
+.col-details {
+    width: 32%;
+}
+
+.col-note {
+    width: 13%;
+}
+
+.col-ded {
+    width: 18%;
+}
+
+.col-actions {
+    width: 15%;
+}
+
+/* كشف المصروفات */
+.col-r-amount {
+    width: 11%;
+}
+
+.col-r-date {
+    width: 11%;
+}
+
+.col-r-details {
+    width: 32%;
+}
+
+.col-r-note {
+    width: 13%;
+}
+
+.col-r-ded {
+    width: 18%;
+}
+
+.col-r-actions {
+    width: 15%;
+}
+
+/* كشف السلف */
+.col-lr-amount {
+    width: 17%;
+}
+
+.col-lr-date {
+    width: 15%;
+}
+
+.col-lr-source {
+    width: 31%;
+}
+
+.col-lr-type {
+    width: 22%;
+}
+
+.col-lr-actions {
+    width: 15%;
+}
+
+/* آخر السلف */
+.col-loan-amount {
+    width: 18%;
+}
+
+.col-loan-date {
+    width: 16%;
+}
+
+.col-source {
+    width: 30%;
+}
+
+.col-type {
+    width: 20%;
+}
+
+.col-loan-actions {
+    width: 16%;
+}
+
+/* أنواع السلف */
+.col-type-name {
+    width: 70%;
+}
+
+.col-type-actions {
+    width: 30%;
+}
+
+/* القاصة */
+.col-cash-type {
+    width: 34%;
+}
+
+.col-cash-num {
+    width: 22%;
+}
+
+/* جهات الصرف */
 .col-dest-name {
     width: 40%;
 }
@@ -374,9 +571,34 @@ main {
 .col-dest-actions {
     width: 18%;
 }
-/* end page destinations section */
 
-/* start page summary section */
+/* الخلاصة */
+.col-sum-name {
+    width: 50%;
+}
+
+.col-sum-count {
+    width: 20%;
+}
+
+.col-sum-total {
+    width: 30%;
+}
+
+/* المحاسبون */
+.col-acc-name {
+    width: 40%;
+}
+
+.col-acc-user {
+    width: 30%;
+}
+
+.col-acc-actions {
+    width: 30%;
+}
+
+/* ---------- الخلاصة ---------- */
 .stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -421,19 +643,6 @@ main {
     color: var(--muted-color);
 }
 
-.col-sum-name {
-    width: 50%;
-}
-
-.col-sum-count {
-    width: 20%;
-}
-
-.col-sum-total {
-    width: 30%;
-}
-/* end page summary section */
-
 /* ---------- الكشوفات ---------- */
 .report-form {
     display: grid;
@@ -477,16 +686,6 @@ main {
     margin-top: 8px;
 }
 
-.link-btn {
-    padding: 0;
-    border: 0;
-    background: none;
-    color: var(--green-color);
-    font: inherit;
-    text-decoration: underline;
-    cursor: pointer;
-}
-
 .report-head {
     display: flex;
     justify-content: space-between;
@@ -509,61 +708,13 @@ main {
     gap: 8px;
 }
 
-.form-success {
-    margin-bottom: 12px;
-    padding: 10px 12px;
-    border: 1px solid var(--green-color);
-    border-radius: var(--radius-small);
-    background-color: var(--green-soft-color);
-    color: var(--green-color);
-}
-
-.btn:disabled {
-    opacity: .5;
-    cursor: not-allowed;
-}
-
-
-
 /* جداول الكشوفات بخطوط وأعمدة */
 .grid-table th,
 .grid-table td {
     border: 1px solid var(--grid-color);
 }
 
-.col-r-amount {
-    width: 16%;
-}
-
-.col-r-date {
-    width: 14%;
-}
-
-.col-r-details {
-    width: 50%;
-}
-
-.col-r-note {
-    width: 20%;
-}
-
-.col-lr-amount {
-    width: 20%;
-}
-
-.col-lr-date {
-    width: 18%;
-}
-
-.col-lr-source {
-    width: 38%;
-}
-
-.col-lr-type {
-    width: 24%;
-}
-
-/* رسالة التأكيد */
+/* ---------- رسالة التأكيد ---------- */
 .toast {
     position: fixed;
     bottom: 28px;
@@ -592,7 +743,58 @@ main {
     background-color: var(--red-color);
 }
 
-/* الطباعة: الكشف فقط بخطوط وأعمدة */
+/* ---------- تسجيل الدخول ---------- */
+.login-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 24px;
+}
+
+.login-box {
+    width: 100%;
+    max-width: 380px;
+    margin: auto 0;
+    padding: 32px;
+    background-color: var(--white-color);
+    border: 1px solid var(--off-white-color);
+    border-radius: var(--radius-large);
+}
+
+.login-box h1 {
+    margin: 0 0 4px;
+    font-size: 22px;
+    text-align: center;
+    color: var(--green-color);
+}
+
+.login-box p {
+    margin: 0 0 22px;
+    text-align: center;
+    color: var(--muted-color);
+}
+
+.login-box .btn {
+    width: 100%;
+    padding: 10px 20px;
+}
+
+.login-credit {
+    margin-top: 26px;
+    padding-top: 18px;
+    border-top: 1px solid var(--off-white-color);
+    text-align: center;
+    font-size: 16px;
+    color: var(--muted-color);
+}
+
+.login-credit strong {
+    font-size: 18px;
+    color: var(--green-color);
+}
+
+/* ---------- الطباعة: الكشف فقط بخطوط وأعمدة ---------- */
 @media print {
 
     .navbar,
@@ -635,11 +837,63 @@ main {
         color: #000;
     }
 
+    .grid-table tbody tr {
+        background-color: #fff !important;
+    }
+
     .grid-table th,
     .grid-table tfoot td {
         background-color: #e9eeeb;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+    }
+
+    /* سلفة الاستقطاع تُطبع كنص عادي بدون شارة */
+    .grid-table .ded-badge {
+        padding: 0;
+        border: 0;
+        background: none;
+        color: #000;
+        font-size: inherit;
+        font-weight: 400;
+    }
+
+    /* كشف المصروفات بعد إخفاء الأزرار: خمسة أعمدة تملأ الصفحة */
+    .col-r-amount {
+        width: 14%;
+    }
+
+    .col-r-date {
+        width: 12%;
+    }
+
+    .col-r-details {
+        width: 38%;
+    }
+
+    .col-r-note {
+        width: 16%;
+    }
+
+    .col-r-ded {
+        width: 20%;
+    }
+
+    /* كشف السلف بعد إخفاء الأزرار: أربعة أعمدة */
+    .col-lr-amount {
+        width: 20%;
+    }
+
+    .col-lr-date {
+        width: 18%;
+    }
+
+    .col-lr-source {
+        width: 38%;
+    }
+
+    .col-lr-type {
+        width: 24%;
     }
 
     .grid-table thead {
@@ -656,100 +910,3 @@ main {
         break-inside: avoid;
     }
 }
-
-/* ---------- تسجيل الدخول ---------- */
-.login-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: 100vh;
-    padding: 24px;
-}
-
-.login-box {
-    width: 100%;
-    max-width: 380px;
-    margin: auto 0;   /* يتوسط الصفحة، ويبقى سطر الحقوق في الأسفل */
-    padding: 32px;
-    background-color: var(--white-color);
-    border: 1px solid var(--off-white-color);
-    border-radius: var(--radius-large);
-}
-
-.login-box h1 {
-    margin: 0 0 4px;
-    font-size: 22px;
-    text-align: center;
-    color: var(--green-color);
-}
-
-.login-box p {
-    margin: 0 0 22px;
-    text-align: center;
-    color: var(--muted-color);
-}
-
-.login-box .btn {
-    width: 100%;
-    padding: 10px 20px;
-}
-
-.login-credit {
-    margin-top: 26px;
-    padding-top: 18px;
-    border-top: 1px solid var(--off-white-color);
-    text-align: center;
-    font-size: 16px;
-    color: var(--muted-color);
-}
-
-.login-credit strong {
-    font-size: 18px;
-    color: var(--green-color);
-}
-
-/* نماذج عمودية (الإعدادات والأدمن) */
-.stack {
-    display: grid;
-    gap: 14px;
-}
-
-.narrow {
-    max-width: 460px;
-    margin-inline: auto;   /* الصندوق في منتصف الصفحة */
-}
-
-/* إظهار كلمة المرور */
-.password-wrap {
-    position: relative;
-}
-
-.field .password-wrap input {
-    padding-inline-end: 40px;
-}
-
-.password-toggle {
-    position: absolute;
-    top: 50%;
-    inset-inline-end: 10px;
-    transform: translateY(-50%);
-    display: flex;
-    padding: 0;
-    border: 0;
-    background: none;
-    color: var(--muted-color);
-    cursor: pointer;
-}
-
-.password-toggle:hover {
-    color: var(--green-color);
-}
-
-.medium {
-    max-width: 720px;
-    margin-inline: auto;
-}
-
-.col-acc-name    { width: 40%; }
-.col-acc-user    { width: 30%; }
-.col-acc-actions { width: 30%; }

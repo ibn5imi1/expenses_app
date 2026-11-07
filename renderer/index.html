@@ -158,14 +158,15 @@
         </div>
 
         <div class="card">
-          <h2>آخر المصروفات</h2>
+          <h2>آخر 100 مصروف</h2>
 
-          <table class="table" id="expenses-table">
+          <table class="table data-table" id="expenses-table">
             <colgroup>
               <col class="col-amount" />
               <col class="col-date" />
               <col class="col-details" />
               <col class="col-note" />
+              <col class="col-ded" />
               <col class="col-actions" />
             </colgroup>
             <thead>
@@ -174,12 +175,11 @@
                 <th>التاريخ</th>
                 <th>التفاصيل</th>
                 <th>ملاحظات</th>
-                <th></th>
+                <th class="center">سلفة الاستقطاع</th>
+                <th class="center">تعديل / حذف</th>
               </tr>
             </thead>
-            <tbody id="expenses-body">
-              <!-- تُملأ لاحقاً من main.js -->
-            </tbody>
+            <tbody id="expenses-body"></tbody>
           </table>
         </div>
       </section>
@@ -566,26 +566,23 @@
             </div>
           </div>
 
-          <table class="table grid-table">
-            <colgroup>
-              <col class="col-r-amount" />
-              <col class="col-r-date" />
-              <col class="col-r-details" />
-              <col class="col-r-note" />
-            </colgroup>
+          <table class="table grid-table data-table">
             <thead>
               <tr>
-                <th>المبلغ</th>
-                <th>التاريخ</th>
-                <th>التفاصيل</th>
-                <th>ملاحظات</th>
+                <th class="col-r-amount">المبلغ</th>
+                <th class="col-r-date">التاريخ</th>
+                <th class="col-r-details">التفاصيل</th>
+                <th class="col-r-note">ملاحظات</th>
+                <th class="col-r-ded center">سلفة الاستقطاع</th>
+                <th class="col-r-actions center noprint">تعديل / حذف</th>
               </tr>
             </thead>
             <tbody id="expenses-report-body"></tbody>
             <tfoot>
               <tr>
                 <td id="expenses-report-total"></td>
-                <td colspan="3" id="expenses-report-count"></td>
+                <td colspan="4" id="expenses-report-count"></td>
+                <td class="noprint"></td>
               </tr>
             </tfoot>
           </table>
@@ -697,19 +694,14 @@
             </div>
           </div>
 
-          <table class="table grid-table">
-            <colgroup>
-              <col class="col-lr-amount" />
-              <col class="col-lr-date" />
-              <col class="col-lr-source" />
-              <col class="col-lr-type" />
-            </colgroup>
+          <table class="table grid-table data-table">
             <thead>
               <tr>
-                <th>المبلغ</th>
-                <th>التاريخ</th>
-                <th>المصدر</th>
-                <th>النوع</th>
+                <th class="col-lr-amount">المبلغ</th>
+                <th class="col-lr-date">التاريخ</th>
+                <th class="col-lr-source">المصدر</th>
+                <th class="col-lr-type">النوع</th>
+                <th class="col-lr-actions center noprint">تعديل / حذف</th>
               </tr>
             </thead>
             <tbody id="loans-report-body"></tbody>
@@ -717,6 +709,7 @@
               <tr>
                 <td id="loans-report-total"></td>
                 <td colspan="3" id="loans-report-count"></td>
+                <td class="noprint"></td>
               </tr>
             </tfoot>
           </table>

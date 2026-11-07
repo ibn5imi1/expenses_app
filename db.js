@@ -250,7 +250,7 @@ function getExpenses() {
         JOIN destinations d ON d.id = e.destination_id
         JOIN loan_types t ON t.id = e.loan_type_id
         ORDER BY e.id DESC
-        LIMIT 15
+        LIMIT 100
     `,
     )
     .all();
@@ -482,9 +482,13 @@ function getExpensesReport(f) {
   return db
     .prepare(
       `
-        SELECT e.id, e.amount, e.details, e.date, e.note, d.name AS destination
+        SELECT e.id, e.amount, e.details, e.date, e.note,
+               e.destination_id, d.name AS destination,
+               e.loan_type_id, t.name AS loan_type,
+               e.created_by, e.created_at, e.updated_by, e.updated_at
         FROM expenses e
         JOIN destinations d ON d.id = e.destination_id
+        JOIN loan_types t ON t.id = e.loan_type_id
         WHERE e.destination_id IN (${ids.map(() => "?").join(",")})
           AND e.date >= ? AND e.date <= ?
         ORDER BY e.date ASC, e.id ASC
@@ -503,7 +507,9 @@ function getLoansReport(f) {
   return db
     .prepare(
       `
-        SELECT l.id, l.amount, l.date, l.source, t.name AS loan_type
+        SELECT l.id, l.amount, l.date, l.source,
+               l.loan_type_id, t.name AS loan_type,
+               l.created_by, l.created_at, l.updated_by, l.updated_at
         FROM loans l
         JOIN loan_types t ON t.id = l.loan_type_id
         WHERE l.loan_type_id IN (${ids.map(() => "?").join(",")})
@@ -513,7 +519,6 @@ function getLoansReport(f) {
     )
     .all(...ids, f.from, f.to);
 }
-
 /* ---------- المستخدمون ---------- */
 const MIN_PASSWORD = 6;
 
