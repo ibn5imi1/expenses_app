@@ -656,3 +656,100 @@ main {
         break-inside: avoid;
     }
 }
+
+/* ---------- تسجيل الدخول ---------- */
+.login-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 24px;
+}
+
+.login-box {
+    width: 100%;
+    max-width: 380px;
+    margin: auto 0;   /* يتوسط الصفحة، ويبقى سطر الحقوق في الأسفل */
+    padding: 32px;
+    background-color: var(--white-color);
+    border: 1px solid var(--off-white-color);
+    border-radius: var(--radius-large);
+}
+
+.login-box h1 {
+    margin: 0 0 4px;
+    font-size: 22px;
+    text-align: center;
+    color: var(--green-color);
+}
+
+.login-box p {
+    margin: 0 0 22px;
+    text-align: center;
+    color: var(--muted-color);
+}
+
+.login-box .btn {
+    width: 100%;
+    padding: 10px 20px;
+}
+
+.login-credit {
+    margin-top: 26px;
+    padding-top: 18px;
+    border-top: 1px solid var(--off-white-color);
+    text-align: center;
+    font-size: 16px;
+    color: var(--muted-color);
+}
+
+.login-credit strong {
+    font-size: 18px;
+    color: var(--green-color);
+}
+
+/* نماذج عمودية (الإعدادات والأدمن) */
+.stack {
+    display: grid;
+    gap: 14px;
+}
+
+.narrow {
+    max-width: 460px;
+    margin-inline: auto;   /* الصندوق في منتصف الصفحة */
+}
+
+/* إظهار كلمة المرور */
+.password-wrap {
+    position: relative;
+}
+
+.field .password-wrap input {
+    padding-inline-end: 40px;
+}
+
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    inset-inline-end: 10px;
+    transform: translateY(-50%);
+    display: flex;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--muted-color);
+    cursor: pointer;
+}
+
+.password-toggle:hover {
+    color: var(--green-color);
+}
+
+.medium {
+    max-width: 720px;
+    margin-inline: auto;
+}
+
+.col-acc-name    { width: 40%; }
+.col-acc-user    { width: 30%; }
+.col-acc-actions { width: 30%; }

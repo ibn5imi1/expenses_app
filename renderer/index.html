@@ -11,7 +11,37 @@
     <link rel="stylesheet" href="css/style.css" />
     <title>مصروفات كلية العمارة</title>
   </head>
-  <body>
+    <!-- start login screen -->
+    <div class="login-screen" id="login-screen">
+      <div class="login-box">
+        <h1>مصروفات كلية العمارة</h1>
+        <p>تسجيل الدخول</p>
+
+        <form id="login-form" class="stack" novalidate>
+          <div class="field">
+            <label for="login-username">اسم المستخدم</label>
+            <input type="text" id="login-username" autocomplete="username" />
+          </div>
+
+          <div class="field">
+            <label for="login-password">كلمة المرور</label>
+            <input
+              type="password"
+              id="login-password"
+              autocomplete="current-password"
+            />
+          </div>
+
+          <div class="hidden" id="login-error"></div>
+
+          <button type="submit" class="btn" id="login-submit">دخول</button>
+        </form>
+        <div class="login-credit">برمجة وتطوير: <strong>محمد احمد</strong></div>
+      </div>
+
+    </div>
+    <!-- end login screen -->
+  <div id="app" class="hidden">
     <!-- start nav -->
     <nav class="navbar">
       <span class="brand">مصروفات كلية العمارة</span>
@@ -29,7 +59,9 @@
         <button class="nav-link" id="refresh-btn">تحديث البيانات</button>
         <button class="nav-link" data-page="settings">الاعدادات</button>
 
-        <button class="nav-link admin-only" data-page="admin">الادمن</button>
+        <button class="nav-link admin-only hidden" data-page="admin">
+          الادمن
+        </button>
       </div>
 
       <div class="user-box">
@@ -691,8 +723,104 @@
         </div>
       </section>
       <!-- end page loans report section -->
+
+      <!-- start page settings section -->
+      <section class="page hidden" id="page-settings">
+        <div class="card narrow">
+          <h2>تغيير كلمة المرور</h2>
+
+          <form id="password-form" class="stack" novalidate>
+            <div class="field">
+              <label for="old-password">كلمة المرور الحالية</label>
+              <input
+                type="password"
+                id="old-password"
+                autocomplete="current-password"
+              />
+            </div>
+
+            <div class="field">
+              <label for="new-password">كلمة المرور الجديدة</label>
+              <input
+                type="password"
+                id="new-password"
+                autocomplete="new-password"
+              />
+            </div>
+
+            <div class="field">
+              <label for="confirm-password">تأكيد كلمة المرور الجديدة</label>
+              <input
+                type="password"
+                id="confirm-password"
+                autocomplete="new-password"
+              />
+            </div>
+
+            <div class="hidden" id="password-error"></div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn">تغيير كلمة المرور</button>
+            </div>
+          </form>
+        </div>
+      </section>
+      <!-- end page settings section -->
+
+      <!-- start page admin section -->
+<section class="page hidden" id="page-admin">
+    <div class="card narrow">
+        <h2 id="accountant-form-title">إضافة محاسب</h2>
+
+        <form id="accountant-form" class="stack" novalidate>
+            <div class="field">
+                <label for="accountant-name">اسم المحاسب (يظهر في سجلات الإضافة والتعديل)</label>
+                <input type="text" id="accountant-name" autocomplete="off">
+            </div>
+
+            <div class="field">
+                <label for="accountant-username">اسم المستخدم</label>
+                <input type="text" id="accountant-username" autocomplete="off">
+            </div>
+
+            <div class="field">
+                <label for="accountant-password" id="accountant-password-label">كلمة المرور</label>
+                <input type="password" id="accountant-password" autocomplete="new-password">
+            </div>
+
+            <div class="hidden" id="accountant-error"></div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn" id="accountant-submit">إضافة المحاسب</button>
+                <button type="button" class="btn btn-light hidden" id="accountant-cancel">إلغاء التعديل</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card medium">
+        <h2>المحاسبون</h2>
+
+        <table class="table">
+            <colgroup>
+                <col class="col-acc-name">
+                <col class="col-acc-user">
+                <col class="col-acc-actions">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>الاسم</th>
+                    <th>اسم المستخدم</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="accountants-body"></tbody>
+        </table>
+    </div>
+</section>
+<!-- end page admin section -->
     </main>
     <!-- end main -->
+  </div>
 
     <div class="toast noprint" id="toast" role="status"></div>
     <script src="lib/flatpickr.js"></script>

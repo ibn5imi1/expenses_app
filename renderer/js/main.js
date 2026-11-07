@@ -2,7 +2,11 @@
 const navLinks = document.querySelectorAll('.nav-link[data-page]');
 const pages = document.querySelectorAll('.page');
 
+let currentUser = null;   // { id, username, role }
+
 function showPage(name) {
+    if (name === 'admin' && (!currentUser || currentUser.role !== 'admin')) return;
+
     pages.forEach(page => {
         page.classList.toggle('hidden', page.id !== `page-${name}`);
     });
@@ -12,10 +16,10 @@ function showPage(name) {
 
     // تحديث بيانات الصفحة عند فتحها
     if (name === 'cash') loadCash();
-    if (name === 'destinations') reloadDestinations();
     if (name === 'summary') loadSummary();
+    if (name === 'destinations') reloadDestinations();
+    if (name === 'admin') loadAccountants();
 }
-
 navLinks.forEach(link => {
     link.addEventListener('click', () => showPage(link.dataset.page));
 });
@@ -1247,8 +1251,46 @@ loansReportExcelBtn.addEventListener('click', () => exportReport(loansReport));
 
 
 
-/* ---------- تشغيل أولي ---------- */
-async function init() {
+/* ================= إظهار كلمة المرور ================= */
+const EYE_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+const EYE_OFF_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+
+function addPasswordToggle(input) {
+    const wrap = document.createElement('div');
+    wrap.className = 'password-wrap';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'password-toggle';
+    btn.setAttribute('aria-label', 'إظهار كلمة المرور');
+    btn.innerHTML = EYE_ICON;
+    btn.addEventListener('click', () => {
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        btn.innerHTML = show ? EYE_OFF_ICON : EYE_ICON;
+        btn.setAttribute('aria-label', show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور');
+    });
+    wrap.appendChild(btn);
+}
+
+// تُضاف أيقونة العين لكل حقول كلمة المرور في البرنامج
+document.querySelectorAll('input[type="password"]').forEach(addPasswordToggle);
+
+/* ================= تسجيل الدخول والخروج ================= */
+const MIN_PASSWORD = 6;
+
+const loginScreen = document.getElementById('login-screen');
+const appShell = document.getElementById('app');
+const loginForm = document.getElementById('login-form');
+const loginUsername = document.getElementById('login-username');
+const loginPassword = document.getElementById('login-password');
+const loginError = document.getElementById('login-error');
+const loginSubmit = document.getElementById('login-submit');
+const adminLink = document.querySelector('.admin-only');
+
+async function loadAllData() {
     destinations = await window.api.getDestinations();
     fillDestinations();
 
@@ -1260,4 +1302,246 @@ async function init() {
     await loadLoans();
 }
 
-init();
+function showLogin() {
+    appShell.classList.add('hidden');
+    loginScreen.classList.remove('hidden');
+    loginUsername.focus();
+}
+
+async function enterApp(user) {
+    currentUser = user;
+    document.getElementById('current-user').textContent = user.displayName || user.username;
+    adminLink.classList.toggle('hidden', user.role !== 'admin');
+
+    loginScreen.classList.add('hidden');
+    appShell.classList.remove('hidden');
+    showPage('expenses');
+
+    try {
+        await loadAllData();
+    } catch (err) {
+        console.error(err);
+        showToast('تعذر تحميل البيانات', true);
+    }
+}
+
+loginForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    hideNote(loginError);
+
+    const username = loginUsername.value.trim();
+    const password = loginPassword.value;
+
+    if (!username || !password) {
+        showNote(loginError, 'أدخل اسم المستخدم وكلمة المرور');
+        return;
+    }
+
+    loginSubmit.disabled = true;
+    try {
+        const user = await window.api.login(username, password);
+        loginPassword.value = '';
+        await enterApp(user);
+    } catch (err) {
+        console.error(err);
+        showNote(loginError, cleanError(err));
+        loginPassword.select();
+    } finally {
+        loginSubmit.disabled = false;
+    }
+});
+
+// الخروج: نعيد تحميل الصفحة لتنظيف كل شيء، فتظهر شاشة الدخول
+document.getElementById('logout-btn').addEventListener('click', async () => {
+    await window.api.logout();
+    location.reload();
+});
+
+/* ================= الإعدادات: تغيير كلمة المرور ================= */
+const passwordForm = document.getElementById('password-form');
+const oldPasswordInput = document.getElementById('old-password');
+const newPasswordInput = document.getElementById('new-password');
+const confirmPasswordInput = document.getElementById('confirm-password');
+const passwordError = document.getElementById('password-error');
+
+passwordForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    hideNote(passwordError);
+
+    const oldPassword = oldPasswordInput.value;
+    const newPassword = newPasswordInput.value;
+    const confirmPassword = confirmPasswordInput.value;
+
+    let message = '';
+    if (!oldPassword || !newPassword || !confirmPassword) {
+        message = 'املأ جميع الحقول';
+    } else if (newPassword.length < MIN_PASSWORD) {
+        message = `كلمة المرور الجديدة يجب ألا تقل عن ${MIN_PASSWORD} أحرف`;
+    } else if (newPassword !== confirmPassword) {
+        message = 'كلمة المرور الجديدة وتأكيدها غير متطابقتين';
+    } else if (newPassword === oldPassword) {
+        message = 'كلمة المرور الجديدة يجب أن تختلف عن الحالية';
+    }
+
+    if (message) {
+        showNote(passwordError, message);
+        return;
+    }
+
+    try {
+        await window.api.changePassword(oldPassword, newPassword);
+        passwordForm.reset();
+        showToast('تم تغيير كلمة المرور');
+    } catch (err) {
+        console.error(err);
+        showNote(passwordError, cleanError(err));
+    }
+});
+
+/* ================= الأدمن: المحاسبون ================= */
+let accountants = [];
+let editingAccountantId = null;
+
+const accountantFormTitle = document.getElementById('accountant-form-title');
+const accountantForm = document.getElementById('accountant-form');
+const accountantName = document.getElementById('accountant-name');
+const accountantUsername = document.getElementById('accountant-username');
+const accountantPassword = document.getElementById('accountant-password');
+const accountantPasswordLabel = document.getElementById('accountant-password-label');
+const accountantError = document.getElementById('accountant-error');
+const accountantSubmit = document.getElementById('accountant-submit');
+const accountantCancel = document.getElementById('accountant-cancel');
+const accountantsBody = document.getElementById('accountants-body');
+
+function resetAccountantForm() {
+    accountantForm.reset();
+    editingAccountantId = null;
+    accountantFormTitle.textContent = 'إضافة محاسب';
+    accountantPasswordLabel.textContent = 'كلمة المرور';
+    accountantSubmit.textContent = 'إضافة المحاسب';
+    accountantCancel.classList.add('hidden');
+    hideNote(accountantError);
+}
+
+function startAccountantEdit(a) {
+    editingAccountantId = a.id;
+    accountantName.value = a.display_name || a.username;
+    accountantUsername.value = a.username;
+    accountantPassword.value = '';
+
+    accountantFormTitle.textContent = 'تعديل المحاسب';
+    accountantPasswordLabel.textContent = 'كلمة مرور جديدة (اتركها فارغة بدون تغيير)';
+    accountantSubmit.textContent = 'حفظ التعديل';
+    accountantCancel.classList.remove('hidden');
+    hideNote(accountantError);
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    accountantName.focus();
+}
+
+async function removeAccountant(a) {
+    const name = a.display_name || a.username;
+    if (!confirm(`هل تريد حذف المحاسب «${name}»؟ لن يستطيع الدخول بعد الآن، وتبقى سجلاته كما هي.`)) return;
+
+    try {
+        await window.api.deleteAccountant(a.id);
+        if (editingAccountantId === a.id) resetAccountantForm();
+        await loadAccountants();
+        showToast(`تم حذف المحاسب: ${name}`);
+    } catch (err) {
+        console.error(err);
+        showToast(cleanError(err), true);
+    }
+}
+
+function renderAccountants() {
+    accountantsBody.innerHTML = '';
+
+    if (!accountants.length) {
+        const tr = document.createElement('tr');
+        const td = createCell('لا يوجد محاسبون بعد');
+        td.colSpan = 3;
+        tr.appendChild(td);
+        accountantsBody.appendChild(tr);
+        return;
+    }
+
+    accountants.forEach(a => {
+        const tr = document.createElement('tr');
+        tr.appendChild(createCell(a.display_name || a.username));
+        tr.appendChild(createCell(a.username));
+
+        const actionsTd = document.createElement('td');
+        const box = document.createElement('div');
+        box.className = 'row-actions';
+        box.appendChild(createButton('تعديل', 'btn btn-light btn-small', () => startAccountantEdit(a)));
+        box.appendChild(createButton('حذف', 'btn btn-danger btn-small', () => removeAccountant(a)));
+        actionsTd.appendChild(box);
+        tr.appendChild(actionsTd);
+
+        accountantsBody.appendChild(tr);
+    });
+}
+
+async function loadAccountants() {
+    accountants = await window.api.getAccountants();
+    renderAccountants();
+}
+
+accountantForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    hideNote(accountantError);
+
+    const displayName = accountantName.value.replace(/\s+/g, ' ').trim();
+    const username = accountantUsername.value.trim();
+    const password = accountantPassword.value;
+    const editing = editingAccountantId !== null;
+
+    let message = '';
+    if (!displayName || !username) {
+        message = 'أدخل اسم المحاسب واسم المستخدم';
+    } else if (!editing && !password) {
+        message = 'أدخل كلمة المرور';
+    } else if (password && password.length < MIN_PASSWORD) {
+        message = `كلمة المرور يجب ألا تقل عن ${MIN_PASSWORD} أحرف`;
+    }
+
+    if (message) {
+        showNote(accountantError, message);
+        return;
+    }
+
+    try {
+        if (editing) {
+            await window.api.updateAccountant(editingAccountantId, displayName, username, password);
+            showToast(`تم تعديل بيانات المحاسب: ${displayName}`);
+        } else {
+            await window.api.addAccountant(displayName, username, password);
+            showToast(`تمت إضافة المحاسب: ${displayName}`);
+        }
+        resetAccountantForm();
+        await loadAccountants();
+    } catch (err) {
+        console.error(err);
+        showNote(accountantError, cleanError(err));
+    }
+});
+
+accountantCancel.addEventListener('click', resetAccountantForm);
+
+/* ---------- تشغيل أولي ---------- */
+async function startup() {
+    try {
+        const user = await window.api.getSession();   // بقاء الجلسة عند إعادة تحميل النافذة
+        if (user) {
+            await enterApp(user);
+        } else {
+            showLogin();
+        }
+    } catch (err) {
+        console.error(err);
+        showLogin();
+    }
+}
+
+startup();
