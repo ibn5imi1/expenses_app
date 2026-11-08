@@ -64,11 +64,9 @@ async function saveReport(report, filePath) {
     report.rows.forEach((values, i) => writeRow(5 + i, values, false));
     const totalRowNumber = 5 + report.rows.length;
     writeRow(totalRowNumber, report.total, true);
-    if (colCount > 2) ws.mergeCells(totalRowNumber, 2, totalRowNumber, colCount);
-
-    ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
-
-    await wb.xlsx.writeFile(filePath);
+    if (report.mergeTotal !== false && colCount > 2) {
+        ws.mergeCells(totalRowNumber, 2, totalRowNumber, colCount);
+    }
 }
 
 module.exports = { saveReport };

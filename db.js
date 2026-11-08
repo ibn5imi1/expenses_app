@@ -690,6 +690,58 @@ function deleteAccountant(id) {
   if (result.changes === 0) throw new Error("المحاسب غير موجود");
 }
 
+/* ---------- كشف القاصة الشهري ---------- */
+// الرصيد المرحّل: للأشهر حتى بداية الترحيل تراكمي، وبعدها هو سلف الترحيل المسجلة
+// الحركات: السلف (وارد) والمصروفات (صادر) خلال الشهر، بدون السلف المرحّلة
+function getMonthCashReport(f) {
+  const year = Number(f.year);
+  const month = Number(f.month);
+  if (!Number.isInteger(year) || year < 2000 || year > 2100)
+    throw new Error("السنة غير صحيحة");
+  if (!Number.isInteger(month) || month < 1 || month > 12)
+    throw new Error("الشهر غير صحيح");
+
+
+  const key = `${year}-${String(month).padStart(2, "0")}`;
+  const from = `${key}-01`;
+  const to = `${key}-31`;
+  const cumulative = key <= getSetting("carry_start_month");
+
+  const opening = cumulative
+    ? db
+        .prepare(
+          `SELECT
+             COALESCE((SELECT SUM(amount) FROM loans WHERE is_carry = 0 AND date < ?), 0)
+           - COALESCE((SELECT SUM(amount) FROM expenses WHERE date < ?), 0) AS v`,
+        )
+        .get(from, from).v
+    : db
+        .prepare(
+          `SELECT COALESCE(SUM(amount), 0) AS v FROM loans
+           WHERE is_carry = 1 AND date >= ? AND date <= ?`,
+        )
+        .get(from, to).v;
+
+  const rows = db
+    .prepare(
+      `
+        SELECT 'loan' AS kind, 0 AS sort_order, l.id, l.date, l.source AS text, l.amount,
+               l.created_by, l.created_at, l.updated_by, l.updated_at
+        FROM loans l
+        WHERE l.is_carry = 0 AND l.date >= ? AND l.date <= ?
+        UNION ALL
+        SELECT 'expense' AS kind, 1 AS sort_order, e.id, e.date, e.details AS text, e.amount,
+               e.created_by, e.created_at, e.updated_by, e.updated_at
+        FROM expenses e
+        WHERE e.date >= ? AND e.date <= ?
+        ORDER BY date ASC, sort_order ASC, id ASC
+      `,
+    )
+    .all(from, to, from, to);
+
+  return { opening: round2(opening), rows };
+}
+
 module.exports = {
   init,
   getDestinations,
@@ -717,6 +769,7 @@ module.exports = {
   addAccountant,
   resetPassword,
   recoverAdmin,
-   updateAccountant,
+  updateAccountant,
   deleteAccountant,
+    getMonthCashReport,
 };

@@ -56,6 +56,7 @@
           كشف المصروفات
         </button>
         <button class="nav-link" data-page="loans-report">كشف السلف</button>
+                <button class="nav-link" data-page="cash-report">كشف القاصة</button>
         <button class="nav-link" id="refresh-btn">تحديث البيانات</button>
         <button class="nav-link" data-page="settings">الاعدادات</button>
 
@@ -716,6 +717,77 @@
         </div>
       </section>
       <!-- end page loans report section -->
+
+      <!-- start page cash report section -->
+          <section class="page hidden" id="page-cash-report">
+        <div class="card noprint">
+          <h2>كشف القاصة</h2>
+
+          <form id="cash-report-form" class="inline-form cash-filter" novalidate>
+            <div class="field">
+              <label for="cashr-year">السنة</label>
+              <input
+                type="number"
+                id="cashr-year"
+                min="2000"
+                max="2100"
+                inputmode="numeric"
+              />
+            </div>
+
+            <div class="field">
+              <label for="cashr-month">الشهر</label>
+              <select id="cashr-month"></select>
+            </div>
+
+            <button type="submit" class="btn">عرض الكشف</button>
+          </form>
+          <div class="hidden" id="cash-report-error"></div>
+        </div>
+
+        <div class="card hidden" id="cash-report-result">
+          <div class="report-head">
+            <div>
+              <h2 id="cash-report-title"></h2>
+              <p class="report-sub" id="cash-report-subtitle"></p>
+            </div>
+            <div class="report-buttons noprint">
+              <button
+                type="button"
+                class="btn btn-light"
+                id="cash-report-print"
+              >
+                طباعة
+              </button>
+              <button type="button" class="btn" id="cash-report-excel">
+                تصدير Excel
+              </button>
+            </div>
+          </div>
+
+          <table class="table grid-table data-table">
+            <thead>
+              <tr>
+                <th class="col-cr-date">التاريخ</th>
+                <th class="col-cr-text">البيان</th>
+                <th class="col-cr-in">وارد</th>
+                <th class="col-cr-out">صادر</th>
+                <th class="col-cr-bal">الرصيد</th>
+              </tr>
+            </thead>
+            <tbody id="cash-report-body"></tbody>
+            <tfoot>
+              <tr>
+                <td colspan="2" id="cash-report-count"></td>
+                <td id="cash-report-total-in"></td>
+                <td id="cash-report-total-out"></td>
+                <td id="cash-report-closing"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+          </section>
+      <!-- end page cash report section -->
 
       <!-- start page settings section -->
       <section class="page hidden" id="page-settings">

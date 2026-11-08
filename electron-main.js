@@ -137,7 +137,6 @@ app.whenReady().then(() => {
     /* ---------- الكشوفات ---------- */
     handle('getExpensesReport', (e, filters) => db.getExpensesReport(filters));
     handle('getLoansReport', (e, filters) => db.getLoansReport(filters));
-
     handle('exportReport', async (e, report) => {
         const win = BrowserWindow.fromWebContents(e.sender);
         const result = await dialog.showSaveDialog(win, {

@@ -44,6 +44,7 @@ async function refreshAll() {
         // إذا كان كشف معروضاً، نعيد عرضه بالأرقام الجديدة
         if (!expensesReportResult.classList.contains('hidden')) expensesReportForm.requestSubmit();
         if (!loansReportResult.classList.contains('hidden')) loansReportForm.requestSubmit();
+                if (!cashReportResult.classList.contains('hidden')) cashReportForm.requestSubmit();
 
         showToast('تم تحديث البيانات');
     } catch (err) {
@@ -1191,6 +1192,7 @@ document.getElementById('report-dest-none').addEventListener('click', () => setA
 document.getElementById('expenses-report-print').addEventListener('click', printReport);
 expensesReportExcelBtn.addEventListener('click', () => exportReport(expensesReport));
 
+
 /* ================= كشف السلف ================= */
 const loanReportTypes = document.getElementById('report-loan-types');
 const loansReportForm = document.getElementById('loans-report-form');
@@ -1319,7 +1321,160 @@ document.getElementById('report-type-none').addEventListener('click', () => setA
 document.getElementById('loans-report-print').addEventListener('click', printReport);
 loansReportExcelBtn.addEventListener('click', () => exportReport(loansReport));
 
+/* ================= كشف القاصة (شهري) ================= */
+const cashReportForm = document.getElementById('cash-report-form');
+const cashrYear = document.getElementById('cashr-year');
+const cashrMonth = document.getElementById('cashr-month');
+const cashReportError = document.getElementById('cash-report-error');
+const cashReportResult = document.getElementById('cash-report-result');
+const cashReportTitle = document.getElementById('cash-report-title');
+const cashReportSubtitle = document.getElementById('cash-report-subtitle');
+const cashReportBody = document.getElementById('cash-report-body');
+const cashReportCount = document.getElementById('cash-report-count');
+const cashReportTotalIn = document.getElementById('cash-report-total-in');
+const cashReportTotalOut = document.getElementById('cash-report-total-out');
+const cashReportClosing = document.getElementById('cash-report-closing');
+const cashReportExcelBtn = document.getElementById('cash-report-excel');
 
+let cashReport = null;   // آخر كشف معروض (للتصدير)
+
+const round2 = n => Math.round(n * 100) / 100;
+const pad2 = n => String(n).padStart(2, '0');
+
+// خلية مبلغ: السالب بالأحمر
+function createMoneyCell(value) {
+    const td = createCell(formatMoney(value), 'money-cell');
+    if (value < 0) td.classList.add('negative');
+    return td;
+}
+
+// قائمة الأشهر، والسنة والشهر الحاليان كقيمة افتراضية
+MONTHS.forEach((name, i) => {
+    const option = document.createElement('option');
+    option.value = i + 1;
+    option.textContent = name;
+    cashrMonth.appendChild(option);
+});
+cashrYear.value = new Date().getFullYear();
+cashrMonth.value = new Date().getMonth() + 1;
+
+function renderCashReport(data, year, month) {
+    const prevName = MONTHS[(month + 10) % 12];   // اسم الشهر السابق
+    const lastDay = new Date(year, month, 0).getDate();
+    const from = `${year}-${pad2(month)}-01`;
+    const to = `${year}-${pad2(month)}-${pad2(lastDay)}`;
+
+    const title = `كشف القاصة — ${MONTHS[month - 1]} ${year}`;
+    const subtitle = periodText(from, to);
+    const openingLabel = `الرصيد المرحّل من شهر ${prevName}`;
+
+    let balance = round2(data.opening);
+    let totalIn = 0;
+    let totalOut = 0;
+
+    cashReportTitle.textContent = title;
+    cashReportSubtitle.textContent = subtitle;
+    cashReportBody.innerHTML = '';
+
+    // الصف الأول: الرصيد المرحّل
+    const openingTr = document.createElement('tr');
+    openingTr.className = 'opening-row';
+    openingTr.appendChild(createCell(''));
+    openingTr.appendChild(createCell(openingLabel));
+    openingTr.appendChild(createCell(''));
+    openingTr.appendChild(createCell(''));
+    openingTr.appendChild(createMoneyCell(balance));
+    cashReportBody.appendChild(openingTr);
+
+    const excelRows = [['', openingLabel, '', '', balance]];
+
+    data.rows.forEach(r => {
+        const isLoan = r.kind === 'loan';
+        const text = isLoan ? `سلفة: ${r.text}` : r.text;
+
+        if (isLoan) {
+            totalIn = round2(totalIn + r.amount);
+            balance = round2(balance + r.amount);
+        } else {
+            totalOut = round2(totalOut + r.amount);
+            balance = round2(balance - r.amount);
+        }
+
+        const tr = document.createElement('tr');
+        tr.title = auditTitle(r);   // من أضاف ومن عدّل عند وقوف المؤشر
+
+        tr.appendChild(createDateCell(r.date));
+        tr.appendChild(createCell(text, 'details-cell'));
+        tr.appendChild(isLoan ? createMoneyCell(r.amount) : createCell(''));
+        tr.appendChild(isLoan ? createCell('') : createMoneyCell(r.amount));
+        tr.appendChild(createMoneyCell(balance));
+        cashReportBody.appendChild(tr);
+
+        excelRows.push([
+            formatDate(r.date),
+            text,
+            isLoan ? r.amount : '',
+            isLoan ? '' : r.amount,
+            balance,
+        ]);
+    });
+
+    if (!data.rows.length) {
+        const tr = document.createElement('tr');
+        const td = createCell('لا توجد حركات في هذا الشهر');
+        td.colSpan = 5;
+        tr.appendChild(td);
+        cashReportBody.appendChild(tr);
+    }
+
+    cashReportCount.textContent = `الإجمالي — عدد الحركات: ${data.rows.length}`;
+    cashReportTotalIn.textContent = formatMoney(totalIn);
+    cashReportTotalOut.textContent = formatMoney(totalOut);
+    setRemaining(cashReportClosing, balance);
+
+    cashReport = {
+        title,
+        subtitle,
+        fileName: `cash-report-${year}-${pad2(month)}.xlsx`,
+        mergeTotal: false,   // لا ندمج خلايا صف الإجمالي
+        columns: [
+            { header: 'التاريخ', width: 14 },
+            { header: 'البيان', width: 56 },
+            { header: 'وارد', width: 16 },
+            { header: 'صادر', width: 16 },
+            { header: 'الرصيد', width: 16 },
+        ],
+        rows: excelRows,
+        total: ['الإجمالي', `عدد الحركات: ${data.rows.length}`, totalIn, totalOut, balance],
+    };
+
+    cashReportExcelBtn.disabled = false;
+    cashReportResult.classList.remove('hidden');
+}
+
+cashReportForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    hideNote(cashReportError);
+
+    const year = Number(cashrYear.value);
+    const month = Number(cashrMonth.value);
+
+    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+        showNote(cashReportError, 'أدخل سنة صحيحة، مثل 2026');
+        return;
+    }
+
+    try {
+        const data = await window.api.getMonthCashReport({ year, month });
+        renderCashReport(data, year, month);
+    } catch (err) {
+        console.error(err);
+        showNote(cashReportError, cleanError(err));
+    }
+});
+
+document.getElementById('cash-report-print').addEventListener('click', printReport);
+cashReportExcelBtn.addEventListener('click', () => exportReport(cashReport));
 
 /* ================= إظهار كلمة المرور ================= */
 const EYE_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';

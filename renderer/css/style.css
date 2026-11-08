@@ -794,6 +794,32 @@ main {
     color: var(--green-color);
 }
 
+/* ---------- كشف القاصة ---------- */
+.col-cr-date { width: 12%; }
+.col-cr-text { width: 40%; }
+.col-cr-in   { width: 16%; }
+.col-cr-out  { width: 16%; }
+.col-cr-bal  { width: 16%; }
+
+/* حقلا السنة والشهر في كشف القاصة */
+.cash-filter .field {
+    width: 180px;
+}
+
+/* أرقام الوارد والصادر والرصيد: تظهر بالسالب بشكل صحيح */
+.table td.money-cell {
+    direction: ltr;
+    text-align: right;
+    font-weight: 700;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.table tr.opening-row td {
+    background-color: var(--table-head-color);
+    font-weight: 700;
+}
+
 /* ---------- الطباعة: الكشف فقط بخطوط وأعمدة ---------- */
 @media print {
 
@@ -908,5 +934,15 @@ main {
     /* المجموع في آخر صفحة فقط */
     .grid-table tr {
         break-inside: avoid;
+    }
+
+        .grid-table tr.opening-row td {
+        background-color: #f3f5f4;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .grid-table .negative {
+        color: #000;
     }
 }

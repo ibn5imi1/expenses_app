@@ -51,6 +51,7 @@ contextBridge.exposeInMainWorld("api", {
   getExpensesReport: (filters) =>
     ipcRenderer.invoke("getExpensesReport", filters),
   getLoansReport: (filters) => ipcRenderer.invoke("getLoansReport", filters),
+  getMonthCashReport: filters => ipcRenderer.invoke('getMonthCashReport', filters),
   exportReport: (report) => ipcRenderer.invoke("exportReport", report),
   printPage: () => ipcRenderer.invoke("printPage"),
 });
