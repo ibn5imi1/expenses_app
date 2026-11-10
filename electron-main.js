@@ -3,7 +3,8 @@ const path = require('path');
 const db = require('./db');
 const { saveReport } = require('./export');
 const { RECOVERY_KEY_HASH } = require('./recovery');
-// المستخدم المسجل دخوله: { id, username, role } أو null
+
+// المستخدم المسجل دخوله: { id, username, displayName, role } أو null
 // يحمله الجزء الخلفي فقط، فلا تستطيع الواجهة انتحال اسم أو صلاحية
 let session = null;
 
@@ -55,9 +56,16 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-    db.init();
+    try {
+        db.init();
+    } catch (err) {
+        console.error(err);
+        dialog.showErrorBox('تعذر فتح قاعدة البيانات', String(err.stack || err));
+        app.quit();
+        return;
+    }
 
-        const resetArg = process.argv.find(a => a.startsWith('--reset-admin='));
+    const resetArg = process.argv.find(a => a.startsWith('--reset-admin='));
     if (resetArg) {
         runAdminRecovery(resetArg);
         return;
@@ -100,10 +108,9 @@ app.whenReady().then(() => {
 
     /* ---------- الأدمن فقط ---------- */
     handle('getAccountants', () => db.getAccountants(), { admin: true });
-        handle('addAccountant', (e, displayName, username, password) =>
+    handle('addAccountant', (e, displayName, username, password) =>
         db.addAccountant(displayName, username, password), { admin: true });
-    handle('resetPassword', (e, userId, password) => db.resetPassword(userId, password), { admin: true });
-        handle('updateAccountant', (e, id, displayName, username, password) =>
+    handle('updateAccountant', (e, id, displayName, username, password) =>
         db.updateAccountant(id, displayName, username, password), { admin: true });
     handle('deleteAccountant', (e, id) => db.deleteAccountant(id), { admin: true });
 
@@ -115,7 +122,7 @@ app.whenReady().then(() => {
 
     /* ---------- المصروفات ---------- */
     handle('getExpenses', () => db.getExpenses());
-        handle('addExpense', (e, data) => db.addExpense(data, session.displayName));
+    handle('addExpense', (e, data) => db.addExpense(data, session.displayName));
     handle('updateExpense', (e, id, data) => db.updateExpense(id, data, session.displayName));
     handle('deleteExpense', (e, id) => db.deleteExpense(id));
 
@@ -127,16 +134,19 @@ app.whenReady().then(() => {
 
     /* ---------- السلف ---------- */
     handle('getLoans', () => db.getLoans());
-     handle('addLoan', (e, data) => db.addLoan(data, session.displayName));
+    handle('addLoan', (e, data) => db.addLoan(data, session.displayName));
     handle('updateLoan', (e, id, data) => db.updateLoan(id, data, session.displayName));
     handle('deleteLoan', (e, id) => db.deleteLoan(id));
 
-    /* ---------- القاصة ---------- */
-    handle('getCash', () => db.getCash());
+    /* ---------- القاصة والخلاصة (شهرية) ---------- */
+    handle('getMonthCashReport', (e, filters) => db.getMonthCashReport(filters));
+    handle('getMonthSummary', (e, filters) => db.getMonthSummary(filters));
 
-    /* ---------- الكشوفات ---------- */
+    /* ---------- كشف المصروفات والسلف ---------- */
     handle('getExpensesReport', (e, filters) => db.getExpensesReport(filters));
     handle('getLoansReport', (e, filters) => db.getLoansReport(filters));
+
+    /* ---------- التصدير والطباعة ---------- */
     handle('exportReport', async (e, report) => {
         const win = BrowserWindow.fromWebContents(e.sender);
         const result = await dialog.showSaveDialog(win, {

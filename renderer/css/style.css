@@ -115,6 +115,11 @@ main {
     font-size: 18px;
 }
 
+.sub-title {
+    margin: 26px 0 10px;
+    font-size: 16px;
+}
+
 /* ---------- الفورمات ---------- */
 .form-grid {
     display: grid;
@@ -205,8 +210,13 @@ main {
     width: 320px;
 }
 
-.inline-form+.form-error {
+.inline-form + .form-error {
     margin-top: 12px;
+}
+
+/* حقلا السنة والشهر (القاصة والخلاصة) */
+.inline-form.period-form .field {
+    width: 180px;
 }
 
 /* نماذج عمودية (الإعدادات والأدمن) */
@@ -366,7 +376,7 @@ main {
     text-align: center;
 }
 
-/* خلايا جداول المصروفات والسلف (موحّدة في الجداول الثلاثة) */
+/* خلايا موحّدة في كل الجداول */
 .table td.details-cell {
     white-space: pre-wrap;
 }
@@ -381,6 +391,14 @@ main {
     white-space: nowrap;
 }
 
+.table td.money-cell {
+    direction: ltr;
+    text-align: right;
+    font-weight: 700;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
 .table td.ded-cell,
 .table td.actions-cell {
     text-align: center;
@@ -393,6 +411,11 @@ main {
 
 .table tbody tr:hover {
     background-color: var(--table-head-color);
+}
+
+.table tr.opening-row td {
+    background-color: var(--table-head-color);
+    font-weight: 700;
 }
 
 .table tfoot td {
@@ -444,161 +467,80 @@ main {
     margin-top: 16px;
 }
 
+/* جداول الكشوفات بخطوط وأعمدة */
+.grid-table th,
+.grid-table td {
+    border: 1px solid var(--grid-color);
+}
+
 /* ---------- عروض الأعمدة ---------- */
 /* آخر 100 مصروف */
-.col-amount {
-    width: 11%;
-}
-
-.col-date {
-    width: 11%;
-}
-
-.col-details {
-    width: 32%;
-}
-
-.col-note {
-    width: 13%;
-}
-
-.col-ded {
-    width: 18%;
-}
-
-.col-actions {
-    width: 15%;
-}
+.col-amount  { width: 11%; }
+.col-date    { width: 11%; }
+.col-details { width: 32%; }
+.col-note    { width: 13%; }
+.col-ded     { width: 18%; }
+.col-actions { width: 15%; }
 
 /* كشف المصروفات */
-.col-r-amount {
-    width: 11%;
-}
-
-.col-r-date {
-    width: 11%;
-}
-
-.col-r-details {
-    width: 32%;
-}
-
-.col-r-note {
-    width: 13%;
-}
-
-.col-r-ded {
-    width: 18%;
-}
-
-.col-r-actions {
-    width: 15%;
-}
+.col-r-amount  { width: 11%; }
+.col-r-date    { width: 11%; }
+.col-r-details { width: 32%; }
+.col-r-note    { width: 13%; }
+.col-r-ded     { width: 18%; }
+.col-r-actions { width: 15%; }
 
 /* كشف السلف */
-.col-lr-amount {
-    width: 17%;
-}
-
-.col-lr-date {
-    width: 15%;
-}
-
-.col-lr-source {
-    width: 31%;
-}
-
-.col-lr-type {
-    width: 22%;
-}
-
-.col-lr-actions {
-    width: 15%;
-}
+.col-lr-amount  { width: 17%; }
+.col-lr-date    { width: 15%; }
+.col-lr-source  { width: 31%; }
+.col-lr-type    { width: 22%; }
+.col-lr-actions { width: 15%; }
 
 /* آخر السلف */
-.col-loan-amount {
-    width: 18%;
-}
-
-.col-loan-date {
-    width: 16%;
-}
-
-.col-source {
-    width: 30%;
-}
-
-.col-type {
-    width: 20%;
-}
-
-.col-loan-actions {
-    width: 16%;
-}
+.col-loan-amount  { width: 17%; }
+.col-loan-date    { width: 15%; }
+.col-source       { width: 31%; }
+.col-type         { width: 22%; }
+.col-loan-actions { width: 15%; }
 
 /* أنواع السلف */
-.col-type-name {
-    width: 70%;
-}
-
-.col-type-actions {
-    width: 30%;
-}
+.col-type-name    { width: 70%; }
+.col-type-actions { width: 30%; }
 
 /* القاصة */
-.col-cash-type {
-    width: 34%;
-}
+.col-cash-type { width: 34%; }
+.col-cash-num  { width: 22%; }
 
-.col-cash-num {
-    width: 22%;
-}
+/* كشف القاصة */
+.col-cr-date { width: 12%; }
+.col-cr-text { width: 40%; }
+.col-cr-in   { width: 16%; }
+.col-cr-out  { width: 16%; }
+.col-cr-bal  { width: 16%; }
 
 /* جهات الصرف */
-.col-dest-name {
-    width: 40%;
-}
-
-.col-dest-count {
-    width: 18%;
-}
-
-.col-dest-total {
-    width: 24%;
-}
-
-.col-dest-actions {
-    width: 18%;
-}
+.col-dest-name    { width: 40%; }
+.col-dest-count   { width: 18%; }
+.col-dest-total   { width: 24%; }
+.col-dest-actions { width: 18%; }
 
 /* الخلاصة */
-.col-sum-name {
-    width: 50%;
-}
-
-.col-sum-count {
-    width: 20%;
-}
-
-.col-sum-total {
-    width: 30%;
-}
+.col-sum-name  { width: 50%; }
+.col-sum-count { width: 20%; }
+.col-sum-total { width: 30%; }
 
 /* المحاسبون */
-.col-acc-name {
-    width: 40%;
+.col-acc-name    { width: 40%; }
+.col-acc-user    { width: 30%; }
+.col-acc-actions { width: 30%; }
+
+/* ---------- القاصة والخلاصة ---------- */
+.cash-hint {
+    margin: 0 0 14px;
+    color: var(--muted-color);
 }
 
-.col-acc-user {
-    width: 30%;
-}
-
-.col-acc-actions {
-    width: 30%;
-}
-
-/* ---------- الخلاصة ---------- */
 .stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -651,7 +593,7 @@ main {
     align-items: end;
 }
 
-.report-form+div {
+.report-form + div {
     margin-top: 12px;
 }
 
@@ -706,12 +648,6 @@ main {
 .report-buttons {
     display: flex;
     gap: 8px;
-}
-
-/* جداول الكشوفات بخطوط وأعمدة */
-.grid-table th,
-.grid-table td {
-    border: 1px solid var(--grid-color);
 }
 
 /* ---------- رسالة التأكيد ---------- */
@@ -794,35 +730,8 @@ main {
     color: var(--green-color);
 }
 
-/* ---------- كشف القاصة ---------- */
-.col-cr-date { width: 12%; }
-.col-cr-text { width: 40%; }
-.col-cr-in   { width: 16%; }
-.col-cr-out  { width: 16%; }
-.col-cr-bal  { width: 16%; }
-
-/* حقلا السنة والشهر في كشف القاصة */
-.cash-filter .field {
-    width: 180px;
-}
-
-/* أرقام الوارد والصادر والرصيد: تظهر بالسالب بشكل صحيح */
-.table td.money-cell {
-    direction: ltr;
-    text-align: right;
-    font-weight: 700;
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-}
-
-.table tr.opening-row td {
-    background-color: var(--table-head-color);
-    font-weight: 700;
-}
-
-/* ---------- الطباعة: الكشف فقط بخطوط وأعمدة ---------- */
+/* ---------- الطباعة: الصفحة المعروضة فقط بخطوط وأعمدة ---------- */
 @media print {
-
     .navbar,
     .noprint,
     .toast {
@@ -849,7 +758,9 @@ main {
         font-size: 18px;
     }
 
-    .report-sub {
+    .report-sub,
+    .cash-hint,
+    .summary-hint {
         color: #000;
     }
 
@@ -874,6 +785,12 @@ main {
         print-color-adjust: exact;
     }
 
+    .grid-table tr.opening-row td {
+        background-color: #f3f5f4;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
     /* سلفة الاستقطاع تُطبع كنص عادي بدون شارة */
     .grid-table .ded-badge {
         padding: 0;
@@ -884,65 +801,36 @@ main {
         font-weight: 400;
     }
 
-    /* كشف المصروفات بعد إخفاء الأزرار: خمسة أعمدة تملأ الصفحة */
-    .col-r-amount {
-        width: 14%;
-    }
-
-    .col-r-date {
-        width: 12%;
-    }
-
-    .col-r-details {
-        width: 38%;
-    }
-
-    .col-r-note {
-        width: 16%;
-    }
-
-    .col-r-ded {
-        width: 20%;
-    }
-
-    /* كشف السلف بعد إخفاء الأزرار: أربعة أعمدة */
-    .col-lr-amount {
-        width: 20%;
-    }
-
-    .col-lr-date {
-        width: 18%;
-    }
-
-    .col-lr-source {
-        width: 38%;
-    }
-
-    .col-lr-type {
-        width: 24%;
-    }
-
-    .grid-table thead {
-        display: table-header-group;
-    }
-
-    /* يتكرر الرأس في كل صفحة */
-    .grid-table tfoot {
-        display: table-row-group;
-    }
-
-    /* المجموع في آخر صفحة فقط */
-    .grid-table tr {
-        break-inside: avoid;
-    }
-
-        .grid-table tr.opening-row td {
-        background-color: #f3f5f4;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
     .grid-table .negative {
         color: #000;
     }
+
+    /* بطاقات الخلاصة بدون ألوان */
+    .stat,
+    .stat-main {
+        background: #fff;
+        border: 1px solid #000;
+    }
+
+    .stat-main .stat-label,
+    .stat-main .stat-value {
+        color: #000;
+    }
+
+    /* كشف المصروفات بعد إخفاء الأزرار */
+    .col-r-amount  { width: 14%; }
+    .col-r-date    { width: 12%; }
+    .col-r-details { width: 38%; }
+    .col-r-note    { width: 16%; }
+    .col-r-ded     { width: 20%; }
+
+    /* كشف السلف بعد إخفاء الأزرار */
+    .col-lr-amount { width: 20%; }
+    .col-lr-date   { width: 18%; }
+    .col-lr-source { width: 38%; }
+    .col-lr-type   { width: 24%; }
+
+    .grid-table thead { display: table-header-group; }   /* يتكرر الرأس في كل صفحة */
+    .grid-table tfoot { display: table-row-group; }      /* المجموع في آخر صفحة فقط */
+    .grid-table tr    { break-inside: avoid; }
 }

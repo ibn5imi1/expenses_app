@@ -5,6 +5,16 @@ const Database = require("better-sqlite3");
 
 let db;
 
+const SYSTEM_USER = "النظام";
+const MIN_DATE = "0000-01-01";
+const CARRY_LOCKED_MESSAGE =
+  "هذه سلفة مرحّلة تلقائياً من القاصة ولا يمكن تعديلها أو حذفها";
+
+const MONTH_NAMES = [
+  "كانون الثاني", "شباط", "آذار", "نيسان", "أيار", "حزيران",
+  "تموز", "آب", "أيلول", "تشرين الأول", "تشرين الثاني", "كانون الأول",
+];
+
 function init() {
   const file = path.join(app.getPath("userData"), "college.db");
   db = new Database(file);
@@ -44,6 +54,7 @@ function init() {
             date         TEXT NOT NULL,
             source       TEXT NOT NULL,
             loan_type_id INTEGER NOT NULL REFERENCES loan_types(id),
+            is_carry     INTEGER NOT NULL DEFAULT 0,
             created_by   TEXT NOT NULL,
             created_at   TEXT NOT NULL,
             updated_by   TEXT,
@@ -67,6 +78,7 @@ function init() {
 
   seed();
   migrate();
+  syncCarry();
 }
 
 // البيانات الأساسية تُدخل مرة واحدة فقط عندما تكون الجداول فارغة
@@ -104,7 +116,7 @@ function seed() {
 
     db.prepare(
       `
-            INSERT INTO settings (key, value) VALUES ('schema_version', '5')
+            INSERT INTO settings (key, value) VALUES ('schema_version', '6')
             ON CONFLICT(key) DO UPDATE SET value = excluded.value
         `,
     ).run();
@@ -147,10 +159,138 @@ function migrate() {
      SET display_name = CASE WHEN role = 'admin' THEN 'الأدمن' ELSE username END
      WHERE display_name IS NULL OR display_name = ''`,
   ).run();
+
+  // علامة السلف المرحّلة تلقائياً من القاصة
+  if (!hasColumn("loans", "is_carry")) {
+    db.exec("ALTER TABLE loans ADD COLUMN is_carry INTEGER NOT NULL DEFAULT 0");
+  }
 }
 
 function isConstraintError(err) {
   return String(err.code).startsWith("SQLITE_CONSTRAINT");
+}
+
+/* ---------- الإعدادات الداخلية ---------- */
+function getSetting(key) {
+  const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(key);
+  return row ? row.value : null;
+}
+
+function setSetting(key, value) {
+  db.prepare(
+    `INSERT INTO settings (key, value) VALUES (?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+  ).run(key, value);
+}
+
+/* ---------- ترحيل متبقي القاصة تلقائياً ---------- */
+const round2 = (n) => Math.round(n * 100) / 100;
+
+// 'YYYY-MM' + عدد أشهر
+function shiftMonthKey(key, delta) {
+  const [y, m] = key.split("-").map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function currentMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function sumLoans(typeId, from, to, includeCarry) {
+  return db
+    .prepare(
+      `SELECT COALESCE(SUM(amount), 0) AS s FROM loans
+       WHERE loan_type_id = ? AND date >= ? AND date <= ?
+       ${includeCarry ? "" : "AND is_carry = 0"}`,
+    )
+    .get(typeId, from, to).s;
+}
+
+function sumExpenses(typeId, from, to) {
+  return db
+    .prepare(
+      `SELECT COALESCE(SUM(amount), 0) AS s FROM expenses
+       WHERE loan_type_id = ? AND date >= ? AND date <= ?`,
+    )
+    .get(typeId, from, to).s;
+}
+
+// ينشئ أو يحدّث أو يحذف سلفة الترحيل بتاريخ 1 من الشهر التالي، بنفس نوع السلفة
+function upsertCarry(typeId, fromMonth, remaining) {
+  const amount = round2(Math.max(remaining, 0));
+  const date = `${shiftMonthKey(fromMonth, 1)}-01`;
+  const source = `المتبقي في القاصة لشهر ${MONTH_NAMES[Number(fromMonth.slice(5, 7)) - 1]}`;
+  const now = new Date().toISOString();
+
+  const existing = db
+    .prepare(
+      "SELECT id, amount FROM loans WHERE is_carry = 1 AND date = ? AND loan_type_id = ?",
+    )
+    .get(date, typeId);
+
+  if (amount > 0) {
+    if (!existing) {
+      db.prepare(
+        `INSERT INTO loans (amount, date, source, loan_type_id, is_carry, created_by, created_at)
+         VALUES (?, ?, ?, ?, 1, ?, ?)`,
+      ).run(amount, date, source, typeId, SYSTEM_USER, now);
+    } else if (round2(existing.amount) !== amount) {
+      db.prepare(
+        "UPDATE loans SET amount = ?, source = ?, updated_by = ?, updated_at = ? WHERE id = ?",
+      ).run(amount, source, SYSTEM_USER, now, existing.id);
+    }
+  } else if (existing) {
+    db.prepare("DELETE FROM loans WHERE id = ?").run(existing.id);
+  }
+}
+
+// يضمن أن سلف الترحيل صحيحة لكل الأشهر المنتهية. آمنة للتكرار.
+function syncCarry() {
+  // إن رجع تاريخ الجهاز للوراء، نحذف سلف الترحيل المؤرخة في المستقبل
+  db.prepare("DELETE FROM loans WHERE is_carry = 1 AND date > ?").run(
+    `${currentMonthKey()}-31`,
+  );
+
+  const target = shiftMonthKey(currentMonthKey(), -1); // آخر شهر منتهٍ
+
+  let start = getSetting("carry_start_month");
+  if (!start) {
+    start = target; // أول تفعيل: نبدأ من آخر شهر منتهٍ
+    setSetting("carry_start_month", start);
+  }
+  if (start > target) return;
+
+  const types = db.prepare("SELECT id FROM loan_types").all();
+
+  db.transaction(() => {
+    for (let m = start; m <= target; m = shiftMonthKey(m, 1)) {
+      for (const t of types) {
+        // شهر البداية تراكمي (كل البيانات السابقة)، وما بعده شهري
+        const remaining =
+          m === start
+            ? sumLoans(t.id, MIN_DATE, `${m}-31`, false) -
+              sumExpenses(t.id, MIN_DATE, `${m}-31`)
+            : sumLoans(t.id, `${m}-01`, `${m}-31`, true) -
+              sumExpenses(t.id, `${m}-01`, `${m}-31`);
+        upsertCarry(t.id, m, remaining);
+      }
+    }
+  })();
+}
+
+// يتحقق من السنة والشهر ويرجع حدود الشهر
+function parsePeriod(f) {
+  const year = Number(f && f.year);
+  const month = Number(f && f.month);
+  if (!Number.isInteger(year) || year < 2000 || year > 2100)
+    throw new Error("السنة غير صحيحة");
+  if (!Number.isInteger(month) || month < 1 || month > 12)
+    throw new Error("الشهر غير صحيح");
+
+  const key = `${year}-${String(month).padStart(2, "0")}`;
+  return { key, from: `${key}-01`, to: `${key}-31` };
 }
 
 /* ---------- جهات الصرف ---------- */
@@ -275,6 +415,7 @@ function addExpense(d, user) {
       user,
       new Date().toISOString(),
     );
+  syncCarry();
   return result.lastInsertRowid;
 }
 
@@ -301,10 +442,12 @@ function updateExpense(id, d, user) {
       id,
     );
   if (result.changes === 0) throw new Error("المصروف غير موجود");
+  syncCarry();
 }
 
 function deleteExpense(id) {
   db.prepare("DELETE FROM expenses WHERE id = ?").run(id);
+  syncCarry();
 }
 
 /* ---------- أنواع السلف ---------- */
@@ -386,15 +529,16 @@ function validateLoan(d) {
 }
 
 function getLoans() {
+  syncCarry(); // لتظهر سلف الترحيل فور بداية شهر جديد
   return db
     .prepare(
       `
-        SELECT l.id, l.amount, l.date, l.source,
+        SELECT l.id, l.amount, l.date, l.source, l.is_carry,
                l.loan_type_id, t.name AS loan_type,
                l.created_by, l.created_at, l.updated_by, l.updated_at
         FROM loans l
         JOIN loan_types t ON t.id = l.loan_type_id
-        ORDER BY l.id DESC
+        ORDER BY l.date DESC, l.id DESC
         LIMIT 15
     `,
     )
@@ -403,7 +547,7 @@ function getLoans() {
 
 function addLoan(d, user) {
   validateLoan(d);
-  return db
+  const result = db
     .prepare(
       `
         INSERT INTO loans (amount, date, source, loan_type_id, created_by, created_at)
@@ -417,52 +561,132 @@ function addLoan(d, user) {
       d.loanTypeId,
       user,
       new Date().toISOString(),
-    ).lastInsertRowid;
+    );
+  syncCarry();
+  return result.lastInsertRowid;
+}
+
+function assertNotCarry(id) {
+  const row = db.prepare("SELECT is_carry FROM loans WHERE id = ?").get(id);
+  if (!row) throw new Error("السلفة غير موجودة");
+  if (row.is_carry) throw new Error(CARRY_LOCKED_MESSAGE);
 }
 
 function updateLoan(id, d, user) {
   validateLoan(d);
-  const result = db
-    .prepare(
-      `
+  assertNotCarry(id);
+
+  db.prepare(
+    `
         UPDATE loans
         SET amount = ?, date = ?, source = ?, loan_type_id = ?, updated_by = ?, updated_at = ?
         WHERE id = ?
     `,
-    )
-    .run(
-      Number(d.amount),
-      d.date,
-      d.source.trim(),
-      d.loanTypeId,
-      user,
-      new Date().toISOString(),
-      id,
-    );
-  if (result.changes === 0) throw new Error("السلفة غير موجودة");
+  ).run(
+    Number(d.amount),
+    d.date,
+    d.source.trim(),
+    d.loanTypeId,
+    user,
+    new Date().toISOString(),
+    id,
+  );
+  syncCarry();
 }
 
 function deleteLoan(id) {
+  assertNotCarry(id);
   db.prepare("DELETE FROM loans WHERE id = ?").run(id);
+  syncCarry();
 }
 
-/* ---------- القاصة ---------- */
-// لكل نوع سلفة: مجموع السلف ومجموع المصروفات المخصومة منه
-function getCash() {
-  return db
+/* ---------- القاصة الشهرية مع كشفها ---------- */
+// byType: لكل نوع سلفة صافي السلف (مع المرحّل) والمصروف منها خلال الشهر
+//         (الأشهر حتى بداية الترحيل تراكمية حتى نهاية الشهر)
+// opening + rows: كشف الحركة، الوارد (السلف) والصادر (المصروفات) بدون السلف المرحّلة
+function getMonthCashReport(f) {
+  const { key, from, to } = parsePeriod(f);
+  syncCarry();
+
+  const cumulative = key <= (getSetting("carry_start_month") || "0000-00");
+  const rangeFrom = cumulative ? MIN_DATE : from;
+
+  const byType = db
+    .prepare("SELECT id, name, is_fixed FROM loan_types ORDER BY id")
+    .all()
+    .map((t) => ({
+      id: t.id,
+      name: t.name,
+      is_fixed: t.is_fixed,
+      loans_total: sumLoans(t.id, rangeFrom, to, !cumulative),
+      spent_total: sumExpenses(t.id, rangeFrom, to),
+    }));
+
+  const opening = cumulative
+    ? db
+        .prepare(
+          `SELECT
+             COALESCE((SELECT SUM(amount) FROM loans WHERE is_carry = 0 AND date < ?), 0)
+           - COALESCE((SELECT SUM(amount) FROM expenses WHERE date < ?), 0) AS v`,
+        )
+        .get(from, from).v
+    : db
+        .prepare(
+          `SELECT COALESCE(SUM(amount), 0) AS v FROM loans
+           WHERE is_carry = 1 AND date >= ? AND date <= ?`,
+        )
+        .get(from, to).v;
+
+  const rows = db
     .prepare(
       `
-        SELECT t.id, t.name, t.is_fixed,
-               COALESCE((SELECT SUM(amount) FROM loans    WHERE loan_type_id = t.id), 0) AS loans_total,
-               COALESCE((SELECT SUM(amount) FROM expenses WHERE loan_type_id = t.id), 0) AS spent_total
-        FROM loan_types t
-        ORDER BY t.id
-    `,
+        SELECT 'loan' AS kind, 0 AS sort_order, l.id, l.date, l.source AS text, l.amount,
+               l.created_by, l.created_at, l.updated_by, l.updated_at
+        FROM loans l
+        WHERE l.is_carry = 0 AND l.date >= ? AND l.date <= ?
+        UNION ALL
+        SELECT 'expense' AS kind, 1 AS sort_order, e.id, e.date, e.details AS text, e.amount,
+               e.created_by, e.created_at, e.updated_by, e.updated_at
+        FROM expenses e
+        WHERE e.date >= ? AND e.date <= ?
+        ORDER BY date ASC, sort_order ASC, id ASC
+      `,
     )
-    .all();
+    .all(from, to, from, to);
+
+  return { cumulative, byType, opening: round2(opening), rows };
 }
 
-/* ---------- الكشوفات ---------- */
+/* ---------- الخلاصة الشهرية ---------- */
+// مصروفات الشهر لكل جهة، ومجموع سلف الشهر بدون السلف المرحّلة (فتبدأ الأشهر من صفر)
+function getMonthSummary(f) {
+  const { from, to } = parsePeriod(f);
+
+  const destinations = db
+    .prepare(
+      `
+        SELECT d.id, d.name,
+               (SELECT COUNT(*) FROM expenses
+                WHERE destination_id = d.id AND date >= ? AND date <= ?) AS expenses_count,
+               COALESCE((SELECT SUM(amount) FROM expenses
+                         WHERE destination_id = d.id AND date >= ? AND date <= ?), 0) AS expenses_total
+        FROM destinations d
+        ORDER BY d.id
+      `,
+    )
+    .all(from, to, from, to);
+
+  const loansTotal = db
+    .prepare(
+      `SELECT COALESCE(SUM(amount), 0) AS v FROM loans
+       WHERE is_carry = 0 AND date >= ? AND date <= ?`,
+    )
+    .get(from, to).v;
+
+  return { destinations, loansTotal };
+}
+
+/* ---------- كشف المصروفات والسلف ---------- */
 function assertDate(value, label) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value)))
     throw new Error(`${label} غير صحيح`);
@@ -507,7 +731,7 @@ function getLoansReport(f) {
   return db
     .prepare(
       `
-        SELECT l.id, l.amount, l.date, l.source,
+        SELECT l.id, l.amount, l.date, l.source, l.is_carry,
                l.loan_type_id, t.name AS loan_type,
                l.created_by, l.created_at, l.updated_by, l.updated_at
         FROM loans l
@@ -519,6 +743,7 @@ function getLoansReport(f) {
     )
     .all(...ids, f.from, f.to);
 }
+
 /* ---------- المستخدمون ---------- */
 const MIN_PASSWORD = 6;
 
@@ -623,31 +848,6 @@ function addAccountant(displayName, username, password) {
   }
 }
 
-function resetPassword(userId, newPassword) {
-  assertPassword(newPassword);
-
-  const result = db
-    .prepare(
-      "UPDATE users SET password_hash = ? WHERE id = ? AND role = 'accountant'",
-    )
-    .run(bcrypt.hashSync(String(newPassword), 10), userId);
-  if (result.changes === 0) throw new Error("المحاسب غير موجود");
-}
-
-// استرجاع كلمة مرور الأدمن: يتطلب مفتاحاً يطابق البصمة المحفوظة في recovery.js
-function recoverAdmin(key, newPassword, keyHash) {
-  if (!keyHash) throw new Error("الاسترجاع غير مفعّل");
-  if (!bcrypt.compareSync(String(key || ""), keyHash)) {
-    throw new Error("مفتاح الاسترجاع غير صحيح");
-  }
-  assertPassword(newPassword);
-
-  const result = db
-    .prepare("UPDATE users SET password_hash = ? WHERE role = 'admin'")
-    .run(bcrypt.hashSync(String(newPassword), 10));
-  if (result.changes === 0) throw new Error("لا يوجد حساب أدمن");
-}
-
 function updateAccountant(id, displayName, username, newPassword) {
   const name = cleanDisplayName(displayName);
   const clean = cleanUsername(username);
@@ -659,17 +859,19 @@ function updateAccountant(id, displayName, username, newPassword) {
     .get(id);
   if (!user) throw new Error("المحاسب غير موجود");
 
-  if (db.prepare("SELECT 1 FROM users WHERE display_name = ? AND id <> ?").get(name, id)) {
+  if (
+    db
+      .prepare("SELECT 1 FROM users WHERE display_name = ? AND id <> ?")
+      .get(name, id)
+  ) {
     throw new Error("هذا الاسم مستخدم لمحاسب آخر");
   }
 
   try {
     db.transaction(() => {
-      db.prepare("UPDATE users SET display_name = ?, username = ? WHERE id = ?").run(
-        name,
-        clean,
-        id,
-      );
+      db.prepare(
+        "UPDATE users SET display_name = ?, username = ? WHERE id = ?",
+      ).run(name, clean, id);
       if (hasPassword) {
         db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(
           bcrypt.hashSync(String(newPassword), 10),
@@ -690,56 +892,18 @@ function deleteAccountant(id) {
   if (result.changes === 0) throw new Error("المحاسب غير موجود");
 }
 
-/* ---------- كشف القاصة الشهري ---------- */
-// الرصيد المرحّل: للأشهر حتى بداية الترحيل تراكمي، وبعدها هو سلف الترحيل المسجلة
-// الحركات: السلف (وارد) والمصروفات (صادر) خلال الشهر، بدون السلف المرحّلة
-function getMonthCashReport(f) {
-  const year = Number(f.year);
-  const month = Number(f.month);
-  if (!Number.isInteger(year) || year < 2000 || year > 2100)
-    throw new Error("السنة غير صحيحة");
-  if (!Number.isInteger(month) || month < 1 || month > 12)
-    throw new Error("الشهر غير صحيح");
+// استرجاع كلمة مرور الأدمن: يتطلب مفتاحاً يطابق البصمة المحفوظة في recovery.js
+function recoverAdmin(key, newPassword, keyHash) {
+  if (!keyHash) throw new Error("الاسترجاع غير مفعّل");
+  if (!bcrypt.compareSync(String(key || ""), keyHash)) {
+    throw new Error("مفتاح الاسترجاع غير صحيح");
+  }
+  assertPassword(newPassword);
 
-
-  const key = `${year}-${String(month).padStart(2, "0")}`;
-  const from = `${key}-01`;
-  const to = `${key}-31`;
-  const cumulative = key <= getSetting("carry_start_month");
-
-  const opening = cumulative
-    ? db
-        .prepare(
-          `SELECT
-             COALESCE((SELECT SUM(amount) FROM loans WHERE is_carry = 0 AND date < ?), 0)
-           - COALESCE((SELECT SUM(amount) FROM expenses WHERE date < ?), 0) AS v`,
-        )
-        .get(from, from).v
-    : db
-        .prepare(
-          `SELECT COALESCE(SUM(amount), 0) AS v FROM loans
-           WHERE is_carry = 1 AND date >= ? AND date <= ?`,
-        )
-        .get(from, to).v;
-
-  const rows = db
-    .prepare(
-      `
-        SELECT 'loan' AS kind, 0 AS sort_order, l.id, l.date, l.source AS text, l.amount,
-               l.created_by, l.created_at, l.updated_by, l.updated_at
-        FROM loans l
-        WHERE l.is_carry = 0 AND l.date >= ? AND l.date <= ?
-        UNION ALL
-        SELECT 'expense' AS kind, 1 AS sort_order, e.id, e.date, e.details AS text, e.amount,
-               e.created_by, e.created_at, e.updated_by, e.updated_at
-        FROM expenses e
-        WHERE e.date >= ? AND e.date <= ?
-        ORDER BY date ASC, sort_order ASC, id ASC
-      `,
-    )
-    .all(from, to, from, to);
-
-  return { opening: round2(opening), rows };
+  const result = db
+    .prepare("UPDATE users SET password_hash = ? WHERE role = 'admin'")
+    .run(bcrypt.hashSync(String(newPassword), 10));
+  if (result.changes === 0) throw new Error("لا يوجد حساب أدمن");
 }
 
 module.exports = {
@@ -760,16 +924,15 @@ module.exports = {
   addLoan,
   updateLoan,
   deleteLoan,
-  getCash,
+  getMonthCashReport,
+  getMonthSummary,
   getExpensesReport,
   getLoansReport,
   login,
   changePassword,
   getAccountants,
   addAccountant,
-  resetPassword,
-  recoverAdmin,
   updateAccountant,
   deleteAccountant,
-    getMonthCashReport,
+  recoverAdmin,
 };

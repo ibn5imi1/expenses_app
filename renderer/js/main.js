@@ -2,7 +2,7 @@
 const navLinks = document.querySelectorAll('.nav-link[data-page]');
 const pages = document.querySelectorAll('.page');
 
-let currentUser = null;   // { id, username, role }
+let currentUser = null;   // { id, username, displayName, role }
 
 function showPage(name) {
     if (name === 'admin' && (!currentUser || currentUser.role !== 'admin')) return;
@@ -20,6 +20,7 @@ function showPage(name) {
     if (name === 'destinations') reloadDestinations();
     if (name === 'admin') loadAccountants();
 }
+
 navLinks.forEach(link => {
     link.addEventListener('click', () => showPage(link.dataset.page));
 });
@@ -44,7 +45,6 @@ async function refreshAll() {
         // إذا كان كشف معروضاً، نعيد عرضه بالأرقام الجديدة
         if (!expensesReportResult.classList.contains('hidden')) expensesReportForm.requestSubmit();
         if (!loansReportResult.classList.contains('hidden')) loansReportForm.requestSubmit();
-                if (!cashReportResult.classList.contains('hidden')) cashReportForm.requestSubmit();
 
         showToast('تم تحديث البيانات');
     } catch (err) {
@@ -59,10 +59,15 @@ document.getElementById('refresh-btn').addEventListener('click', refreshAll);
 
 showPage('expenses');
 
+/* ---------- أدوات صغيرة مشتركة ---------- */
+const round2 = n => Math.round(n * 100) / 100;
+const pad2 = n => String(n).padStart(2, '0');
+
 /* ---------- حالة الصفحة ---------- */
 let destinations = [];
 let expenses = [];
-let editingId = null;   // رقم المصروف الذي يجري تعديله، أو null عند الإضافة
+let editingId = null;         // رقم المصروف الذي يجري تعديله، أو null عند الإضافة
+let returnToReport = false;   // هل بدأ التعديل من كشف المصروفات؟ للعودة إليه بعد الحفظ
 
 /* ---------- عناصر فورم المصروفات ---------- */
 const expenseLoanTypeSelect = document.getElementById('expense-loan-type');
@@ -112,7 +117,7 @@ attachAmountFormat(amountInput);
 
 // تقريب إلى خانتين عشريتين لتفادي فروق الكسور، مع فواصل الآلاف
 function formatMoney(n) {
-    return (Math.round(n * 100) / 100).toLocaleString('en-US');
+    return round2(n).toLocaleString('en-US');
 }
 
 /* ---------- التاريخ ---------- */
@@ -147,6 +152,7 @@ function createDatePicker(input, iconBtn, extra = {}) {
     });
     return picker;
 }
+
 const datePicker = createDatePicker(dateInput, document.getElementById('date-icon'));
 
 // '2026-11-04' ← '4/11/2026'
@@ -180,6 +186,34 @@ function createCell(text, className) {
     return td;
 }
 
+function createDateCell(iso) {
+    const td = document.createElement('td');
+    td.className = 'date-cell';
+    const bdi = document.createElement('bdi');   // يحمي ترتيب الأرقام في الصفحة العربية
+    bdi.textContent = formatDate(iso);
+    td.appendChild(bdi);
+    return td;
+}
+
+// خلية مبلغ: السالب بالأحمر
+function createMoneyCell(value) {
+    const td = createCell(formatMoney(value), 'money-cell');
+    if (value < 0) td.classList.add('negative');
+    return td;
+}
+
+// خلية سلفة الاستقطاع: شارة واضحة
+function createDeductionCell(name, className = '') {
+    const td = document.createElement('td');
+    td.className = `ded-cell ${className}`.trim();
+
+    const badge = document.createElement('span');
+    badge.className = 'ded-badge';
+    badge.textContent = name;
+    td.appendChild(badge);
+    return td;
+}
+
 function createButton(text, className, onClick) {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -187,6 +221,31 @@ function createButton(text, className, onClick) {
     btn.textContent = text;
     btn.addEventListener('click', onClick);
     return btn;
+}
+
+// خلية أزرار التعديل والحذف (موحّدة في كل الجداول)
+function createActionsCell(onEdit, onDelete, className = '') {
+    const td = document.createElement('td');
+    td.className = `actions-cell ${className}`.trim();
+
+    const box = document.createElement('div');
+    box.className = 'row-actions';
+    box.appendChild(createButton('تعديل', 'btn btn-light btn-small', onEdit));
+    box.appendChild(createButton('حذف', 'btn btn-danger btn-small', onDelete));
+    td.appendChild(box);
+    return td;
+}
+
+// خلية بدل الأزرار للسلف المرحّلة تلقائياً (لا تُعدَّل ولا تُحذف)
+function createCarryCell(className = '') {
+    const td = document.createElement('td');
+    td.className = `actions-cell ${className}`.trim();
+
+    const badge = document.createElement('span');
+    badge.className = 'badge';
+    badge.textContent = 'مرحّلة تلقائياً';
+    td.appendChild(badge);
+    return td;
 }
 
 // رسالة الخطأ الأصلية بدون مقدمة Electron
@@ -242,6 +301,7 @@ function showError(message) {
 function resetExpenseForm() {
     expenseForm.reset();
     editingId = null;
+    returnToReport = false;
     submitBtn.textContent = 'حفظ المصروف';
     cancelBtn.classList.add('hidden');
     detailsInput.style.height = 'auto';
@@ -252,6 +312,7 @@ function resetExpenseForm() {
 }
 
 function startEdit(expense) {
+    returnToReport = false;
     editingId = expense.id;
     amountInput.value = formatAmount(expense.amount);
     datePicker.setDate(expense.date);
@@ -268,7 +329,11 @@ function startEdit(expense) {
     amountInput.focus();
 }
 
-cancelBtn.addEventListener('click', resetExpenseForm);
+cancelBtn.addEventListener('click', () => {
+    const backToReport = returnToReport;
+    resetExpenseForm();
+    if (backToReport) showPage('expenses-report');
+});
 
 /* ---------- التحقق ---------- */
 function validateExpense() {
@@ -324,6 +389,8 @@ expenseForm.addEventListener('submit', async e => {
         details: detailsInput.value.trim(),
     };
 
+    const backToReport = returnToReport;
+
     try {
         if (editingId) {
             await window.api.updateExpense(editingId, data);
@@ -332,6 +399,12 @@ expenseForm.addEventListener('submit', async e => {
         }
         resetExpenseForm();
         await loadExpenses();
+
+        if (backToReport) {
+            showPage('expenses-report');
+            expensesReportForm.requestSubmit();   // يعيد عرض الكشف بالبيانات المحدثة
+            showToast('تم تعديل المصروف');
+        }
     } catch (err) {
         console.error(err);
         showError('تعذر الحفظ، حاول مرة أخرى');
@@ -441,7 +514,7 @@ function fillTypeSelect(select) {
     }
 }
 
-// تحديث قائمتي السلف والمصروفات وجدول الأنواع
+// تحديث قائمتي السلف والمصروفات وقائمة كشف السلف وجدول الأنواع
 function fillLoanTypes() {
     fillTypeSelect(loanTypeSelect);
     fillTypeSelect(expenseLoanTypeSelect);
@@ -599,6 +672,7 @@ loanCancelBtn.addEventListener('click', () => {
     resetLoanForm();
     if (backToReport) showPage('loans-report');
 });
+
 loanForm.addEventListener('input', e => e.target.classList.remove('invalid'));
 
 function validateLoanForm() {
@@ -697,24 +771,14 @@ function renderLoans() {
         const tr = document.createElement('tr');
         tr.title = auditTitle(l);
 
-        tr.appendChild(createCell(l.amount.toLocaleString('en-US')));
-
-        const dateTd = document.createElement('td');
-        const bdi = document.createElement('bdi');
-        bdi.textContent = formatDate(l.date);
-        dateTd.appendChild(bdi);
-        tr.appendChild(dateTd);
-
+        tr.appendChild(createCell(l.amount.toLocaleString('en-US'), 'num-cell'));
+        tr.appendChild(createDateCell(l.date));
         tr.appendChild(createCell(l.source));
         tr.appendChild(createCell(l.loan_type));
 
-        const actionsTd = document.createElement('td');
-        const box = document.createElement('div');
-        box.className = 'row-actions';
-        box.appendChild(createButton('تعديل', 'btn btn-light btn-small', () => startLoanEdit(l)));
-        box.appendChild(createButton('حذف', 'btn btn-danger btn-small', () => removeLoan(l.id)));
-        actionsTd.appendChild(box);
-        tr.appendChild(actionsTd);
+        tr.appendChild(l.is_carry
+            ? createCarryCell()
+            : createActionsCell(() => startLoanEdit(l), () => removeLoan(l.id)));
 
         loansBody.appendChild(tr);
     });
@@ -724,82 +788,229 @@ async function loadLoans() {
     loans = await window.api.getLoans();
     renderLoans();
 }
-// خلية سلفة الاستقطاع: شارة واضحة
-function createDeductionCell(name, className = '') {
-    const td = document.createElement('td');
-    td.className = `ded-cell ${className}`.trim();
 
-    const badge = document.createElement('span');
-    badge.className = 'ded-badge';
-    badge.textContent = name;
-    td.appendChild(badge);
-    return td;
+/* ================= السنة والشهر (القاصة والخلاصة) ================= */
+// يملأ قائمة الأشهر ويضبط السنة والشهر الحاليين
+function initPeriodFields(yearInput, monthSelect) {
+    MONTHS.forEach((name, i) => {
+        const option = document.createElement('option');
+        option.value = i + 1;
+        option.textContent = name;
+        monthSelect.appendChild(option);
+    });
+
+    const now = new Date();
+    yearInput.value = now.getFullYear();
+    monthSelect.value = now.getMonth() + 1;
 }
 
-function createDateCell(iso) {
-    const td = document.createElement('td');
-    td.className = 'date-cell';
-    const bdi = document.createElement('bdi');   // يحمي ترتيب الأرقام في الصفحة العربية
-    bdi.textContent = formatDate(iso);
-    td.appendChild(bdi);
-    return td;
+// يقرأ السنة والشهر، ويعرض رسالة إن كانت السنة غير صحيحة
+function readPeriod(yearInput, monthSelect, errorEl) {
+    hideNote(errorEl);
+
+    const year = Number(yearInput.value);
+    const month = Number(monthSelect.value);
+
+    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+        showNote(errorEl, 'أدخل سنة صحيحة، مثل 2026');
+        return null;
+    }
+    return { year, month };
 }
 
-// خلية أزرار التعديل والحذف (موحّدة في كل الجداول)
-function createActionsCell(onEdit, onDelete, className = '') {
-    const td = document.createElement('td');
-    td.className = `actions-cell ${className}`.trim();
-
-    const box = document.createElement('div');
-    box.className = 'row-actions';
-    box.appendChild(createButton('تعديل', 'btn btn-light btn-small', onEdit));
-    box.appendChild(createButton('حذف', 'btn btn-danger btn-small', onDelete));
-    td.appendChild(box);
-    return td;
+// حدود الشهر: من أول يوم إلى آخر يوم
+function periodRange(year, month) {
+    const last = new Date(year, month, 0).getDate();
+    return {
+        from: `${year}-${pad2(month)}-01`,
+        to: `${year}-${pad2(month)}-${pad2(last)}`,
+    };
 }
 
-/* ================= القاصة ================= */
+/* ================= القاصة (شهرية، وكشفها في الصفحة نفسها) ================= */
+const cashForm = document.getElementById('cash-form');
+const cashYear = document.getElementById('cash-year');
+const cashMonth = document.getElementById('cash-month');
+const cashError = document.getElementById('cash-error');
+const cashTitle = document.getElementById('cash-title');
+const cashSubtitle = document.getElementById('cash-subtitle');
+const cashHint = document.getElementById('cash-hint');
 const cashBody = document.getElementById('cash-body');
 const cashTotalLoans = document.getElementById('cash-total-loans');
 const cashTotalSpent = document.getElementById('cash-total-spent');
 const cashTotalRemaining = document.getElementById('cash-total-remaining');
+const cashLedgerBody = document.getElementById('cash-ledger-body');
+const cashLedgerCount = document.getElementById('cash-ledger-count');
+const cashLedgerIn = document.getElementById('cash-ledger-in');
+const cashLedgerOut = document.getElementById('cash-ledger-out');
+const cashLedgerClosing = document.getElementById('cash-ledger-closing');
+const cashExcelBtn = document.getElementById('cash-excel');
+
+initPeriodFields(cashYear, cashMonth);
+
+let cashExport = null;   // آخر قاصة معروضة (للتصدير)
 
 function setRemaining(cell, value) {
     cell.textContent = formatMoney(value);
     cell.classList.toggle('negative', value < 0);   // الأحمر عند تجاوز السلفة
 }
 
-function renderCash(rows) {
-    cashBody.innerHTML = '';
+function renderCash(data, year, month) {
+    const { from, to } = periodRange(year, month);
+    const title = `القاصة — ${MONTHS[month - 1]} ${year}`;
+    const subtitle = periodText(from, to);
+    const prevName = MONTHS[(month + 10) % 12];   // اسم الشهر السابق
 
+    cashTitle.textContent = title;
+    cashSubtitle.textContent = subtitle;
+    cashHint.textContent = data.cumulative
+        ? 'أرقام تراكمية حتى نهاية هذا الشهر (قبل بدء الترحيل التلقائي).'
+        : 'صافي السلفة يشمل المبلغ المرحّل من الشهر السابق، ويُرحَّل المتبقي تلقائياً في أول كل شهر كسلفة بنفس النوع.';
+
+    /* --- جدول القاصة حسب نوع السلفة --- */
+    cashBody.innerHTML = '';
     let totalLoans = 0;
     let totalSpent = 0;
+    const typeRows = [];
 
-    rows.forEach(r => {
-        const remaining = r.loans_total - r.spent_total;
-        totalLoans += r.loans_total;
-        totalSpent += r.spent_total;
+    data.byType.forEach(r => {
+        const remaining = round2(r.loans_total - r.spent_total);
+        totalLoans = round2(totalLoans + r.loans_total);
+        totalSpent = round2(totalSpent + r.spent_total);
+        typeRows.push([r.name, r.loans_total, r.spent_total, remaining]);
 
         const tr = document.createElement('tr');
         tr.appendChild(createCell(r.name));
-        tr.appendChild(createCell(formatMoney(r.loans_total)));
-        tr.appendChild(createCell(formatMoney(r.spent_total)));
-
-        const remainingTd = createCell('');
-        setRemaining(remainingTd, remaining);
-        tr.appendChild(remainingTd);
-
+        tr.appendChild(createMoneyCell(r.loans_total));
+        tr.appendChild(createMoneyCell(r.spent_total));
+        tr.appendChild(createMoneyCell(remaining));
         cashBody.appendChild(tr);
     });
 
+    const totalRemaining = round2(totalLoans - totalSpent);
     cashTotalLoans.textContent = formatMoney(totalLoans);
     cashTotalSpent.textContent = formatMoney(totalSpent);
-    setRemaining(cashTotalRemaining, totalLoans - totalSpent);
+    setRemaining(cashTotalRemaining, totalRemaining);
+
+    /* --- كشف القاصة (الحركات) --- */
+    cashLedgerBody.innerHTML = '';
+    let balance = round2(data.opening);
+    let ledgerIn = 0;
+    let ledgerOut = 0;
+    const openingLabel = `الرصيد المرحّل من شهر ${prevName}`;
+
+    const openingTr = document.createElement('tr');
+    openingTr.className = 'opening-row';
+    openingTr.appendChild(createCell(''));
+    openingTr.appendChild(createCell(openingLabel));
+    openingTr.appendChild(createCell(''));
+    openingTr.appendChild(createCell(''));
+    openingTr.appendChild(createMoneyCell(balance));
+    cashLedgerBody.appendChild(openingTr);
+
+    const excelRows = [['', openingLabel, '', '', balance]];
+
+    data.rows.forEach(r => {
+        const isLoan = r.kind === 'loan';
+        const text = isLoan ? `سلفة: ${r.text}` : r.text;
+
+        if (isLoan) {
+            ledgerIn = round2(ledgerIn + r.amount);
+            balance = round2(balance + r.amount);
+        } else {
+            ledgerOut = round2(ledgerOut + r.amount);
+            balance = round2(balance - r.amount);
+        }
+
+        const tr = document.createElement('tr');
+        tr.title = auditTitle(r);   // من أضاف ومن عدّل عند وقوف المؤشر
+
+        tr.appendChild(createDateCell(r.date));
+        tr.appendChild(createCell(text, 'details-cell'));
+        tr.appendChild(isLoan ? createMoneyCell(r.amount) : createCell(''));
+        tr.appendChild(isLoan ? createCell('') : createMoneyCell(r.amount));
+        tr.appendChild(createMoneyCell(balance));
+        cashLedgerBody.appendChild(tr);
+
+        excelRows.push([
+            formatDate(r.date),
+            text,
+            isLoan ? r.amount : '',
+            isLoan ? '' : r.amount,
+            balance,
+        ]);
+    });
+
+    if (!data.rows.length) {
+        const tr = document.createElement('tr');
+        const td = createCell('لا توجد حركات في هذا الشهر');
+        td.colSpan = 5;
+        tr.appendChild(td);
+        cashLedgerBody.appendChild(tr);
+    }
+
+    cashLedgerCount.textContent = `الإجمالي — عدد الحركات: ${data.rows.length}`;
+    cashLedgerIn.textContent = formatMoney(ledgerIn);
+    cashLedgerOut.textContent = formatMoney(ledgerOut);
+    setRemaining(cashLedgerClosing, balance);
+
+    /* --- ملف Excel: ورقتان --- */
+    cashExport = {
+        title,
+        subtitle,
+        fileName: `cash-${year}-${pad2(month)}.xlsx`,
+        sheets: [
+            {
+                name: 'القاصة',
+                columns: [
+                    { header: 'نوع السلفة', width: 30 },
+                    { header: 'صافي السلفة', width: 20 },
+                    { header: 'المصروف منها', width: 20 },
+                    { header: 'المتبقي', width: 20 },
+                ],
+                rows: typeRows,
+                total: ['المجموع', totalLoans, totalSpent, totalRemaining],
+                mergeTotal: false,
+            },
+            {
+                name: 'كشف القاصة',
+                columns: [
+                    { header: 'التاريخ', width: 14 },
+                    { header: 'البيان', width: 56 },
+                    { header: 'وارد', width: 16 },
+                    { header: 'صادر', width: 16 },
+                    { header: 'الرصيد', width: 16 },
+                ],
+                rows: excelRows,
+                total: ['الإجمالي', `عدد الحركات: ${data.rows.length}`, ledgerIn, ledgerOut, balance],
+                mergeTotal: false,
+            },
+        ],
+    };
+
+    cashExcelBtn.disabled = false;
 }
 
 async function loadCash() {
-    renderCash(await window.api.getCash());
+    const period = readPeriod(cashYear, cashMonth, cashError);
+    if (!period) return;
+
+    try {
+        const data = await window.api.getMonthCashReport(period);
+        renderCash(data, period.year, period.month);
+    } catch (err) {
+        console.error(err);
+        showNote(cashError, cleanError(err));
+    }
 }
+
+cashForm.addEventListener('submit', e => {
+    e.preventDefault();
+    loadCash();
+});
+
+document.getElementById('cash-print').addEventListener('click', printReport);
+cashExcelBtn.addEventListener('click', () => exportReport(cashExport));
 
 /* ================= جهات الصرف ================= */
 let editingDestinationId = null;
@@ -933,7 +1144,13 @@ destinationForm.addEventListener('submit', async e => {
 destinationCancelBtn.addEventListener('click', resetDestinationForm);
 destinationNameInput.addEventListener('input', () => destinationNameInput.classList.remove('invalid'));
 
-/* ================= الخلاصة ================= */
+/* ================= الخلاصة (شهرية) ================= */
+const summaryForm = document.getElementById('summary-form');
+const summaryYear = document.getElementById('summary-year');
+const summaryMonth = document.getElementById('summary-month');
+const summaryError = document.getElementById('summary-error');
+const summaryTitle = document.getElementById('summary-title');
+const summarySubtitle = document.getElementById('summary-subtitle');
 const summaryExpenses = document.getElementById('summary-expenses');
 const summaryLoans = document.getElementById('summary-loans');
 const summaryTotal = document.getElementById('summary-total');
@@ -941,26 +1158,39 @@ const summaryHint = document.getElementById('summary-hint');
 const summaryBody = document.getElementById('summary-body');
 const summaryTotalCount = document.getElementById('summary-total-count');
 const summaryTotalSum = document.getElementById('summary-total-sum');
+const summaryExcelBtn = document.getElementById('summary-excel');
 
-function renderSummary(dests, cash) {
+initPeriodFields(summaryYear, summaryMonth);
+
+let summaryExport = null;   // آخر خلاصة معروضة (للتصدير)
+
+function renderSummary(data, year, month) {
+    const { from, to } = periodRange(year, month);
+    const title = `الخلاصة — ${MONTHS[month - 1]} ${year}`;
+    const subtitle = periodText(from, to);
+
+    summaryTitle.textContent = title;
+    summarySubtitle.textContent = subtitle;
     summaryBody.innerHTML = '';
 
     let totalCount = 0;
     let totalExpenses = 0;
+    const excelRows = [];
 
-    dests.forEach(d => {
+    data.destinations.forEach(d => {
         totalCount += d.expenses_count;
-        totalExpenses += d.expenses_total;
+        totalExpenses = round2(totalExpenses + d.expenses_total);
+        excelRows.push([d.name, d.expenses_count, d.expenses_total]);
 
         const tr = document.createElement('tr');
         tr.appendChild(createCell(d.name));
         tr.appendChild(createCell(String(d.expenses_count)));
-        tr.appendChild(createCell(formatMoney(d.expenses_total)));
+        tr.appendChild(createMoneyCell(d.expenses_total));
         summaryBody.appendChild(tr);
     });
 
-    const totalLoans = cash.reduce((sum, t) => sum + t.loans_total, 0);
-    const difference = Math.round((totalExpenses - totalLoans) * 100) / 100;
+    const totalLoans = round2(data.loansTotal);
+    const difference = round2(totalExpenses - totalLoans);
 
     summaryTotalCount.textContent = String(totalCount);
     summaryTotalSum.textContent = formatMoney(totalExpenses);
@@ -976,19 +1206,57 @@ function renderSummary(dests, cash) {
     } else {
         summaryHint.textContent = 'المصروفات تساوي السلف';
     }
+
+    summaryExport = {
+        title,
+        subtitle,
+        fileName: `summary-${year}-${pad2(month)}.xlsx`,
+        sheets: [
+            {
+                name: 'الخلاصة',
+                columns: [
+                    { header: 'جهة الصرف', width: 36 },
+                    { header: 'عدد المصروفات', width: 20 },
+                    { header: 'المجموع', width: 22 },
+                ],
+                rows: excelRows,
+                total: ['إجمالي المصروفات', totalCount, totalExpenses],
+                extraRows: [
+                    ['مجموع السلف', '', totalLoans],
+                    ['المجموع الكلي (المصروفات − السلف)', '', difference],
+                ],
+                mergeTotal: false,
+            },
+        ],
+    };
+
+    summaryExcelBtn.disabled = false;
 }
 
 async function loadSummary() {
-    const [dests, cash] = await Promise.all([
-        window.api.getDestinations(),
-        window.api.getCash(),
-    ]);
-    renderSummary(dests, cash);
+    const period = readPeriod(summaryYear, summaryMonth, summaryError);
+    if (!period) return;
+
+    try {
+        const data = await window.api.getMonthSummary(period);
+        renderSummary(data, period.year, period.month);
+    } catch (err) {
+        console.error(err);
+        showNote(summaryError, cleanError(err));
+    }
 }
+
+summaryForm.addEventListener('submit', e => {
+    e.preventDefault();
+    loadSummary();
+});
+
+document.getElementById('summary-print').addEventListener('click', printReport);
+summaryExcelBtn.addEventListener('click', () => exportReport(summaryExport));
 
 /* ================= الكشوفات: أدوات مشتركة ================= */
 function toISO(d) {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
 function monthStartISO() {
@@ -1038,14 +1306,12 @@ function hideNote(el) {
 }
 
 function sumAmounts(rows) {
-    return Math.round(rows.reduce((s, r) => s + r.amount, 0) * 100) / 100;
+    return round2(rows.reduce((s, r) => s + r.amount, 0));
 }
 
 function periodText(from, to) {
     return `من ${formatDate(from)} إلى ${formatDate(to)}`;
 }
-
-
 
 /* ---------- رسالة التأكيد (تظهر وتختفي وحدها) ---------- */
 const toastEl = document.getElementById('toast');
@@ -1161,6 +1427,28 @@ function renderExpensesReport(rows, ids, from, to) {
     expensesReportResult.classList.remove('hidden');
 }
 
+// التعديل من الكشف: ننتقل لصفحة المصروفات، وبعد الحفظ نعود للكشف
+function editFromReport(row) {
+    showPage('expenses');
+    startEdit(row);
+    returnToReport = true;   // بعد startEdit لأنها تصفّره
+}
+
+async function removeFromReport(row) {
+    if (!confirm('هل تريد حذف هذا المصروف؟')) return;
+
+    try {
+        await window.api.deleteExpense(row.id);
+        if (editingId === row.id) resetExpenseForm();
+        await loadExpenses();
+        expensesReportForm.requestSubmit();   // يحدّث الكشف والمجموع
+        showToast('تم حذف المصروف');
+    } catch (err) {
+        console.error(err);
+        showToast('تعذر حذف المصروف', true);
+    }
+}
+
 expensesReportForm.addEventListener('submit', async e => {
     e.preventDefault();
     hideNote(expensesReportError);
@@ -1191,7 +1479,6 @@ document.getElementById('report-dest-all').addEventListener('click', () => setAl
 document.getElementById('report-dest-none').addEventListener('click', () => setAllChecked(reportDestinations, false));
 document.getElementById('expenses-report-print').addEventListener('click', printReport);
 expensesReportExcelBtn.addEventListener('click', () => exportReport(expensesReport));
-
 
 /* ================= كشف السلف ================= */
 const loanReportTypes = document.getElementById('report-loan-types');
@@ -1238,11 +1525,13 @@ function renderLoansReport(rows, ids, from, to) {
         tr.appendChild(createDateCell(r.date));
         tr.appendChild(createCell(r.source));
         tr.appendChild(createCell(r.loan_type));
-        tr.appendChild(createActionsCell(
-            () => editLoanFromReport(r),
-            () => removeLoanFromReport(r),
-            'noprint'                    // الأزرار لا تُطبع
-        ));
+        tr.appendChild(r.is_carry
+            ? createCarryCell('noprint')
+            : createActionsCell(
+                () => editLoanFromReport(r),
+                () => removeLoanFromReport(r),
+                'noprint'                // الأزرار لا تُطبع
+            ));
 
         loansReportBody.appendChild(tr);
     });
@@ -1320,161 +1609,6 @@ document.getElementById('report-type-all').addEventListener('click', () => setAl
 document.getElementById('report-type-none').addEventListener('click', () => setAllChecked(loanReportTypes, false));
 document.getElementById('loans-report-print').addEventListener('click', printReport);
 loansReportExcelBtn.addEventListener('click', () => exportReport(loansReport));
-
-/* ================= كشف القاصة (شهري) ================= */
-const cashReportForm = document.getElementById('cash-report-form');
-const cashrYear = document.getElementById('cashr-year');
-const cashrMonth = document.getElementById('cashr-month');
-const cashReportError = document.getElementById('cash-report-error');
-const cashReportResult = document.getElementById('cash-report-result');
-const cashReportTitle = document.getElementById('cash-report-title');
-const cashReportSubtitle = document.getElementById('cash-report-subtitle');
-const cashReportBody = document.getElementById('cash-report-body');
-const cashReportCount = document.getElementById('cash-report-count');
-const cashReportTotalIn = document.getElementById('cash-report-total-in');
-const cashReportTotalOut = document.getElementById('cash-report-total-out');
-const cashReportClosing = document.getElementById('cash-report-closing');
-const cashReportExcelBtn = document.getElementById('cash-report-excel');
-
-let cashReport = null;   // آخر كشف معروض (للتصدير)
-
-const round2 = n => Math.round(n * 100) / 100;
-const pad2 = n => String(n).padStart(2, '0');
-
-// خلية مبلغ: السالب بالأحمر
-function createMoneyCell(value) {
-    const td = createCell(formatMoney(value), 'money-cell');
-    if (value < 0) td.classList.add('negative');
-    return td;
-}
-
-// قائمة الأشهر، والسنة والشهر الحاليان كقيمة افتراضية
-MONTHS.forEach((name, i) => {
-    const option = document.createElement('option');
-    option.value = i + 1;
-    option.textContent = name;
-    cashrMonth.appendChild(option);
-});
-cashrYear.value = new Date().getFullYear();
-cashrMonth.value = new Date().getMonth() + 1;
-
-function renderCashReport(data, year, month) {
-    const prevName = MONTHS[(month + 10) % 12];   // اسم الشهر السابق
-    const lastDay = new Date(year, month, 0).getDate();
-    const from = `${year}-${pad2(month)}-01`;
-    const to = `${year}-${pad2(month)}-${pad2(lastDay)}`;
-
-    const title = `كشف القاصة — ${MONTHS[month - 1]} ${year}`;
-    const subtitle = periodText(from, to);
-    const openingLabel = `الرصيد المرحّل من شهر ${prevName}`;
-
-    let balance = round2(data.opening);
-    let totalIn = 0;
-    let totalOut = 0;
-
-    cashReportTitle.textContent = title;
-    cashReportSubtitle.textContent = subtitle;
-    cashReportBody.innerHTML = '';
-
-    // الصف الأول: الرصيد المرحّل
-    const openingTr = document.createElement('tr');
-    openingTr.className = 'opening-row';
-    openingTr.appendChild(createCell(''));
-    openingTr.appendChild(createCell(openingLabel));
-    openingTr.appendChild(createCell(''));
-    openingTr.appendChild(createCell(''));
-    openingTr.appendChild(createMoneyCell(balance));
-    cashReportBody.appendChild(openingTr);
-
-    const excelRows = [['', openingLabel, '', '', balance]];
-
-    data.rows.forEach(r => {
-        const isLoan = r.kind === 'loan';
-        const text = isLoan ? `سلفة: ${r.text}` : r.text;
-
-        if (isLoan) {
-            totalIn = round2(totalIn + r.amount);
-            balance = round2(balance + r.amount);
-        } else {
-            totalOut = round2(totalOut + r.amount);
-            balance = round2(balance - r.amount);
-        }
-
-        const tr = document.createElement('tr');
-        tr.title = auditTitle(r);   // من أضاف ومن عدّل عند وقوف المؤشر
-
-        tr.appendChild(createDateCell(r.date));
-        tr.appendChild(createCell(text, 'details-cell'));
-        tr.appendChild(isLoan ? createMoneyCell(r.amount) : createCell(''));
-        tr.appendChild(isLoan ? createCell('') : createMoneyCell(r.amount));
-        tr.appendChild(createMoneyCell(balance));
-        cashReportBody.appendChild(tr);
-
-        excelRows.push([
-            formatDate(r.date),
-            text,
-            isLoan ? r.amount : '',
-            isLoan ? '' : r.amount,
-            balance,
-        ]);
-    });
-
-    if (!data.rows.length) {
-        const tr = document.createElement('tr');
-        const td = createCell('لا توجد حركات في هذا الشهر');
-        td.colSpan = 5;
-        tr.appendChild(td);
-        cashReportBody.appendChild(tr);
-    }
-
-    cashReportCount.textContent = `الإجمالي — عدد الحركات: ${data.rows.length}`;
-    cashReportTotalIn.textContent = formatMoney(totalIn);
-    cashReportTotalOut.textContent = formatMoney(totalOut);
-    setRemaining(cashReportClosing, balance);
-
-    cashReport = {
-        title,
-        subtitle,
-        fileName: `cash-report-${year}-${pad2(month)}.xlsx`,
-        mergeTotal: false,   // لا ندمج خلايا صف الإجمالي
-        columns: [
-            { header: 'التاريخ', width: 14 },
-            { header: 'البيان', width: 56 },
-            { header: 'وارد', width: 16 },
-            { header: 'صادر', width: 16 },
-            { header: 'الرصيد', width: 16 },
-        ],
-        rows: excelRows,
-        total: ['الإجمالي', `عدد الحركات: ${data.rows.length}`, totalIn, totalOut, balance],
-    };
-
-    cashReportExcelBtn.disabled = false;
-    cashReportResult.classList.remove('hidden');
-}
-
-cashReportForm.addEventListener('submit', async e => {
-    e.preventDefault();
-    hideNote(cashReportError);
-
-    const year = Number(cashrYear.value);
-    const month = Number(cashrMonth.value);
-
-    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
-        showNote(cashReportError, 'أدخل سنة صحيحة، مثل 2026');
-        return;
-    }
-
-    try {
-        const data = await window.api.getMonthCashReport({ year, month });
-        renderCashReport(data, year, month);
-    } catch (err) {
-        console.error(err);
-        showNote(cashReportError, cleanError(err));
-    }
-});
-
-document.getElementById('cash-report-print').addEventListener('click', printReport);
-cashReportExcelBtn.addEventListener('click', () => exportReport(cashReport));
 
 /* ================= إظهار كلمة المرور ================= */
 const EYE_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
