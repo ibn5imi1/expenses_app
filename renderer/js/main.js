@@ -1,4 +1,4 @@
-/* ---------- التنقل ---------- */
+/* ================= التنقل ================= */
 const navLinks = document.querySelectorAll('.nav-link[data-page]');
 const pages = document.querySelectorAll('.page');
 
@@ -7,80 +7,72 @@ let currentUser = null;   // { id, username, displayName, role }
 function showPage(name) {
     if (name === 'admin' && (!currentUser || currentUser.role !== 'admin')) return;
 
-    pages.forEach(page => {
-        page.classList.toggle('hidden', page.id !== `page-${name}`);
-    });
-    navLinks.forEach(link => {
-        link.classList.toggle('active', link.dataset.page === name);
-    });
+    pages.forEach(page => page.classList.toggle('hidden', page.id !== `page-${name}`));
+    navLinks.forEach(link => link.classList.toggle('active', link.dataset.page === name));
 
     // تحديث بيانات الصفحة عند فتحها
     if (name === 'cash') loadCash();
     if (name === 'summary') loadSummary();
-    if (name === 'destinations') reloadDestinations();
+    if (name === 'destinations') beneficiaries.load();
+    if (name === 'spenders') spenders.load();
     if (name === 'admin') loadAccountants();
 }
 
-navLinks.forEach(link => {
-    link.addEventListener('click', () => showPage(link.dataset.page));
-});
+navLinks.forEach(link => link.addEventListener('click', () => showPage(link.dataset.page)));
 
-/* ---------- تحديث البيانات ---------- */
-let refreshing = false;
+/* ================= أدوات عامة ================= */
+const round2 = n => Math.round(n * 100) / 100;
+const pad2 = n => String(n).padStart(2, '0');
+const formatMoney = n => round2(n).toLocaleString('en-US');
 
-async function refreshAll() {
-    if (refreshing) return;   // لا نكرر التحديث إذا ضغط المستخدم مرتين
-    refreshing = true;
+// رسالة الخطأ الأصلية بدون مقدمة Electron
+function cleanError(err) {
+    return String(err.message || err)
+        .replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
+}
 
+function showNote(el, text) {
+    el.textContent = text;
+    el.className = 'form-error noprint';
+}
+
+function hideNote(el) {
+    el.className = 'hidden';
+}
+
+/* ---------- رسالة التأكيد (تظهر وتختفي وحدها) ---------- */
+const toastEl = document.getElementById('toast');
+let toastTimer = null;
+
+function showToast(message, isError = false) {
+    toastEl.textContent = message;
+    toastEl.classList.toggle('toast-error', isError);
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 3000);
+}
+
+async function exportReport(report) {
+    if (!report) return;
     try {
-        await Promise.all([
-            reloadDestinations(),
-            reloadLoanTypes(),
-            loadExpenses(),
-            loadLoans(),
-            loadCash(),
-            loadSummary(),
-        ]);
-
-        // إذا كان كشف معروضاً، نعيد عرضه بالأرقام الجديدة
-        if (!expensesReportResult.classList.contains('hidden')) expensesReportForm.requestSubmit();
-        if (!loansReportResult.classList.contains('hidden')) loansReportForm.requestSubmit();
-
-        showToast('تم تحديث البيانات');
+        const result = await window.api.exportReport(report);
+        if (result.saved) showToast(`تم تصدير ملف Excel: ${result.fileName}`);
     } catch (err) {
         console.error(err);
-        showToast('تعذر تحديث البيانات', true);
-    } finally {
-        refreshing = false;
+        showToast('تعذر حفظ الملف، تأكد أنه غير مفتوح في Excel', true);
     }
 }
 
-document.getElementById('refresh-btn').addEventListener('click', refreshAll);
-
-showPage('expenses');
-
-/* ---------- أدوات صغيرة مشتركة ---------- */
-const round2 = n => Math.round(n * 100) / 100;
-const pad2 = n => String(n).padStart(2, '0');
-
-/* ---------- حالة الصفحة ---------- */
-let destinations = [];
-let expenses = [];
-let editingId = null;         // رقم المصروف الذي يجري تعديله، أو null عند الإضافة
-let returnToReport = false;   // هل بدأ التعديل من كشف المصروفات؟ للعودة إليه بعد الحفظ
-
-/* ---------- عناصر فورم المصروفات ---------- */
-const expenseLoanTypeSelect = document.getElementById('expense-loan-type');
-const expenseForm = document.getElementById('expense-form');
-const amountInput = document.getElementById('expense-amount');
-const dateInput = document.getElementById('expense-date');
-const destinationSelect = document.getElementById('expense-destination');
-const noteInput = document.getElementById('expense-note');
-const detailsInput = document.getElementById('expense-details');
-const errorBox = document.getElementById('expense-error');
-const submitBtn = document.getElementById('expense-submit');
-const cancelBtn = document.getElementById('expense-cancel');
-const expensesBody = document.getElementById('expenses-body');
+async function printReport() {
+    try {
+        const result = await window.api.printPage();
+        if (result.success) showToast('تمت الطباعة');
+        else if (!result.cancelled) showToast('تعذرت الطباعة', true);
+    } catch (err) {
+        console.error(err);
+        showToast('تعذرت الطباعة', true);
+    }
+}
 
 /* ---------- المبلغ (فواصل الآلاف) ---------- */
 function formatAmount(value) {
@@ -93,9 +85,7 @@ function formatAmount(value) {
     return rest.length ? `${withCommas}.${rest.join('')}` : withCommas;
 }
 
-function parseAmount(text) {
-    return Number(String(text).replace(/,/g, '')) || 0;
-}
+const parseAmount = text => Number(String(text).replace(/,/g, '')) || 0;
 
 function attachAmountFormat(input) {
     input.addEventListener('input', () => {
@@ -113,13 +103,6 @@ function attachAmountFormat(input) {
     });
 }
 
-attachAmountFormat(amountInput);
-
-// تقريب إلى خانتين عشريتين لتفادي فروق الكسور، مع فواصل الآلاف
-function formatMoney(n) {
-    return round2(n).toLocaleString('en-US');
-}
-
 /* ---------- التاريخ ---------- */
 const MONTHS = [
     'كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران',
@@ -135,7 +118,22 @@ const arabicIraq = {
     firstDayOfWeek: 6,
 };
 
-function createDatePicker(input, iconBtn, extra = {}) {
+const DATE_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>';
+
+// يحوّل الحقل إلى حقل تاريخ بأيقونة تقويم، ويُحفظ YYYY-MM-DD ويُعرض j/n/Y
+function createDatePicker(input, extra = {}) {
+    const wrap = document.createElement('div');
+    wrap.className = 'date-wrap';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+
+    const iconBtn = document.createElement('button');
+    iconBtn.type = 'button';
+    iconBtn.className = 'date-icon';
+    iconBtn.setAttribute('aria-label', 'اختيار التاريخ');
+    iconBtn.innerHTML = DATE_ICON;
+    wrap.appendChild(iconBtn);
+
     const picker = flatpickr(input, Object.assign({
         locale: arabicIraq,
         dateFormat: 'Y-m-d',
@@ -153,7 +151,12 @@ function createDatePicker(input, iconBtn, extra = {}) {
     return picker;
 }
 
-const datePicker = createDatePicker(dateInput, document.getElementById('date-icon'));
+const toISO = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
+function monthStartISO() {
+    const now = new Date();
+    return toISO(new Date(now.getFullYear(), now.getMonth(), 1));
+}
 
 // '2026-11-04' ← '4/11/2026'
 function formatDate(iso) {
@@ -164,10 +167,14 @@ function formatDate(iso) {
 // ISO كاملة ← '4/11/2026 10:30'
 function formatDateTime(iso) {
     const t = new Date(iso);
-    const hh = String(t.getHours()).padStart(2, '0');
-    const mm = String(t.getMinutes()).padStart(2, '0');
-    return `${t.getDate()}/${t.getMonth() + 1}/${t.getFullYear()} ${hh}:${mm}`;
+    return `${t.getDate()}/${t.getMonth() + 1}/${t.getFullYear()} ${pad2(t.getHours())}:${pad2(t.getMinutes())}`;
 }
+
+const periodText = (from, to) => `من ${formatDate(from)} إلى ${formatDate(to)}`;
+
+/* ---------- المحاسب والتلميح ---------- */
+// المحاسب: من أضاف، وعند التعديل من عدّل فقط
+const accountantOf = row => row.updated_by || row.created_by;
 
 // نص التلميح: من أضاف ومن عدّل
 function auditTitle(row) {
@@ -178,7 +185,7 @@ function auditTitle(row) {
     return lines.join('\n');
 }
 
-/* ---------- أدوات مشتركة للجداول ---------- */
+/* ---------- خلايا الجداول ---------- */
 function createCell(text, className) {
     const td = document.createElement('td');
     td.textContent = text;   // textContent يمنع تنفيذ أي HTML داخل النص
@@ -202,13 +209,12 @@ function createMoneyCell(value) {
     return td;
 }
 
-// خلية سلفة الاستقطاع: شارة واضحة
-function createDeductionCell(name, className = '') {
+// خلية الجهة الممولة: شارة واضحة
+function createPartyCell(name) {
     const td = document.createElement('td');
-    td.className = `ded-cell ${className}`.trim();
-
+    td.className = 'party-cell';
     const badge = document.createElement('span');
-    badge.className = 'ded-badge';
+    badge.className = 'party-badge';
     badge.textContent = name;
     td.appendChild(badge);
     return td;
@@ -236,58 +242,264 @@ function createActionsCell(onEdit, onDelete, className = '') {
     return td;
 }
 
-// خلية بدل الأزرار للسلف المرحّلة تلقائياً (لا تُعدَّل ولا تُحذف)
+// خلية بدل الأزرار للمقبوضات المرحّلة تلقائياً (لا تُعدَّل ولا تُحذف)
 function createCarryCell(className = '') {
     const td = document.createElement('td');
     td.className = `actions-cell ${className}`.trim();
-
     const badge = document.createElement('span');
     badge.className = 'badge';
-    badge.textContent = 'مرحّلة تلقائياً';
+    badge.textContent = 'مرحّل تلقائياً';
     td.appendChild(badge);
     return td;
 }
 
-// رسالة الخطأ الأصلية بدون مقدمة Electron
-function cleanError(err) {
-    return String(err.message || err)
-        .replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
+function emptyRow(body, text, columns) {
+    const tr = document.createElement('tr');
+    const td = createCell(text);
+    td.colSpan = columns;
+    tr.appendChild(td);
+    body.appendChild(tr);
 }
 
-/* ---------- جهة الصرف (قائمة فورم المصروفات) ---------- */
+/* ---------- القوائم المنسدلة وقوائم الاختيار ---------- */
+// يملأ قائمة منسدلة ويحافظ على الاختيار الحالي
+function fillSelect(select, items, placeholder = null) {
+    const current = select.value;
+    select.innerHTML = '';
+
+    if (placeholder) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = placeholder;
+        select.appendChild(option);
+    }
+
+    items.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = item.name;
+        select.appendChild(option);
+    });
+
+    const exists = items.some(i => String(i.id) === current);
+    select.value = exists ? current : (placeholder ? '' : (items[0] ? items[0].id : ''));
+}
+
+// قائمة اختيارات تحافظ على ما حدده المستخدم، والعناصر الجديدة تظهر محددة
+function fillCheckList(container, items) {
+    const known = new Set((container.dataset.known || '').split(',').filter(Boolean));
+    const checked = new Set([...container.querySelectorAll('input:checked')].map(i => i.value));
+
+    container.innerHTML = '';
+    items.forEach(item => {
+        const label = document.createElement('label');
+        label.className = 'check-item';
+
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.value = item.id;
+        box.checked = !known.has(String(item.id)) || checked.has(String(item.id));
+
+        const text = document.createElement('span');
+        text.textContent = item.name;
+
+        label.append(box, text);
+        container.appendChild(label);
+    });
+    container.dataset.known = items.map(i => i.id).join(',');
+}
+
+const getCheckedIds = container =>
+    [...container.querySelectorAll('input:checked')].map(i => Number(i.value));
+
+const setAllChecked = (container, state) =>
+    container.querySelectorAll('input').forEach(i => { i.checked = state; });
+
+/* ================= الحالة العامة ================= */
+let destinations = [];     // الجهات المستفيدة
+let spenderList = [];      // الجهات القائمة بالصرف
+let fundingParties = [];   // الجهات الممولة (تنشأ من المقبوضات)
+let expenses = [];
+let loans = [];
+
+/* ================= الجهات المستفيدة والجهات القائمة بالصرف ================= */
+// قسمان متطابقان في الشكل: إضافة وتعديل وحذف
+function createNameList(cfg) {
+    const p = cfg.prefix;
+    const form = document.getElementById(`${p}-form`);
+    const nameInput = document.getElementById(`${p}-name`);
+    const errorBox = document.getElementById(`${p}-error`);
+    const submitBtn = document.getElementById(`${p}-submit`);
+    const cancelBtn = document.getElementById(`${p}-cancel`);
+    const body = document.getElementById(`${p}-body`);
+    const totalCount = document.getElementById(`${p}-total-count`);
+    const totalSum = document.getElementById(`${p}-total-sum`);
+
+    let items = [];
+    let editingId = null;
+
+    function clearError() {
+        errorBox.classList.add('hidden');
+        nameInput.classList.remove('invalid');
+    }
+
+    function showError(message) {
+        errorBox.textContent = message;
+        errorBox.classList.remove('hidden');
+    }
+
+    function reset() {
+        form.reset();
+        editingId = null;
+        submitBtn.textContent = 'إضافة الجهة';
+        cancelBtn.classList.add('hidden');
+        clearError();
+    }
+
+    function startEdit(item) {
+        editingId = item.id;
+        nameInput.value = item.name;
+        submitBtn.textContent = 'تحديث الجهة';
+        cancelBtn.classList.remove('hidden');
+        clearError();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        nameInput.focus();
+    }
+
+    async function remove(item) {
+        if (!confirm(`هل تريد حذف الجهة «${item.name}»؟`)) return;
+        try {
+            await cfg.remove(item.id);
+            if (editingId === item.id) reset();
+            await load();
+        } catch (err) {
+            console.error(err);
+            showError(cleanError(err));
+        }
+    }
+
+    function render() {
+        body.innerHTML = '';
+        let count = 0;
+        let sum = 0;
+
+        items.forEach(item => {
+            count += item.expenses_count;
+            sum += item.expenses_total;
+
+            const tr = document.createElement('tr');
+            tr.appendChild(createCell(item.name));
+            tr.appendChild(createCell(String(item.expenses_count)));
+            tr.appendChild(createCell(formatMoney(item.expenses_total)));
+
+            if (item.is_fixed) {
+                const td = document.createElement('td');
+                td.className = 'actions-cell';
+                const badge = document.createElement('span');
+                badge.className = 'badge';
+                badge.textContent = 'ثابتة';
+                td.appendChild(badge);
+                tr.appendChild(td);
+            } else {
+                tr.appendChild(createActionsCell(() => startEdit(item), () => remove(item)));
+            }
+            body.appendChild(tr);
+        });
+
+        totalCount.textContent = String(count);
+        totalSum.textContent = formatMoney(sum);
+    }
+
+    async function load() {
+        items = await cfg.list();
+        cfg.onLoaded(items);
+        render();
+    }
+
+    form.addEventListener('submit', async e => {
+        e.preventDefault();
+        clearError();
+
+        const name = nameInput.value.replace(/\s+/g, ' ').trim();
+        let message = '';
+
+        if (!name) {
+            message = 'اكتب اسم الجهة';
+        } else if (items.some(i => i.name === name && i.id !== editingId)) {
+            message = 'هذه الجهة موجودة مسبقاً';
+        }
+
+        if (message) {
+            nameInput.classList.add('invalid');
+            showError(message);
+            nameInput.focus();
+            return;
+        }
+
+        try {
+            if (editingId) await cfg.update(editingId, name);
+            else await cfg.add(name);
+            reset();
+            await load();
+            cfg.afterChange();
+        } catch (err) {
+            console.error(err);
+            showError(cleanError(err));
+        }
+    });
+
+    cancelBtn.addEventListener('click', reset);
+    nameInput.addEventListener('input', () => nameInput.classList.remove('invalid'));
+
+    return { load };
+}
+
+const beneficiaries = createNameList({
+    prefix: 'ben',
+    list: () => window.api.getDestinations(),
+    add: name => window.api.addDestination(name),
+    update: (id, name) => window.api.updateDestination(id, name),
+    remove: id => window.api.deleteDestination(id),
+    onLoaded: items => { destinations = items; syncSelects(); },
+    afterChange: () => refreshMoneyData(),
+});
+
+const spenders = createNameList({
+    prefix: 'spn',
+    list: () => window.api.getSpenders(),
+    add: name => window.api.addSpender(name),
+    update: (id, name) => window.api.updateSpender(id, name),
+    remove: id => window.api.deleteSpender(id),
+    onLoaded: items => { spenderList = items; syncSelects(); },
+    afterChange: () => refreshMoneyData(),
+});
+
+/* ================= المصروفات ================= */
+let editingId = null;         // رقم المصروف الذي يجري تعديله، أو null عند الإضافة
+let returnToReport = false;   // هل بدأ التعديل من كشف المصروفات؟ للعودة إليه بعد الحفظ
+
+const expenseForm = document.getElementById('expense-form');
+const amountInput = document.getElementById('expense-amount');
+const dateInput = document.getElementById('expense-date');
+const destinationSelect = document.getElementById('expense-destination');
+const spenderSelect = document.getElementById('expense-spender');
+const funderSelect = document.getElementById('expense-funder');
+const noteInput = document.getElementById('expense-note');
+const detailsInput = document.getElementById('expense-details');
+const errorBox = document.getElementById('expense-error');
+const submitBtn = document.getElementById('expense-submit');
+const cancelBtn = document.getElementById('expense-cancel');
+const expensesBody = document.getElementById('expenses-body');
+
+attachAmountFormat(amountInput);
+const datePicker = createDatePicker(dateInput);
+
+// الجهة المستفيدة الافتراضية: الثابتة (الكلية)
 function setDefaultDestination() {
-    const fixed = destinations.find(d => d.is_fixed);   // الكلية
+    const fixed = destinations.find(d => d.is_fixed);
     if (fixed) destinationSelect.value = fixed.id;
 }
 
-function fillDestinations() {
-    const current = destinationSelect.value;   // نحافظ على الاختيار الحالي
-    destinationSelect.innerHTML = '';
-    destinations.forEach(d => {
-        const option = document.createElement('option');
-        option.value = d.id;
-        option.textContent = d.name;
-        destinationSelect.appendChild(option);
-    });
-
-    if (current && destinations.some(d => String(d.id) === current)) {
-        destinationSelect.value = current;
-    } else {
-        setDefaultDestination();
-    }
-
-    fillCheckList(reportDestinations, destinations);
-}
-
-/* ---------- حقل التفاصيل يكبر مع الكتابة ---------- */
-function autoGrow(el) {
-    el.style.height = 'auto';
-    el.style.height = el.scrollHeight + 'px';
-}
-
-detailsInput.addEventListener('input', () => autoGrow(detailsInput));
-
-/* ---------- فورم المصروفات: إعادة الضبط والتعديل ---------- */
 function clearErrors() {
     errorBox.classList.add('hidden');
     expenseForm.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
@@ -298,6 +510,13 @@ function showError(message) {
     errorBox.classList.remove('hidden');
 }
 
+function autoGrow(el) {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+}
+
+detailsInput.addEventListener('input', () => autoGrow(detailsInput));
+
 function resetExpenseForm() {
     expenseForm.reset();
     editingId = null;
@@ -307,7 +526,8 @@ function resetExpenseForm() {
     detailsInput.style.height = 'auto';
     datePicker.setDate(new Date());
     setDefaultDestination();
-    setDefaultType(expenseLoanTypeSelect);
+    spenderSelect.value = '';
+    funderSelect.value = '';
     clearErrors();
 }
 
@@ -317,7 +537,8 @@ function startEdit(expense) {
     amountInput.value = formatAmount(expense.amount);
     datePicker.setDate(expense.date);
     destinationSelect.value = expense.destination_id;
-    expenseLoanTypeSelect.value = expense.loan_type_id;
+    spenderSelect.value = expense.spender_id;
+    funderSelect.value = expense.funding_party_id;
     noteInput.value = expense.note;
     detailsInput.value = expense.details;
     autoGrow(detailsInput);
@@ -335,47 +556,35 @@ cancelBtn.addEventListener('click', () => {
     if (backToReport) showPage('expenses-report');
 });
 
-/* ---------- التحقق ---------- */
 function validateExpense() {
     clearErrors();
     const missing = [];
     const badFields = [];
+    const check = (ok, label, field) => {
+        if (ok) return;
+        missing.push(label);
+        badFields.push(field);
+    };
 
-    if (!(parseAmount(amountInput.value) > 0)) {
-        missing.push('المبلغ');
-        badFields.push(amountInput);
-    }
+    check(parseAmount(amountInput.value) > 0, 'المبلغ', amountInput);
+    check(dateInput.value, 'التاريخ', datePicker.altInput);
+    check(destinationSelect.value, 'الجهة المستفيدة', destinationSelect);
+    check(spenderSelect.value, 'الجهة القائمة بالصرف', spenderSelect);
+    check(funderSelect.value, 'الجهة الممولة', funderSelect);
+    check(detailsInput.value.trim(), 'التفاصيل', detailsInput);
 
-    if (!dateInput.value) {
-        missing.push('التاريخ');
-        badFields.push(datePicker.altInput);
-    }
+    if (!missing.length) return true;
 
-    if (!destinationSelect.value) {
-        missing.push('جهة الصرف');
-        badFields.push(destinationSelect);
-    }
+    let message = `الرجاء إكمال الحقول التالية: ${missing.join('، ')}`;
+    if (!spenderList.length) message += ' — أضف جهة قائمة بالصرف من قسم «الجهات القائمة بالصرف»';
+    if (!fundingParties.length) message += ' — أضف مقبوضاً أولاً لتظهر الجهة الممولة';
 
-    if (!expenseLoanTypeSelect.value) {
-        missing.push('نوع السلفة');
-        badFields.push(expenseLoanTypeSelect);
-    }
-
-    if (!detailsInput.value.trim()) {
-        missing.push('التفاصيل');
-        badFields.push(detailsInput);
-    }
-
-    if (missing.length) {
-        badFields.forEach(el => el.classList.add('invalid'));
-        showError(`الرجاء إكمال الحقول التالية: ${missing.join('، ')}`);
-        badFields[0].focus();
-        return false;
-    }
-    return true;
+    badFields.forEach(el => el.classList.add('invalid'));
+    showError(message);
+    badFields[0].focus();
+    return false;
 }
 
-/* ---------- الحفظ ---------- */
 expenseForm.addEventListener('submit', async e => {
     e.preventDefault();
     if (!validateExpense()) return;
@@ -384,7 +593,8 @@ expenseForm.addEventListener('submit', async e => {
         amount: parseAmount(amountInput.value),
         date: dateInput.value,                          // YYYY-MM-DD
         destinationId: Number(destinationSelect.value),
-        loanTypeId: Number(expenseLoanTypeSelect.value),
+        spenderId: Number(spenderSelect.value),
+        fundingPartyId: Number(funderSelect.value),
         note: noteInput.value.trim(),
         details: detailsInput.value.trim(),
     };
@@ -392,13 +602,11 @@ expenseForm.addEventListener('submit', async e => {
     const backToReport = returnToReport;
 
     try {
-        if (editingId) {
-            await window.api.updateExpense(editingId, data);
-        } else {
-            await window.api.addExpense(data);
-        }
+        if (editingId) await window.api.updateExpense(editingId, data);
+        else await window.api.addExpense(data);
+
         resetExpenseForm();
-        await loadExpenses();
+        await refreshMoneyData();
 
         if (backToReport) {
             showPage('expenses-report');
@@ -407,49 +615,49 @@ expenseForm.addEventListener('submit', async e => {
         }
     } catch (err) {
         console.error(err);
-        showError('تعذر الحفظ، حاول مرة أخرى');
+        showError(cleanError(err));
     }
 });
 
 expenseForm.addEventListener('input', e => e.target.classList.remove('invalid'));
 
-/* ---------- عرض المصروفات ---------- */
+// صف مصروف موحّد في القائمة وفي الكشف
+function buildExpenseRow(e, onEdit, onDelete, actionsClass = '') {
+    const tr = document.createElement('tr');
+    tr.title = auditTitle(e);   // من أضاف ومن عدّل عند وقوف المؤشر
+
+    tr.appendChild(createCell(formatMoney(e.amount), 'num-cell'));
+    tr.appendChild(createDateCell(e.date));
+    tr.appendChild(createCell(e.details, 'details-cell'));
+    tr.appendChild(createCell(e.note));
+    tr.appendChild(createCell(e.destination));
+    tr.appendChild(createCell(e.spender || '—'));
+    tr.appendChild(createPartyCell(e.funding_party));
+    tr.appendChild(createCell(accountantOf(e)));
+    tr.appendChild(createActionsCell(onEdit, onDelete, actionsClass));
+    return tr;
+}
+
 async function removeExpense(id) {
     if (!confirm('هل تريد حذف هذا المصروف؟')) return;
     try {
         await window.api.deleteExpense(id);
         if (editingId === id) resetExpenseForm();
-        await loadExpenses();
+        await refreshMoneyData();
     } catch (err) {
         console.error(err);
-        alert('تعذر الحذف');
+        showToast('تعذر الحذف', true);
     }
 }
 
 function renderExpenses() {
     expensesBody.innerHTML = '';
-
     if (!expenses.length) {
-        const tr = document.createElement('tr');
-        const td = createCell('لا توجد مصروفات بعد');
-        td.colSpan = 6;
-        tr.appendChild(td);
-        expensesBody.appendChild(tr);
+        emptyRow(expensesBody, 'لا توجد مصروفات بعد', 9);
         return;
     }
-
     expenses.forEach(e => {
-        const tr = document.createElement('tr');
-        tr.title = auditTitle(e);   // من أضاف ومن عدّل
-
-        tr.appendChild(createCell(e.amount.toLocaleString('en-US'), 'num-cell'));
-        tr.appendChild(createDateCell(e.date));
-        tr.appendChild(createCell(e.details, 'details-cell'));
-        tr.appendChild(createCell(e.note));
-        tr.appendChild(createDeductionCell(e.loan_type));
-        tr.appendChild(createActionsCell(() => startEdit(e), () => removeExpense(e.id)));
-
-        expensesBody.appendChild(tr);
+        expensesBody.appendChild(buildExpenseRow(e, () => startEdit(e), () => removeExpense(e.id)));
     });
 }
 
@@ -458,179 +666,24 @@ async function loadExpenses() {
     renderExpenses();
 }
 
-/* ================= السلف ================= */
-let loanTypes = [];
-let loans = [];
+/* ================= المقبوضات ================= */
 let editingLoanId = null;
-let returnToLoansReport = false;   // هل بدأ تعديل السلفة من كشف السلف؟
+let returnToLoansReport = false;   // هل بدأ تعديل المقبوض من كشف المقبوضات؟
 
 const loanForm = document.getElementById('loan-form');
 const loanAmountInput = document.getElementById('loan-amount');
 const loanDateInput = document.getElementById('loan-date');
-const loanSourceInput = document.getElementById('loan-source');
-const loanTypeSelect = document.getElementById('loan-type');
+const loanFunderInput = document.getElementById('loan-funder');
+const loanNoteInput = document.getElementById('loan-note');
+const fundersDatalist = document.getElementById('funders-list');
 const loanErrorBox = document.getElementById('loan-error');
 const loanSubmitBtn = document.getElementById('loan-submit');
 const loanCancelBtn = document.getElementById('loan-cancel');
 const loansBody = document.getElementById('loans-body');
 
-const loanTypeForm = document.getElementById('loan-type-form');
-const loanTypeNameInput = document.getElementById('loan-type-name');
-const loanTypeErrorBox = document.getElementById('loan-type-error');
-const loanTypeSubmitBtn = document.getElementById('loan-type-submit');
-const loanTypeCancelBtn = document.getElementById('loan-type-cancel');
-const loanTypesBody = document.getElementById('loan-types-body');
-
 attachAmountFormat(loanAmountInput);
-const loanDatePicker = createDatePicker(loanDateInput, document.getElementById('loan-date-icon'));
+const loanDatePicker = createDatePicker(loanDateInput);
 
-/* ---------- أنواع السلف ---------- */
-let editingLoanTypeId = null;
-
-function setDefaultType(select) {
-    const fixed = loanTypes.find(t => t.is_fixed);   // سلفة كلية
-    if (fixed) select.value = fixed.id;
-}
-
-function setDefaultLoanType() {
-    setDefaultType(loanTypeSelect);
-}
-
-// يملأ أي قائمة أنواع مع الحفاظ على الاختيار الحالي
-function fillTypeSelect(select) {
-    const current = select.value;
-    select.innerHTML = '';
-    loanTypes.forEach(t => {
-        const option = document.createElement('option');
-        option.value = t.id;
-        option.textContent = t.name;
-        select.appendChild(option);
-    });
-
-    if (current && loanTypes.some(t => String(t.id) === current)) {
-        select.value = current;
-    } else {
-        setDefaultType(select);
-    }
-}
-
-// تحديث قائمتي السلف والمصروفات وقائمة كشف السلف وجدول الأنواع
-function fillLoanTypes() {
-    fillTypeSelect(loanTypeSelect);
-    fillTypeSelect(expenseLoanTypeSelect);
-    fillCheckList(loanReportTypes, loanTypes);
-    renderLoanTypes();
-}
-
-async function reloadLoanTypes() {
-    loanTypes = await window.api.getLoanTypes();
-    fillLoanTypes();
-}
-
-function clearLoanTypeError() {
-    loanTypeErrorBox.classList.add('hidden');
-    loanTypeNameInput.classList.remove('invalid');
-}
-
-function showLoanTypeError(message) {
-    loanTypeErrorBox.textContent = message;
-    loanTypeErrorBox.classList.remove('hidden');
-}
-
-function resetLoanTypeForm() {
-    loanTypeForm.reset();
-    editingLoanTypeId = null;
-    loanTypeSubmitBtn.textContent = 'إضافة النوع';
-    loanTypeCancelBtn.classList.add('hidden');
-    clearLoanTypeError();
-}
-
-function startLoanTypeEdit(type) {
-    editingLoanTypeId = type.id;
-    loanTypeNameInput.value = type.name;
-    loanTypeSubmitBtn.textContent = 'تحديث النوع';
-    loanTypeCancelBtn.classList.remove('hidden');
-    clearLoanTypeError();
-    loanTypeNameInput.focus();
-}
-
-async function removeLoanType(type) {
-    if (!confirm(`هل تريد حذف النوع «${type.name}»؟`)) return;
-    try {
-        await window.api.deleteLoanType(type.id);
-        if (editingLoanTypeId === type.id) resetLoanTypeForm();
-        await reloadLoanTypes();
-    } catch (err) {
-        console.error(err);
-        showLoanTypeError(cleanError(err));
-    }
-}
-
-function renderLoanTypes() {
-    loanTypesBody.innerHTML = '';
-
-    loanTypes.forEach(t => {
-        const tr = document.createElement('tr');
-        tr.appendChild(createCell(t.name));
-
-        const actionsTd = document.createElement('td');
-        if (t.is_fixed) {
-            const badge = document.createElement('span');
-            badge.className = 'badge';
-            badge.textContent = 'ثابت';
-            actionsTd.appendChild(badge);
-        } else {
-            const box = document.createElement('div');
-            box.className = 'row-actions';
-            box.appendChild(createButton('تعديل', 'btn btn-light btn-small', () => startLoanTypeEdit(t)));
-            box.appendChild(createButton('حذف', 'btn btn-danger btn-small', () => removeLoanType(t)));
-            actionsTd.appendChild(box);
-        }
-        tr.appendChild(actionsTd);
-
-        loanTypesBody.appendChild(tr);
-    });
-}
-
-loanTypeForm.addEventListener('submit', async e => {
-    e.preventDefault();
-    clearLoanTypeError();
-
-    const name = loanTypeNameInput.value.replace(/\s+/g, ' ').trim();
-    let message = '';
-
-    if (!name) {
-        message = 'اكتب اسم النوع';
-    } else if (loanTypes.some(t => t.name === name && t.id !== editingLoanTypeId)) {
-        message = 'هذا النوع موجود مسبقاً';
-    }
-
-    if (message) {
-        loanTypeNameInput.classList.add('invalid');
-        showLoanTypeError(message);
-        loanTypeNameInput.focus();
-        return;
-    }
-
-    try {
-        if (editingLoanTypeId) {
-            await window.api.updateLoanType(editingLoanTypeId, name);
-        } else {
-            await window.api.addLoanType(name);
-        }
-        resetLoanTypeForm();
-        await reloadLoanTypes();
-        await loadLoans();   // الاسم قد يتغير في جدول السلف
-    } catch (err) {
-        console.error(err);
-        showLoanTypeError(cleanError(err));
-    }
-});
-
-loanTypeCancelBtn.addEventListener('click', resetLoanTypeForm);
-loanTypeNameInput.addEventListener('input', () => loanTypeNameInput.classList.remove('invalid'));
-
-/* ---------- فورم السلف ---------- */
 function clearLoanErrors() {
     loanErrorBox.classList.add('hidden');
     loanForm.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
@@ -645,10 +698,9 @@ function resetLoanForm() {
     loanForm.reset();
     editingLoanId = null;
     returnToLoansReport = false;
-    loanSubmitBtn.textContent = 'حفظ السلفة';
+    loanSubmitBtn.textContent = 'حفظ المقبوض';
     loanCancelBtn.classList.add('hidden');
     loanDatePicker.setDate(new Date());
-    setDefaultLoanType();
     clearLoanErrors();
 }
 
@@ -657,10 +709,10 @@ function startLoanEdit(loan) {
     editingLoanId = loan.id;
     loanAmountInput.value = formatAmount(loan.amount);
     loanDatePicker.setDate(loan.date);
-    loanSourceInput.value = loan.source;
-    loanTypeSelect.value = loan.loan_type_id;
+    loanFunderInput.value = loan.funding_party;
+    loanNoteInput.value = loan.note;
 
-    loanSubmitBtn.textContent = 'تحديث السلفة';
+    loanSubmitBtn.textContent = 'تحديث المقبوض';
     loanCancelBtn.classList.remove('hidden');
     clearLoanErrors();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -679,34 +731,22 @@ function validateLoanForm() {
     clearLoanErrors();
     const missing = [];
     const badFields = [];
+    const check = (ok, label, field) => {
+        if (ok) return;
+        missing.push(label);
+        badFields.push(field);
+    };
 
-    if (!(parseAmount(loanAmountInput.value) > 0)) {
-        missing.push('مقدار السلفة');
-        badFields.push(loanAmountInput);
-    }
+    check(parseAmount(loanAmountInput.value) > 0, 'المبلغ', loanAmountInput);
+    check(loanDateInput.value, 'التاريخ', loanDatePicker.altInput);
+    check(loanFunderInput.value.trim(), 'الجهة الممولة', loanFunderInput);
 
-    if (!loanDateInput.value) {
-        missing.push('التاريخ');
-        badFields.push(loanDatePicker.altInput);
-    }
+    if (!missing.length) return true;
 
-    if (!loanSourceInput.value.trim()) {
-        missing.push('المصدر');
-        badFields.push(loanSourceInput);
-    }
-
-    if (!loanTypeSelect.value) {
-        missing.push('نوع السلفة');
-        badFields.push(loanTypeSelect);
-    }
-
-    if (missing.length) {
-        badFields.forEach(el => el.classList.add('invalid'));
-        showLoanError(`الرجاء إكمال الحقول التالية: ${missing.join('، ')}`);
-        badFields[0].focus();
-        return false;
-    }
-    return true;
+    badFields.forEach(el => el.classList.add('invalid'));
+    showLoanError(`الرجاء إكمال الحقول التالية: ${missing.join('، ')}`);
+    badFields[0].focus();
+    return false;
 }
 
 loanForm.addEventListener('submit', async e => {
@@ -716,71 +756,66 @@ loanForm.addEventListener('submit', async e => {
     const data = {
         amount: parseAmount(loanAmountInput.value),
         date: loanDateInput.value,
-        source: loanSourceInput.value.trim(),
-        loanTypeId: Number(loanTypeSelect.value),
+        fundingParty: loanFunderInput.value.replace(/\s+/g, ' ').trim(),
+        note: loanNoteInput.value.trim(),
     };
 
     const backToReport = returnToLoansReport;
 
     try {
-        if (editingLoanId) {
-            await window.api.updateLoan(editingLoanId, data);
-        } else {
-            await window.api.addLoan(data);
-        }
+        if (editingLoanId) await window.api.updateLoan(editingLoanId, data);
+        else await window.api.addLoan(data);
+
         resetLoanForm();
-        await loadLoans();
+        await refreshMoneyData();
 
         if (backToReport) {
             showPage('loans-report');
             loansReportForm.requestSubmit();   // يعيد عرض الكشف بالبيانات المحدثة
-            showToast('تم تعديل السلفة');
+            showToast('تم تعديل المقبوض');
         }
     } catch (err) {
         console.error(err);
-        showLoanError('تعذر الحفظ، حاول مرة أخرى');
+        showLoanError(cleanError(err));
     }
 });
 
-/* ---------- عرض السلف ---------- */
+// صف مقبوض موحّد في القائمة وفي الكشف
+function buildLoanRow(l, onEdit, onDelete, actionsClass = '') {
+    const tr = document.createElement('tr');
+    tr.title = auditTitle(l);
+
+    tr.appendChild(createCell(formatMoney(l.amount), 'num-cell'));
+    tr.appendChild(createDateCell(l.date));
+    tr.appendChild(createPartyCell(l.funding_party));
+    tr.appendChild(createCell(l.note, 'details-cell'));
+    tr.appendChild(createCell(accountantOf(l)));
+    tr.appendChild(l.is_carry
+        ? createCarryCell(actionsClass)
+        : createActionsCell(onEdit, onDelete, actionsClass));
+    return tr;
+}
+
 async function removeLoan(id) {
-    if (!confirm('هل تريد حذف هذه السلفة؟')) return;
+    if (!confirm('هل تريد حذف هذا المقبوض؟')) return;
     try {
         await window.api.deleteLoan(id);
         if (editingLoanId === id) resetLoanForm();
-        await loadLoans();
+        await refreshMoneyData();
     } catch (err) {
         console.error(err);
-        alert('تعذر الحذف');
+        showToast(cleanError(err), true);
     }
 }
 
 function renderLoans() {
     loansBody.innerHTML = '';
-
     if (!loans.length) {
-        const tr = document.createElement('tr');
-        const td = createCell('لا توجد سلف بعد');
-        td.colSpan = 5;
-        tr.appendChild(td);
-        loansBody.appendChild(tr);
+        emptyRow(loansBody, 'لا توجد مقبوضات بعد', 6);
         return;
     }
-
     loans.forEach(l => {
-        const tr = document.createElement('tr');
-        tr.title = auditTitle(l);
-
-        tr.appendChild(createCell(l.amount.toLocaleString('en-US'), 'num-cell'));
-        tr.appendChild(createDateCell(l.date));
-        tr.appendChild(createCell(l.source));
-        tr.appendChild(createCell(l.loan_type));
-
-        tr.appendChild(l.is_carry
-            ? createCarryCell()
-            : createActionsCell(() => startLoanEdit(l), () => removeLoan(l.id)));
-
-        loansBody.appendChild(tr);
+        loansBody.appendChild(buildLoanRow(l, () => startLoanEdit(l), () => removeLoan(l.id)));
     });
 }
 
@@ -789,8 +824,40 @@ async function loadLoans() {
     renderLoans();
 }
 
+/* ================= تحديث القوائم المرتبطة ================= */
+// يعيد تعبئة كل القوائم المنسدلة وقوائم الاختيار من الحالة الحالية
+function syncSelects() {
+    const hadDestination = destinationSelect.value;
+    fillSelect(destinationSelect, destinations);
+    if (!hadDestination) setDefaultDestination();
+
+    fillSelect(spenderSelect, spenderList, 'اختر الجهة القائمة بالصرف');
+    fillSelect(funderSelect, fundingParties, 'اختر الجهة الممولة');
+
+    fillCheckList(reportDestinations, destinations);
+    fillCheckList(reportSpenders, spenderList);
+    fillCheckList(reportFunders, fundingParties);
+
+    // اقتراحات الجهات الممولة عند كتابة مقبوض
+    fundersDatalist.innerHTML = '';
+    fundingParties.forEach(p => {
+        const option = document.createElement('option');
+        option.value = p.name;
+        fundersDatalist.appendChild(option);
+    });
+}
+
+async function reloadFundingParties() {
+    fundingParties = await window.api.getFundingParties();
+    syncSelects();
+}
+
+// بعد أي إضافة أو تعديل أو حذف لمصروف أو مقبوض
+async function refreshMoneyData() {
+    await Promise.all([loadExpenses(), loadLoans(), reloadFundingParties()]);
+}
+
 /* ================= السنة والشهر (القاصة والخلاصة) ================= */
-// يملأ قائمة الأشهر ويضبط السنة والشهر الحاليين
 function initPeriodFields(yearInput, monthSelect) {
     MONTHS.forEach((name, i) => {
         const option = document.createElement('option');
@@ -818,7 +885,6 @@ function readPeriod(yearInput, monthSelect, errorEl) {
     return { year, month };
 }
 
-// حدود الشهر: من أول يوم إلى آخر يوم
 function periodRange(year, month) {
     const last = new Date(year, month, 0).getDate();
     return {
@@ -852,7 +918,7 @@ let cashExport = null;   // آخر قاصة معروضة (للتصدير)
 
 function setRemaining(cell, value) {
     cell.textContent = formatMoney(value);
-    cell.classList.toggle('negative', value < 0);   // الأحمر عند تجاوز السلفة
+    cell.classList.toggle('negative', value < 0);   // الأحمر عند تجاوز المقبوضات
 }
 
 function renderCash(data, year, month) {
@@ -865,19 +931,19 @@ function renderCash(data, year, month) {
     cashSubtitle.textContent = subtitle;
     cashHint.textContent = data.cumulative
         ? 'أرقام تراكمية حتى نهاية هذا الشهر (قبل بدء الترحيل التلقائي).'
-        : 'صافي السلفة يشمل المبلغ المرحّل من الشهر السابق، ويُرحَّل المتبقي تلقائياً في أول كل شهر كسلفة بنفس النوع.';
+        : 'صافي المقبوضات يشمل المبلغ المرحّل من الشهر السابق، ويُرحَّل المتبقي تلقائياً في أول كل شهر كمقبوض بنفس الجهة الممولة.';
 
-    /* --- جدول القاصة حسب نوع السلفة --- */
+    /* --- جدول القاصة حسب الجهة الممولة --- */
     cashBody.innerHTML = '';
     let totalLoans = 0;
     let totalSpent = 0;
-    const typeRows = [];
+    const partyRows = [];
 
-    data.byType.forEach(r => {
+    data.byParty.forEach(r => {
         const remaining = round2(r.loans_total - r.spent_total);
         totalLoans = round2(totalLoans + r.loans_total);
         totalSpent = round2(totalSpent + r.spent_total);
-        typeRows.push([r.name, r.loans_total, r.spent_total, remaining]);
+        partyRows.push([r.name, r.loans_total, r.spent_total, remaining]);
 
         const tr = document.createElement('tr');
         tr.appendChild(createCell(r.name));
@@ -886,6 +952,8 @@ function renderCash(data, year, month) {
         tr.appendChild(createMoneyCell(remaining));
         cashBody.appendChild(tr);
     });
+
+    if (!data.byParty.length) emptyRow(cashBody, 'لا توجد جهات ممولة بعد', 4);
 
     const totalRemaining = round2(totalLoans - totalSpent);
     cashTotalLoans.textContent = formatMoney(totalLoans);
@@ -912,7 +980,9 @@ function renderCash(data, year, month) {
 
     data.rows.forEach(r => {
         const isLoan = r.kind === 'loan';
-        const text = isLoan ? `سلفة: ${r.text}` : r.text;
+        const text = isLoan
+            ? `مقبوض من ${r.party}${r.text ? ` — ${r.text}` : ''}`
+            : r.text;
 
         if (isLoan) {
             ledgerIn = round2(ledgerIn + r.amount);
@@ -923,7 +993,7 @@ function renderCash(data, year, month) {
         }
 
         const tr = document.createElement('tr');
-        tr.title = auditTitle(r);   // من أضاف ومن عدّل عند وقوف المؤشر
+        tr.title = auditTitle(r);
 
         tr.appendChild(createDateCell(r.date));
         tr.appendChild(createCell(text, 'details-cell'));
@@ -941,13 +1011,7 @@ function renderCash(data, year, month) {
         ]);
     });
 
-    if (!data.rows.length) {
-        const tr = document.createElement('tr');
-        const td = createCell('لا توجد حركات في هذا الشهر');
-        td.colSpan = 5;
-        tr.appendChild(td);
-        cashLedgerBody.appendChild(tr);
-    }
+    if (!data.rows.length) emptyRow(cashLedgerBody, 'لا توجد حركات في هذا الشهر', 5);
 
     cashLedgerCount.textContent = `الإجمالي — عدد الحركات: ${data.rows.length}`;
     cashLedgerIn.textContent = formatMoney(ledgerIn);
@@ -963,12 +1027,12 @@ function renderCash(data, year, month) {
             {
                 name: 'القاصة',
                 columns: [
-                    { header: 'نوع السلفة', width: 30 },
-                    { header: 'صافي السلفة', width: 20 },
+                    { header: 'الجهة الممولة', width: 30 },
+                    { header: 'صافي المقبوضات', width: 20 },
                     { header: 'المصروف منها', width: 20 },
                     { header: 'المتبقي', width: 20 },
                 ],
-                rows: typeRows,
+                rows: partyRows,
                 total: ['المجموع', totalLoans, totalSpent, totalRemaining],
                 mergeTotal: false,
             },
@@ -996,8 +1060,7 @@ async function loadCash() {
     if (!period) return;
 
     try {
-        const data = await window.api.getMonthCashReport(period);
-        renderCash(data, period.year, period.month);
+        renderCash(await window.api.getMonthCashReport(period), period.year, period.month);
     } catch (err) {
         console.error(err);
         showNote(cashError, cleanError(err));
@@ -1011,138 +1074,6 @@ cashForm.addEventListener('submit', e => {
 
 document.getElementById('cash-print').addEventListener('click', printReport);
 cashExcelBtn.addEventListener('click', () => exportReport(cashExport));
-
-/* ================= جهات الصرف ================= */
-let editingDestinationId = null;
-
-const destinationForm = document.getElementById('destination-form');
-const destinationNameInput = document.getElementById('destination-name');
-const destinationErrorBox = document.getElementById('destination-error');
-const destinationSubmitBtn = document.getElementById('destination-submit');
-const destinationCancelBtn = document.getElementById('destination-cancel');
-const destinationsBody = document.getElementById('destinations-body');
-const destinationsTotalCount = document.getElementById('destinations-total-count');
-const destinationsTotalSum = document.getElementById('destinations-total-sum');
-
-function clearDestinationError() {
-    destinationErrorBox.classList.add('hidden');
-    destinationNameInput.classList.remove('invalid');
-}
-
-function showDestinationError(message) {
-    destinationErrorBox.textContent = message;
-    destinationErrorBox.classList.remove('hidden');
-}
-
-function resetDestinationForm() {
-    destinationForm.reset();
-    editingDestinationId = null;
-    destinationSubmitBtn.textContent = 'إضافة الجهة';
-    destinationCancelBtn.classList.add('hidden');
-    clearDestinationError();
-}
-
-function startDestinationEdit(dest) {
-    editingDestinationId = dest.id;
-    destinationNameInput.value = dest.name;
-    destinationSubmitBtn.textContent = 'تحديث الجهة';
-    destinationCancelBtn.classList.remove('hidden');
-    clearDestinationError();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    destinationNameInput.focus();
-}
-
-async function reloadDestinations() {
-    destinations = await window.api.getDestinations();
-    fillDestinations();
-    renderDestinations();
-}
-
-async function removeDestination(dest) {
-    if (!confirm(`هل تريد حذف الجهة «${dest.name}»؟`)) return;
-    try {
-        await window.api.deleteDestination(dest.id);
-        if (editingDestinationId === dest.id) resetDestinationForm();
-        await reloadDestinations();
-    } catch (err) {
-        console.error(err);
-        showDestinationError(cleanError(err));
-    }
-}
-
-function renderDestinations() {
-    destinationsBody.innerHTML = '';
-
-    let totalCount = 0;
-    let totalSum = 0;
-
-    destinations.forEach(d => {
-        totalCount += d.expenses_count;
-        totalSum += d.expenses_total;
-
-        const tr = document.createElement('tr');
-        tr.appendChild(createCell(d.name));
-        tr.appendChild(createCell(String(d.expenses_count)));
-        tr.appendChild(createCell(formatMoney(d.expenses_total)));
-
-        const actionsTd = document.createElement('td');
-        if (d.is_fixed) {
-            const badge = document.createElement('span');
-            badge.className = 'badge';
-            badge.textContent = 'ثابت';
-            actionsTd.appendChild(badge);
-        } else {
-            const box = document.createElement('div');
-            box.className = 'row-actions';
-            box.appendChild(createButton('تعديل', 'btn btn-light btn-small', () => startDestinationEdit(d)));
-            box.appendChild(createButton('حذف', 'btn btn-danger btn-small', () => removeDestination(d)));
-            actionsTd.appendChild(box);
-        }
-        tr.appendChild(actionsTd);
-
-        destinationsBody.appendChild(tr);
-    });
-
-    destinationsTotalCount.textContent = String(totalCount);
-    destinationsTotalSum.textContent = formatMoney(totalSum);
-}
-
-destinationForm.addEventListener('submit', async e => {
-    e.preventDefault();
-    clearDestinationError();
-
-    const name = destinationNameInput.value.replace(/\s+/g, ' ').trim();
-    let message = '';
-
-    if (!name) {
-        message = 'اكتب اسم الجهة';
-    } else if (destinations.some(d => d.name === name && d.id !== editingDestinationId)) {
-        message = 'هذه الجهة موجودة مسبقاً';
-    }
-
-    if (message) {
-        destinationNameInput.classList.add('invalid');
-        showDestinationError(message);
-        destinationNameInput.focus();
-        return;
-    }
-
-    try {
-        if (editingDestinationId) {
-            await window.api.updateDestination(editingDestinationId, name);
-        } else {
-            await window.api.addDestination(name);
-        }
-        resetDestinationForm();
-        await reloadDestinations();
-    } catch (err) {
-        console.error(err);
-        showDestinationError(cleanError(err));
-    }
-});
-
-destinationCancelBtn.addEventListener('click', resetDestinationForm);
-destinationNameInput.addEventListener('input', () => destinationNameInput.classList.remove('invalid'));
 
 /* ================= الخلاصة (شهرية) ================= */
 const summaryForm = document.getElementById('summary-form');
@@ -1200,11 +1131,11 @@ function renderSummary(data, year, month) {
     summaryTotal.textContent = formatMoney(difference);
 
     if (difference > 0) {
-        summaryHint.textContent = `المصروفات أكثر من السلف بمقدار ${formatMoney(difference)}`;
+        summaryHint.textContent = `المصروفات أكثر من المقبوضات بمقدار ${formatMoney(difference)}`;
     } else if (difference < 0) {
-        summaryHint.textContent = `تبقى من السلف ${formatMoney(Math.abs(difference))}`;
+        summaryHint.textContent = `تبقى من المقبوضات ${formatMoney(Math.abs(difference))}`;
     } else {
-        summaryHint.textContent = 'المصروفات تساوي السلف';
+        summaryHint.textContent = 'المصروفات تساوي المقبوضات';
     }
 
     summaryExport = {
@@ -1215,15 +1146,15 @@ function renderSummary(data, year, month) {
             {
                 name: 'الخلاصة',
                 columns: [
-                    { header: 'جهة الصرف', width: 36 },
+                    { header: 'الجهة المستفيدة', width: 36 },
                     { header: 'عدد المصروفات', width: 20 },
                     { header: 'المجموع', width: 22 },
                 ],
                 rows: excelRows,
                 total: ['إجمالي المصروفات', totalCount, totalExpenses],
                 extraRows: [
-                    ['مجموع السلف', '', totalLoans],
-                    ['المجموع الكلي (المصروفات − السلف)', '', difference],
+                    ['مجموع المقبوضات', '', totalLoans],
+                    ['المجموع الكلي (المصروفات − المقبوضات)', '', difference],
                 ],
                 mergeTotal: false,
             },
@@ -1238,8 +1169,7 @@ async function loadSummary() {
     if (!period) return;
 
     try {
-        const data = await window.api.getMonthSummary(period);
-        renderSummary(data, period.year, period.month);
+        renderSummary(await window.api.getMonthSummary(period), period.year, period.month);
     } catch (err) {
         console.error(err);
         showNote(summaryError, cleanError(err));
@@ -1254,105 +1184,12 @@ summaryForm.addEventListener('submit', e => {
 document.getElementById('summary-print').addEventListener('click', printReport);
 summaryExcelBtn.addEventListener('click', () => exportReport(summaryExport));
 
-/* ================= الكشوفات: أدوات مشتركة ================= */
-function toISO(d) {
-    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-}
-
-function monthStartISO() {
-    const now = new Date();
-    return toISO(new Date(now.getFullYear(), now.getMonth(), 1));
-}
-
-// قائمة اختيارات تحافظ على ما حدده المستخدم، والعناصر الجديدة تظهر محددة
-function fillCheckList(container, items) {
-    const known = new Set((container.dataset.known || '').split(',').filter(Boolean));
-    const checked = new Set([...container.querySelectorAll('input:checked')].map(i => i.value));
-
-    container.innerHTML = '';
-    items.forEach(item => {
-        const label = document.createElement('label');
-        label.className = 'check-item';
-
-        const box = document.createElement('input');
-        box.type = 'checkbox';
-        box.value = item.id;
-        box.checked = !known.has(String(item.id)) || checked.has(String(item.id));
-
-        const text = document.createElement('span');
-        text.textContent = item.name;
-
-        label.append(box, text);
-        container.appendChild(label);
-    });
-    container.dataset.known = items.map(i => i.id).join(',');
-}
-
-function getCheckedIds(container) {
-    return [...container.querySelectorAll('input:checked')].map(i => Number(i.value));
-}
-
-function setAllChecked(container, state) {
-    container.querySelectorAll('input').forEach(i => { i.checked = state; });
-}
-
-function showNote(el, text) {
-    el.textContent = text;
-    el.className = 'form-error noprint';
-}
-
-function hideNote(el) {
-    el.className = 'hidden';
-}
-
-function sumAmounts(rows) {
-    return round2(rows.reduce((s, r) => s + r.amount, 0));
-}
-
-function periodText(from, to) {
-    return `من ${formatDate(from)} إلى ${formatDate(to)}`;
-}
-
-/* ---------- رسالة التأكيد (تظهر وتختفي وحدها) ---------- */
-const toastEl = document.getElementById('toast');
-let toastTimer = null;
-
-function showToast(message, isError = false) {
-    toastEl.textContent = message;
-    toastEl.classList.toggle('toast-error', isError);
-    toastEl.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 3000);
-}
-
-async function exportReport(report) {
-    if (!report) return;
-    try {
-        const result = await window.api.exportReport(report);
-        if (result.saved) showToast(`تم تصدير ملف Excel: ${result.fileName}`);
-    } catch (err) {
-        console.error(err);
-        showToast('تعذر حفظ الملف، تأكد أنه غير مفتوح في Excel', true);
-    }
-}
-
-async function printReport() {
-    try {
-        const result = await window.api.printPage();
-        if (result.success) {
-            showToast('تمت الطباعة');
-        } else if (!result.cancelled) {
-            showToast('تعذرت الطباعة', true);
-        }
-    } catch (err) {
-        console.error(err);
-        showToast('تعذرت الطباعة', true);
-    }
-}
-
 /* ================= كشف المصروفات ================= */
-const reportDestinations = document.getElementById('report-destinations');
 const expensesReportForm = document.getElementById('expenses-report-form');
+const reportDestinations = document.getElementById('report-destinations');
+const reportSpenders = document.getElementById('report-spenders');
+const destGroup = document.getElementById('report-dest-group');
+const spenderGroup = document.getElementById('report-spender-group');
 const expFromInput = document.getElementById('exp-from');
 const expToInput = document.getElementById('exp-to');
 const expensesReportError = document.getElementById('expenses-report-error');
@@ -1364,45 +1201,44 @@ const expensesReportTotal = document.getElementById('expenses-report-total');
 const expensesReportCount = document.getElementById('expenses-report-count');
 const expensesReportExcelBtn = document.getElementById('expenses-report-excel');
 
-createDatePicker(expFromInput, document.getElementById('exp-from-icon'), { defaultDate: monthStartISO() });
-createDatePicker(expToInput, document.getElementById('exp-to-icon'));
+createDatePicker(expFromInput, { defaultDate: monthStartISO() });
+createDatePicker(expToInput);
 
 let expensesReport = null;   // آخر كشف معروض (للتصدير)
 
-function renderExpensesReport(rows, ids, from, to) {
-    const names = destinations.filter(d => ids.includes(d.id)).map(d => d.name).join('، ');
-    const title = `كشف مصروفات: ${names}`;
+const reportMode = () => document.querySelector('input[name="report-mode"]:checked').value;
+
+// طريقة الكشف: حسب الجهة المستفيدة، أو حسب الجهة القائمة بالصرف
+document.querySelectorAll('input[name="report-mode"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+        const bySpender = reportMode() === 'spender';
+        destGroup.classList.toggle('hidden', bySpender);
+        spenderGroup.classList.toggle('hidden', !bySpender);
+    });
+});
+
+function renderExpensesReport(rows, mode, ids, from, to) {
+    const source = mode === 'spender' ? spenderList : destinations;
+    const names = source.filter(i => ids.includes(i.id)).map(i => i.name).join('، ');
+    const title = mode === 'spender'
+        ? `كشف مصروفات الجهة القائمة بالصرف: ${names}`
+        : `كشف مصروفات الجهة المستفيدة: ${names}`;
     const subtitle = periodText(from, to);
-    const total = sumAmounts(rows);
+    const total = round2(rows.reduce((s, r) => s + r.amount, 0));
 
     expensesReportTitle.textContent = title;
     expensesReportSubtitle.textContent = subtitle;
 
     expensesReportBody.innerHTML = '';
-    if (!rows.length) {
-        const tr = document.createElement('tr');
-        const td = createCell('لا توجد مصروفات في هذه الفترة');
-        td.colSpan = 6;
-        tr.appendChild(td);
-        expensesReportBody.appendChild(tr);
-    }
+    if (!rows.length) emptyRow(expensesReportBody, 'لا توجد مصروفات في هذه الفترة', 9);
 
     rows.forEach(r => {
-        const tr = document.createElement('tr');
-        tr.title = auditTitle(r);   // من أضاف ومن عدّل عند وقوف المؤشر
-
-        tr.appendChild(createCell(r.amount.toLocaleString('en-US'), 'num-cell'));
-        tr.appendChild(createDateCell(r.date));
-        tr.appendChild(createCell(r.details, 'details-cell'));
-        tr.appendChild(createCell(r.note));
-        tr.appendChild(createDeductionCell(r.loan_type));   // شاشة وطباعة
-        tr.appendChild(createActionsCell(
+        expensesReportBody.appendChild(buildExpenseRow(
+            r,
             () => editFromReport(r),
             () => removeFromReport(r),
-            'noprint'                                        // الأزرار لا تُطبع
+            'noprint',                       // الأزرار لا تُطبع
         ));
-
-        expensesReportBody.appendChild(tr);
     });
 
     expensesReportTotal.textContent = formatMoney(total);
@@ -1415,12 +1251,18 @@ function renderExpensesReport(rows, ids, from, to) {
         columns: [
             { header: 'المبلغ', width: 16 },
             { header: 'التاريخ', width: 14 },
-            { header: 'التفاصيل', width: 60 },
-            { header: 'ملاحظات', width: 26 },
-            { header: 'سلفة الاستقطاع', width: 22 },
+            { header: 'التفاصيل', width: 50 },
+            { header: 'ملاحظات', width: 24 },
+            { header: 'الجهة المستفيدة', width: 22 },
+            { header: 'الجهة القائمة بالصرف', width: 24 },
+            { header: 'الجهة الممولة', width: 22 },
+            { header: 'المحاسب', width: 18 },
         ],
-        rows: rows.map(r => [r.amount, formatDate(r.date), r.details, r.note, r.loan_type]),
-        total: [total, `المجموع — عدد المصروفات: ${rows.length}`, '', '', ''],
+        rows: rows.map(r => [
+            r.amount, formatDate(r.date), r.details, r.note,
+            r.destination, r.spender || '—', r.funding_party, accountantOf(r),
+        ]),
+        total: [total, `المجموع — عدد المصروفات: ${rows.length}`, '', '', '', '', '', ''],
     };
 
     expensesReportExcelBtn.disabled = !rows.length;
@@ -1440,7 +1282,7 @@ async function removeFromReport(row) {
     try {
         await window.api.deleteExpense(row.id);
         if (editingId === row.id) resetExpenseForm();
-        await loadExpenses();
+        await refreshMoneyData();
         expensesReportForm.requestSubmit();   // يحدّث الكشف والمجموع
         showToast('تم حذف المصروف');
     } catch (err) {
@@ -1453,12 +1295,18 @@ expensesReportForm.addEventListener('submit', async e => {
     e.preventDefault();
     hideNote(expensesReportError);
 
-    const ids = getCheckedIds(reportDestinations);
+    const mode = reportMode();
+    const ids = getCheckedIds(mode === 'spender' ? reportSpenders : reportDestinations);
     const from = expFromInput.value;
     const to = expToInput.value;
 
     if (!ids.length) {
-        showNote(expensesReportError, 'اختر جهة صرف واحدة على الأقل');
+        showNote(
+            expensesReportError,
+            mode === 'spender'
+                ? 'اختر جهة قائمة بالصرف واحدة على الأقل'
+                : 'اختر جهة مستفيدة واحدة على الأقل',
+        );
         return;
     }
     if (from > to) {
@@ -1467,8 +1315,8 @@ expensesReportForm.addEventListener('submit', async e => {
     }
 
     try {
-        const rows = await window.api.getExpensesReport({ destinationIds: ids, from, to });
-        renderExpensesReport(rows, ids, from, to);
+        const rows = await window.api.getExpensesReport({ by: mode, ids, from, to });
+        renderExpensesReport(rows, mode, ids, from, to);
     } catch (err) {
         console.error(err);
         showNote(expensesReportError, cleanError(err));
@@ -1477,12 +1325,14 @@ expensesReportForm.addEventListener('submit', async e => {
 
 document.getElementById('report-dest-all').addEventListener('click', () => setAllChecked(reportDestinations, true));
 document.getElementById('report-dest-none').addEventListener('click', () => setAllChecked(reportDestinations, false));
+document.getElementById('report-spn-all').addEventListener('click', () => setAllChecked(reportSpenders, true));
+document.getElementById('report-spn-none').addEventListener('click', () => setAllChecked(reportSpenders, false));
 document.getElementById('expenses-report-print').addEventListener('click', printReport);
 expensesReportExcelBtn.addEventListener('click', () => exportReport(expensesReport));
 
-/* ================= كشف السلف ================= */
-const loanReportTypes = document.getElementById('report-loan-types');
+/* ================= كشف المقبوضات (حسب الجهة الممولة) ================= */
 const loansReportForm = document.getElementById('loans-report-form');
+const reportFunders = document.getElementById('report-funders');
 const loanFromInput = document.getElementById('loan-from');
 const loanToInput = document.getElementById('loan-to');
 const loansReportError = document.getElementById('loans-report-error');
@@ -1494,70 +1344,55 @@ const loansReportTotal = document.getElementById('loans-report-total');
 const loansReportCount = document.getElementById('loans-report-count');
 const loansReportExcelBtn = document.getElementById('loans-report-excel');
 
-createDatePicker(loanFromInput, document.getElementById('loan-from-icon'), { defaultDate: monthStartISO() });
-createDatePicker(loanToInput, document.getElementById('loan-to-icon'));
+createDatePicker(loanFromInput, { defaultDate: monthStartISO() });
+createDatePicker(loanToInput);
 
 let loansReport = null;
 
 function renderLoansReport(rows, ids, from, to) {
-    const names = loanTypes.filter(t => ids.includes(t.id)).map(t => t.name).join('، ');
-    const title = `كشف السلف المستلمة: ${names}`;
+    const names = fundingParties.filter(p => ids.includes(p.id)).map(p => p.name).join('، ');
+    const title = `كشف المقبوضات حسب الجهة الممولة: ${names}`;
     const subtitle = periodText(from, to);
-    const total = sumAmounts(rows);
+    const total = round2(rows.reduce((s, r) => s + r.amount, 0));
 
     loansReportTitle.textContent = title;
     loansReportSubtitle.textContent = subtitle;
 
     loansReportBody.innerHTML = '';
-    if (!rows.length) {
-        const tr = document.createElement('tr');
-        const td = createCell('لا توجد سلف في هذه الفترة');
-        td.colSpan = 5;
-        tr.appendChild(td);
-        loansReportBody.appendChild(tr);
-    }
+    if (!rows.length) emptyRow(loansReportBody, 'لا توجد مقبوضات في هذه الفترة', 6);
 
     rows.forEach(r => {
-        const tr = document.createElement('tr');
-        tr.title = auditTitle(r);   // من أضاف ومن عدّل عند وقوف المؤشر
-
-        tr.appendChild(createCell(r.amount.toLocaleString('en-US'), 'num-cell'));
-        tr.appendChild(createDateCell(r.date));
-        tr.appendChild(createCell(r.source));
-        tr.appendChild(createCell(r.loan_type));
-        tr.appendChild(r.is_carry
-            ? createCarryCell('noprint')
-            : createActionsCell(
-                () => editLoanFromReport(r),
-                () => removeLoanFromReport(r),
-                'noprint'                // الأزرار لا تُطبع
-            ));
-
-        loansReportBody.appendChild(tr);
+        loansReportBody.appendChild(buildLoanRow(
+            r,
+            () => editLoanFromReport(r),
+            () => removeLoanFromReport(r),
+            'noprint',                       // الأزرار لا تُطبع
+        ));
     });
 
     loansReportTotal.textContent = formatMoney(total);
-    loansReportCount.textContent = `المجموع — عدد السلف: ${rows.length}`;
+    loansReportCount.textContent = `المجموع — عدد المقبوضات: ${rows.length}`;
 
     loansReport = {
         title,
         subtitle,
-        fileName: `loans-report-${from}-to-${to}.xlsx`,
+        fileName: `receipts-report-${from}-to-${to}.xlsx`,
         columns: [
             { header: 'المبلغ', width: 18 },
             { header: 'التاريخ', width: 14 },
-            { header: 'المصدر', width: 40 },
-            { header: 'النوع', width: 22 },
+            { header: 'الجهة الممولة', width: 30 },
+            { header: 'البيان', width: 44 },
+            { header: 'المحاسب', width: 18 },
         ],
-        rows: rows.map(r => [r.amount, formatDate(r.date), r.source, r.loan_type]),
-        total: [total, `المجموع — عدد السلف: ${rows.length}`, '', ''],
+        rows: rows.map(r => [r.amount, formatDate(r.date), r.funding_party, r.note, accountantOf(r)]),
+        total: [total, `المجموع — عدد المقبوضات: ${rows.length}`, '', '', ''],
     };
 
     loansReportExcelBtn.disabled = !rows.length;
     loansReportResult.classList.remove('hidden');
 }
 
-// التعديل من كشف السلف: ننتقل لصفحة السلف، وبعد الحفظ نعود للكشف
+// التعديل من كشف المقبوضات: ننتقل لصفحة المقبوضات، وبعد الحفظ نعود للكشف
 function editLoanFromReport(row) {
     showPage('loans');
     startLoanEdit(row);
@@ -1565,17 +1400,17 @@ function editLoanFromReport(row) {
 }
 
 async function removeLoanFromReport(row) {
-    if (!confirm('هل تريد حذف هذه السلفة؟')) return;
+    if (!confirm('هل تريد حذف هذا المقبوض؟')) return;
 
     try {
         await window.api.deleteLoan(row.id);
         if (editingLoanId === row.id) resetLoanForm();
-        await loadLoans();
+        await refreshMoneyData();
         loansReportForm.requestSubmit();   // يحدّث الكشف والمجموع
-        showToast('تم حذف السلفة');
+        showToast('تم حذف المقبوض');
     } catch (err) {
         console.error(err);
-        showToast('تعذر حذف السلفة', true);
+        showToast(cleanError(err), true);
     }
 }
 
@@ -1583,12 +1418,12 @@ loansReportForm.addEventListener('submit', async e => {
     e.preventDefault();
     hideNote(loansReportError);
 
-    const ids = getCheckedIds(loanReportTypes);
+    const ids = getCheckedIds(reportFunders);
     const from = loanFromInput.value;
     const to = loanToInput.value;
 
     if (!ids.length) {
-        showNote(loansReportError, 'اختر نوع سلفة واحداً على الأقل');
+        showNote(loansReportError, 'اختر جهة ممولة واحدة على الأقل');
         return;
     }
     if (from > to) {
@@ -1597,7 +1432,7 @@ loansReportForm.addEventListener('submit', async e => {
     }
 
     try {
-        const rows = await window.api.getLoansReport({ loanTypeIds: ids, from, to });
+        const rows = await window.api.getLoansReport({ fundingPartyIds: ids, from, to });
         renderLoansReport(rows, ids, from, to);
     } catch (err) {
         console.error(err);
@@ -1605,10 +1440,41 @@ loansReportForm.addEventListener('submit', async e => {
     }
 });
 
-document.getElementById('report-type-all').addEventListener('click', () => setAllChecked(loanReportTypes, true));
-document.getElementById('report-type-none').addEventListener('click', () => setAllChecked(loanReportTypes, false));
+document.getElementById('report-funder-all').addEventListener('click', () => setAllChecked(reportFunders, true));
+document.getElementById('report-funder-none').addEventListener('click', () => setAllChecked(reportFunders, false));
 document.getElementById('loans-report-print').addEventListener('click', printReport);
 loansReportExcelBtn.addEventListener('click', () => exportReport(loansReport));
+
+/* ================= تحديث البيانات ================= */
+let refreshing = false;
+
+async function refreshAll() {
+    if (refreshing) return;   // لا نكرر التحديث إذا ضغط المستخدم مرتين
+    refreshing = true;
+
+    try {
+        await Promise.all([
+            beneficiaries.load(),
+            spenders.load(),
+            refreshMoneyData(),
+            loadCash(),
+            loadSummary(),
+        ]);
+
+        // إذا كان كشف معروضاً، نعيد عرضه بالأرقام الجديدة
+        if (!expensesReportResult.classList.contains('hidden')) expensesReportForm.requestSubmit();
+        if (!loansReportResult.classList.contains('hidden')) loansReportForm.requestSubmit();
+
+        showToast('تم تحديث البيانات');
+    } catch (err) {
+        console.error(err);
+        showToast('تعذر تحديث البيانات', true);
+    } finally {
+        refreshing = false;
+    }
+}
+
+document.getElementById('refresh-btn').addEventListener('click', refreshAll);
 
 /* ================= إظهار كلمة المرور ================= */
 const EYE_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
@@ -1634,7 +1500,6 @@ function addPasswordToggle(input) {
     wrap.appendChild(btn);
 }
 
-// تُضاف أيقونة العين لكل حقول كلمة المرور في البرنامج
 document.querySelectorAll('input[type="password"]').forEach(addPasswordToggle);
 
 /* ================= تسجيل الدخول والخروج ================= */
@@ -1650,15 +1515,8 @@ const loginSubmit = document.getElementById('login-submit');
 const adminLink = document.querySelector('.admin-only');
 
 async function loadAllData() {
-    destinations = await window.api.getDestinations();
-    fillDestinations();
-
-    loanTypes = await window.api.getLoanTypes();   // قبل المصروفات
-    fillLoanTypes();
-    renderDestinations();
-
-    await loadExpenses();
-    await loadLoans();
+    await Promise.all([beneficiaries.load(), spenders.load(), reloadFundingParties()]);
+    await Promise.all([loadExpenses(), loadLoans()]);
 }
 
 function showLogin() {
@@ -1815,13 +1673,8 @@ async function removeAccountant(a) {
 
 function renderAccountants() {
     accountantsBody.innerHTML = '';
-
     if (!accountants.length) {
-        const tr = document.createElement('tr');
-        const td = createCell('لا يوجد محاسبون بعد');
-        td.colSpan = 3;
-        tr.appendChild(td);
-        accountantsBody.appendChild(tr);
+        emptyRow(accountantsBody, 'لا يوجد محاسبون بعد', 3);
         return;
     }
 
@@ -1829,15 +1682,7 @@ function renderAccountants() {
         const tr = document.createElement('tr');
         tr.appendChild(createCell(a.display_name || a.username));
         tr.appendChild(createCell(a.username));
-
-        const actionsTd = document.createElement('td');
-        const box = document.createElement('div');
-        box.className = 'row-actions';
-        box.appendChild(createButton('تعديل', 'btn btn-light btn-small', () => startAccountantEdit(a)));
-        box.appendChild(createButton('حذف', 'btn btn-danger btn-small', () => removeAccountant(a)));
-        actionsTd.appendChild(box);
-        tr.appendChild(actionsTd);
-
+        tr.appendChild(createActionsCell(() => startAccountantEdit(a), () => removeAccountant(a)));
         accountantsBody.appendChild(tr);
     });
 }
@@ -1888,15 +1733,12 @@ accountantForm.addEventListener('submit', async e => {
 
 accountantCancel.addEventListener('click', resetAccountantForm);
 
-/* ---------- تشغيل أولي ---------- */
+/* ================= التشغيل الأولي ================= */
 async function startup() {
     try {
         const user = await window.api.getSession();   // بقاء الجلسة عند إعادة تحميل النافذة
-        if (user) {
-            await enterApp(user);
-        } else {
-            showLogin();
-        }
+        if (user) await enterApp(user);
+        else showLogin();
     } catch (err) {
         console.error(err);
         showLogin();

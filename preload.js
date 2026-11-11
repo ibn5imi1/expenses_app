@@ -1,54 +1,56 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+const call = channel => (...args) => ipcRenderer.invoke(channel, ...args);
+
 contextBridge.exposeInMainWorld('api', {
     // الجلسة
-    login: (username, password) => ipcRenderer.invoke('login', username, password),
-    logout: () => ipcRenderer.invoke('logout'),
-    getSession: () => ipcRenderer.invoke('getSession'),
+    login: call('login'),
+    logout: call('logout'),
+    getSession: call('getSession'),
 
     // الإعدادات والأدمن
-    changePassword: (oldPassword, newPassword) =>
-        ipcRenderer.invoke('changePassword', oldPassword, newPassword),
-    getAccountants: () => ipcRenderer.invoke('getAccountants'),
-    addAccountant: (displayName, username, password) =>
-        ipcRenderer.invoke('addAccountant', displayName, username, password),
-    updateAccountant: (id, displayName, username, password) =>
-        ipcRenderer.invoke('updateAccountant', id, displayName, username, password),
-    deleteAccountant: id => ipcRenderer.invoke('deleteAccountant', id),
+    changePassword: call('changePassword'),
+    getAccountants: call('getAccountants'),
+    addAccountant: call('addAccountant'),
+    updateAccountant: call('updateAccountant'),
+    deleteAccountant: call('deleteAccountant'),
 
-    // جهات الصرف
-    getDestinations: () => ipcRenderer.invoke('getDestinations'),
-    addDestination: name => ipcRenderer.invoke('addDestination', name),
-    updateDestination: (id, name) => ipcRenderer.invoke('updateDestination', id, name),
-    deleteDestination: id => ipcRenderer.invoke('deleteDestination', id),
+    // الجهات المستفيدة
+    getDestinations: call('getDestinations'),
+    addDestination: call('addDestination'),
+    updateDestination: call('updateDestination'),
+    deleteDestination: call('deleteDestination'),
+
+    // الجهات القائمة بالصرف
+    getSpenders: call('getSpenders'),
+    addSpender: call('addSpender'),
+    updateSpender: call('updateSpender'),
+    deleteSpender: call('deleteSpender'),
+
+    // الجهات الممولة
+    getFundingParties: call('getFundingParties'),
 
     // المصروفات
-    getExpenses: () => ipcRenderer.invoke('getExpenses'),
-    addExpense: data => ipcRenderer.invoke('addExpense', data),
-    updateExpense: (id, data) => ipcRenderer.invoke('updateExpense', id, data),
-    deleteExpense: id => ipcRenderer.invoke('deleteExpense', id),
+    getExpenses: call('getExpenses'),
+    addExpense: call('addExpense'),
+    updateExpense: call('updateExpense'),
+    deleteExpense: call('deleteExpense'),
 
-    // أنواع السلف
-    getLoanTypes: () => ipcRenderer.invoke('getLoanTypes'),
-    addLoanType: name => ipcRenderer.invoke('addLoanType', name),
-    updateLoanType: (id, name) => ipcRenderer.invoke('updateLoanType', id, name),
-    deleteLoanType: id => ipcRenderer.invoke('deleteLoanType', id),
+    // المقبوضات
+    getLoans: call('getLoans'),
+    addLoan: call('addLoan'),
+    updateLoan: call('updateLoan'),
+    deleteLoan: call('deleteLoan'),
 
-    // السلف
-    getLoans: () => ipcRenderer.invoke('getLoans'),
-    addLoan: data => ipcRenderer.invoke('addLoan', data),
-    updateLoan: (id, data) => ipcRenderer.invoke('updateLoan', id, data),
-    deleteLoan: id => ipcRenderer.invoke('deleteLoan', id),
+    // القاصة والخلاصة
+    getMonthCashReport: call('getMonthCashReport'),
+    getMonthSummary: call('getMonthSummary'),
 
-    // القاصة والخلاصة (شهرية)
-    getMonthCashReport: filters => ipcRenderer.invoke('getMonthCashReport', filters),
-    getMonthSummary: filters => ipcRenderer.invoke('getMonthSummary', filters),
-
-    // كشف المصروفات والسلف
-    getExpensesReport: filters => ipcRenderer.invoke('getExpensesReport', filters),
-    getLoansReport: filters => ipcRenderer.invoke('getLoansReport', filters),
+    // الكشوفات
+    getExpensesReport: call('getExpensesReport'),
+    getLoansReport: call('getLoansReport'),
 
     // التصدير والطباعة
-    exportReport: report => ipcRenderer.invoke('exportReport', report),
-    printPage: () => ipcRenderer.invoke('printPage'),
+    exportReport: call('exportReport'),
+    printPage: call('printPage'),
 });

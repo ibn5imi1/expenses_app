@@ -1,5 +1,4 @@
 :root {
-    /* colors */
     --green-color: #1f5c4d;
     --green-soft-color: #e6f2ee;
     --red-color: #b3402f;
@@ -14,19 +13,15 @@
     --font-color: #1d2b26;
     --muted-color: #66756f;
 
-    /* fonts */
     --font-main: "Segoe UI", Tahoma, Arial, sans-serif;
     --main-font-size: 15px;
     --small-font-size: 13px;
 
-    /* shapes */
     --radius-small: 6px;
     --radius-large: 10px;
 }
 
-* {
-    box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
     margin: 0;
@@ -36,9 +31,7 @@ body {
     background-color: var(--background-color);
 }
 
-.hidden {
-    display: none !important;
-}
+.hidden { display: none !important; }
 
 /* ---------- النافبار ---------- */
 .navbar {
@@ -47,40 +40,28 @@ body {
     z-index: 10;
     display: flex;
     align-items: center;
-    gap: 24px;
-    padding: 0 20px;
+    gap: 18px;
+    padding: 0 16px;
     background-color: var(--green-color);
 }
 
-.brand {
-    color: var(--white-color);
-    font-weight: 700;
-    white-space: nowrap;
-}
+.brand { color: var(--white-color); font-weight: 700; white-space: nowrap; }
 
-.nav-links {
-    display: flex;
-    flex-wrap: wrap;
-}
+.nav-links { display: flex; flex-wrap: wrap; }
 
 .nav-link {
-    padding: 15px 14px;
+    padding: 15px 10px;
     border: 0;
     border-bottom: 3px solid transparent;
     background: none;
     color: var(--off-white-color);
     font: inherit;
+    font-size: 14px;
     cursor: pointer;
 }
 
-.nav-link:hover {
-    color: var(--white-color);
-}
-
-.nav-link.active {
-    color: var(--white-color);
-    border-bottom-color: var(--gold-color);
-}
+.nav-link:hover { color: var(--white-color); }
+.nav-link.active { color: var(--white-color); border-bottom-color: var(--gold-color); }
 
 .user-box {
     display: flex;
@@ -91,16 +72,10 @@ body {
     white-space: nowrap;
 }
 
-.user-name {
-    font-weight: 700;
-}
+.user-name { font-weight: 700; }
 
 /* ---------- المحتوى العام ---------- */
-main {
-    max-width: 1200px;
-    margin: 22px auto;
-    padding: 0 20px;
-}
+main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
 
 .card {
     margin-bottom: 20px;
@@ -110,15 +85,8 @@ main {
     border-radius: var(--radius-large);
 }
 
-.card h2 {
-    margin: 0 0 16px;
-    font-size: 18px;
-}
-
-.sub-title {
-    margin: 26px 0 10px;
-    font-size: 16px;
-}
+.card h2 { margin: 0 0 16px; font-size: 18px; }
+.sub-title { margin: 26px 0 10px; font-size: 16px; }
 
 /* ---------- الفورمات ---------- */
 .form-grid {
@@ -127,17 +95,8 @@ main {
     gap: 14px 16px;
 }
 
-.form-grid.cols-3 {
-    grid-template-columns: repeat(3, 1fr);
-}
-
-.form-grid.cols-5 {
-    grid-template-columns: repeat(5, 1fr);
-}
-
-.span-full {
-    grid-column: 1 / -1;
-}
+.form-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.span-full { grid-column: 1 / -1; }
 
 .field label {
     display: block;
@@ -157,11 +116,7 @@ main {
     background-color: var(--white-color);
 }
 
-.field textarea {
-    resize: vertical;
-    overflow: hidden;
-    min-height: 80px;
-}
+.field textarea { resize: vertical; overflow: hidden; min-height: 80px; }
 
 .field input:focus,
 .field select:focus,
@@ -172,10 +127,7 @@ main {
     outline-offset: 1px;
 }
 
-.form-actions {
-    display: flex;
-    gap: 10px;
-}
+.form-actions { display: flex; gap: 10px; }
 
 .invalid {
     border-color: var(--red-color) !important;
@@ -190,96 +142,26 @@ main {
     color: var(--red-color);
 }
 
-.form-success {
-    margin-bottom: 12px;
-    padding: 10px 12px;
-    border: 1px solid var(--green-color);
-    border-radius: var(--radius-small);
-    background-color: var(--green-soft-color);
-    color: var(--green-color);
-}
+.inline-form { display: flex; align-items: flex-end; gap: 12px; }
+.inline-form .field { width: 320px; }
+.inline-form + .form-error { margin-top: 12px; }
+.inline-form.period-form .field { width: 180px; }
 
-/* فورم أفقي صغير */
-.inline-form {
-    display: flex;
-    align-items: flex-end;
-    gap: 12px;
-}
+.stack { display: grid; gap: 14px; }
+.narrow { max-width: 460px; margin-inline: auto; }
+.medium { max-width: 720px; margin-inline: auto; }
 
-.inline-form .field {
-    width: 320px;
-}
+/* ---------- التقويم وإظهار كلمة المرور ---------- */
+.flatpickr-calendar { font-family: var(--font-main); }
+.flatpickr-day.selected { background-color: var(--green-color); border-color: var(--green-color); }
 
-.inline-form + .form-error {
-    margin-top: 12px;
-}
+.date-wrap,
+.password-wrap { position: relative; }
 
-/* حقلا السنة والشهر (القاصة والخلاصة) */
-.inline-form.period-form .field {
-    width: 180px;
-}
+.field .date-wrap input { padding-inline-end: 38px; cursor: pointer; }
+.field .password-wrap input { padding-inline-end: 40px; }
 
-/* نماذج عمودية (الإعدادات والأدمن) */
-.stack {
-    display: grid;
-    gap: 14px;
-}
-
-.narrow {
-    max-width: 460px;
-    margin-inline: auto;
-}
-
-.medium {
-    max-width: 720px;
-    margin-inline: auto;
-}
-
-/* ---------- التقويم ---------- */
-.flatpickr-calendar {
-    font-family: var(--font-main);
-}
-
-.flatpickr-day.selected {
-    background-color: var(--green-color);
-    border-color: var(--green-color);
-}
-
-.date-wrap {
-    position: relative;
-}
-
-.field .date-wrap input {
-    padding-inline-end: 38px;
-    cursor: pointer;
-}
-
-.date-icon {
-    position: absolute;
-    top: 50%;
-    inset-inline-end: 10px;
-    transform: translateY(-50%);
-    display: flex;
-    padding: 0;
-    border: 0;
-    background: none;
-    color: var(--muted-color);
-    cursor: pointer;
-}
-
-.date-icon:hover {
-    color: var(--green-color);
-}
-
-/* ---------- إظهار كلمة المرور ---------- */
-.password-wrap {
-    position: relative;
-}
-
-.field .password-wrap input {
-    padding-inline-end: 40px;
-}
-
+.date-icon,
 .password-toggle {
     position: absolute;
     top: 50%;
@@ -293,9 +175,8 @@ main {
     cursor: pointer;
 }
 
-.password-toggle:hover {
-    color: var(--green-color);
-}
+.date-icon:hover,
+.password-toggle:hover { color: var(--green-color); }
 
 /* ---------- الأزرار ---------- */
 .btn {
@@ -308,31 +189,11 @@ main {
     cursor: pointer;
 }
 
-.btn:hover {
-    opacity: .9;
-}
-
-.btn:disabled {
-    opacity: .5;
-    cursor: not-allowed;
-}
-
-.btn-light {
-    background-color: var(--white-color);
-    color: var(--green-color);
-}
-
-.btn-danger {
-    border-color: var(--red-color);
-    background-color: var(--white-color);
-    color: var(--red-color);
-}
-
-.btn-small {
-    padding: 4px 12px;
-    font-size: var(--small-font-size);
-    white-space: nowrap;
-}
+.btn:hover { opacity: .9; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-light { background-color: var(--white-color); color: var(--green-color); }
+.btn-danger { border-color: var(--red-color); background-color: var(--white-color); color: var(--red-color); }
+.btn-small { padding: 4px 12px; font-size: var(--small-font-size); white-space: nowrap; }
 
 .link-btn {
     padding: 0;
@@ -345,11 +206,11 @@ main {
 }
 
 /* ---------- الجداول ---------- */
-.table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-}
+.table-wrap { overflow-x: auto; }              /* تمرير أفقي عند ضيق الشاشة */
+.table-wide { min-width: 1250px; }
+.table-mid  { min-width: 820px; }
+
+.table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 
 .table th,
 .table td {
@@ -366,30 +227,14 @@ main {
     white-space: nowrap;
 }
 
-.table td {
-    white-space: normal;
-    overflow-wrap: anywhere;
-}
+.table td { white-space: normal; overflow-wrap: anywhere; }
 
 .table th.center,
-.table td.center {
-    text-align: center;
-}
+.table td.center { text-align: center; }
 
-/* خلايا موحّدة في كل الجداول */
-.table td.details-cell {
-    white-space: pre-wrap;
-}
-
-.table td.num-cell {
-    font-weight: 700;
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-}
-
-.table td.date-cell {
-    white-space: nowrap;
-}
+.table td.details-cell { white-space: pre-wrap; }
+.table td.num-cell { font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.table td.date-cell { white-space: nowrap; }
 
 .table td.money-cell {
     direction: ltr;
@@ -399,24 +244,13 @@ main {
     font-variant-numeric: tabular-nums;
 }
 
-.table td.ded-cell,
-.table td.actions-cell {
-    text-align: center;
-}
+.table td.party-cell,
+.table td.actions-cell { text-align: center; }
 
-/* تظليل خفيف لكل صف ثانٍ، ثم التمرير فوقه */
-.data-table tbody tr:nth-child(even) {
-    background-color: var(--zebra-color);
-}
+.data-table tbody tr:nth-child(even) { background-color: var(--zebra-color); }
+.table tbody tr:hover { background-color: var(--table-head-color); }
 
-.table tbody tr:hover {
-    background-color: var(--table-head-color);
-}
-
-.table tr.opening-row td {
-    background-color: var(--table-head-color);
-    font-weight: 700;
-}
+.table tr.opening-row td { background-color: var(--table-head-color); font-weight: 700; }
 
 .table tfoot td {
     background-color: var(--table-head-color);
@@ -424,15 +258,11 @@ main {
     font-weight: 700;
 }
 
-.row-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
+.grid-table th,
+.grid-table td { border: 1px solid var(--grid-color); }
 
-.actions-cell .row-actions {
-    justify-content: center;
-}
+.row-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.actions-cell .row-actions { justify-content: center; }
 
 .badge {
     display: inline-block;
@@ -443,8 +273,8 @@ main {
     font-size: var(--small-font-size);
 }
 
-/* شارة سلفة الاستقطاع */
-.ded-badge {
+/* شارة الجهة الممولة */
+.party-badge {
     display: inline-block;
     max-width: 100%;
     padding: 3px 12px;
@@ -458,72 +288,42 @@ main {
     text-align: center;
 }
 
-.negative {
-    color: var(--red-color);
-    font-weight: 700;
-}
-
-.type-table {
-    margin-top: 16px;
-}
-
-/* جداول الكشوفات بخطوط وأعمدة */
-.grid-table th,
-.grid-table td {
-    border: 1px solid var(--grid-color);
-}
+.negative { color: var(--red-color); font-weight: 700; }
 
 /* ---------- عروض الأعمدة ---------- */
-/* آخر 100 مصروف */
-.col-amount  { width: 11%; }
-.col-date    { width: 11%; }
-.col-details { width: 32%; }
-.col-note    { width: 13%; }
-.col-ded     { width: 18%; }
-.col-actions { width: 15%; }
+/* المصروفات (القائمة والكشف) */
+.col-e-amount  { width: 9%; }
+.col-e-date    { width: 9%; }
+.col-e-details { width: 19%; }
+.col-e-note    { width: 10%; }
+.col-e-dest    { width: 11%; }
+.col-e-spender { width: 11%; }
+.col-e-funder  { width: 11%; }
+.col-e-acc     { width: 9%; }
+.col-e-actions { width: 11%; }
 
-/* كشف المصروفات */
-.col-r-amount  { width: 11%; }
-.col-r-date    { width: 11%; }
-.col-r-details { width: 32%; }
-.col-r-note    { width: 13%; }
-.col-r-ded     { width: 18%; }
-.col-r-actions { width: 15%; }
+/* المقبوضات (القائمة والكشف) */
+.col-l-amount  { width: 13%; }
+.col-l-date    { width: 12%; }
+.col-l-funder  { width: 22%; }
+.col-l-note    { width: 28%; }
+.col-l-acc     { width: 12%; }
+.col-l-actions { width: 13%; }
 
-/* كشف السلف */
-.col-lr-amount  { width: 17%; }
-.col-lr-date    { width: 15%; }
-.col-lr-source  { width: 31%; }
-.col-lr-type    { width: 22%; }
-.col-lr-actions { width: 15%; }
+/* قوائم الجهات */
+.col-n-name    { width: 40%; }
+.col-n-count   { width: 18%; }
+.col-n-total   { width: 24%; }
+.col-n-actions { width: 18%; }
 
-/* آخر السلف */
-.col-loan-amount  { width: 17%; }
-.col-loan-date    { width: 15%; }
-.col-source       { width: 31%; }
-.col-type         { width: 22%; }
-.col-loan-actions { width: 15%; }
-
-/* أنواع السلف */
-.col-type-name    { width: 70%; }
-.col-type-actions { width: 30%; }
-
-/* القاصة */
+/* القاصة وكشفها */
 .col-cash-type { width: 34%; }
 .col-cash-num  { width: 22%; }
-
-/* كشف القاصة */
 .col-cr-date { width: 12%; }
 .col-cr-text { width: 40%; }
 .col-cr-in   { width: 16%; }
 .col-cr-out  { width: 16%; }
 .col-cr-bal  { width: 16%; }
-
-/* جهات الصرف */
-.col-dest-name    { width: 40%; }
-.col-dest-count   { width: 18%; }
-.col-dest-total   { width: 24%; }
-.col-dest-actions { width: 18%; }
 
 /* الخلاصة */
 .col-sum-name  { width: 50%; }
@@ -536,10 +336,7 @@ main {
 .col-acc-actions { width: 30%; }
 
 /* ---------- القاصة والخلاصة ---------- */
-.cash-hint {
-    margin: 0 0 14px;
-    color: var(--muted-color);
-}
+.cash-hint { margin: 0 0 14px; color: var(--muted-color); }
 
 .stats {
     display: grid;
@@ -555,35 +352,14 @@ main {
     border-radius: var(--radius-large);
 }
 
-.stat-label {
-    display: block;
-    font-size: var(--small-font-size);
-    color: var(--muted-color);
-}
+.stat-label { display: block; font-size: var(--small-font-size); color: var(--muted-color); }
+.stat-value { display: block; margin-top: 6px; font-size: 24px; }
 
-.stat-value {
-    display: block;
-    margin-top: 6px;
-    font-size: 24px;
-}
+.stat-main { background-color: var(--green-color); border-color: var(--green-color); }
+.stat-main .stat-label { color: var(--off-white-color); }
+.stat-main .stat-value { color: var(--white-color); }
 
-.stat-main {
-    background-color: var(--green-color);
-    border-color: var(--green-color);
-}
-
-.stat-main .stat-label {
-    color: var(--off-white-color);
-}
-
-.stat-main .stat-value {
-    color: var(--white-color);
-}
-
-.summary-hint {
-    margin: 0 0 20px;
-    color: var(--muted-color);
-}
+.summary-hint { margin: 0 0 20px; color: var(--muted-color); }
 
 /* ---------- الكشوفات ---------- */
 .report-form {
@@ -593,9 +369,7 @@ main {
     align-items: end;
 }
 
-.report-form + div {
-    margin-top: 12px;
-}
+.report-form + div { margin-top: 12px; }
 
 .group-label {
     display: block;
@@ -604,29 +378,32 @@ main {
     color: var(--muted-color);
 }
 
-.check-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 22px;
-}
+.mode-switch { display: flex; flex-wrap: wrap; gap: 10px; }
 
-.check-item {
+.mode-option {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    padding: 8px 16px;
+    border: 1px solid var(--off-white-color);
+    border-radius: var(--radius-small);
+    background-color: var(--table-head-color);
     cursor: pointer;
 }
 
-.check-item input {
-    width: auto;
-    margin: 0;
+.mode-option:has(input:checked) {
+    border-color: var(--green-color);
+    background-color: var(--green-soft-color);
+    color: var(--green-color);
+    font-weight: 600;
 }
 
-.check-actions {
-    display: flex;
-    gap: 16px;
-    margin-top: 8px;
-}
+.mode-option input { margin: 0; accent-color: var(--green-color); }
+
+.check-list { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+.check-item { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.check-item input { width: auto; margin: 0; }
+.check-actions { display: flex; gap: 16px; margin-top: 8px; }
 
 .report-head {
     display: flex;
@@ -636,19 +413,9 @@ main {
     margin-bottom: 12px;
 }
 
-.report-head h2 {
-    margin: 0;
-}
-
-.report-sub {
-    margin: 4px 0 0;
-    color: var(--muted-color);
-}
-
-.report-buttons {
-    display: flex;
-    gap: 8px;
-}
+.report-head h2 { margin: 0; }
+.report-sub { margin: 4px 0 0; color: var(--muted-color); }
+.report-buttons { display: flex; gap: 8px; }
 
 /* ---------- رسالة التأكيد ---------- */
 .toast {
@@ -670,14 +437,8 @@ main {
     transition: opacity .25s, transform .25s;
 }
 
-.toast.show {
-    opacity: 1;
-    transform: translate(-50%, 0);
-}
-
-.toast-error {
-    background-color: var(--red-color);
-}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast-error { background-color: var(--red-color); }
 
 /* ---------- تسجيل الدخول ---------- */
 .login-screen {
@@ -698,23 +459,9 @@ main {
     border-radius: var(--radius-large);
 }
 
-.login-box h1 {
-    margin: 0 0 4px;
-    font-size: 22px;
-    text-align: center;
-    color: var(--green-color);
-}
-
-.login-box p {
-    margin: 0 0 22px;
-    text-align: center;
-    color: var(--muted-color);
-}
-
-.login-box .btn {
-    width: 100%;
-    padding: 10px 20px;
-}
+.login-box h1 { margin: 0 0 4px; font-size: 22px; text-align: center; color: var(--green-color); }
+.login-box p { margin: 0 0 22px; text-align: center; color: var(--muted-color); }
+.login-box .btn { width: 100%; padding: 10px 20px; }
 
 .login-credit {
     margin-top: 26px;
@@ -725,58 +472,36 @@ main {
     color: var(--muted-color);
 }
 
-.login-credit strong {
-    font-size: 18px;
-    color: var(--green-color);
-}
+.login-credit strong { font-size: 18px; color: var(--green-color); }
 
-/* ---------- الطباعة: الصفحة المعروضة فقط بخطوط وأعمدة ---------- */
+/* ---------- الطباعة: بالعرض، الصفحة المعروضة فقط ---------- */
+@page { size: A4 landscape; margin: 10mm; }
+
 @media print {
     .navbar,
     .noprint,
-    .toast {
-        display: none !important;
-    }
+    .toast { display: none !important; }
 
-    body {
-        background-color: #fff;
-        color: #000;
-    }
+    body { background-color: #fff; color: #000; }
+    main { max-width: none; margin: 0; padding: 0; }
+    .card { border: 0; padding: 0; }
 
-    main {
-        max-width: none;
-        margin: 0;
-        padding: 0;
-    }
+    .table-wrap { overflow: visible; }
+    .table-wide,
+    .table-mid { min-width: 0; }
 
-    .card {
-        border: 0;
-        padding: 0;
-    }
-
-    .report-head h2 {
-        font-size: 18px;
-    }
+    .report-head h2 { font-size: 18px; }
 
     .report-sub,
     .cash-hint,
-    .summary-hint {
-        color: #000;
-    }
+    .summary-hint { color: #000; }
 
-    .grid-table {
-        font-size: 13px;
-    }
+    .grid-table { font-size: 12px; }
 
     .grid-table th,
-    .grid-table td {
-        border: 1px solid #000;
-        color: #000;
-    }
+    .grid-table td { border: 1px solid #000; color: #000; }
 
-    .grid-table tbody tr {
-        background-color: #fff !important;
-    }
+    .grid-table tbody tr { background-color: #fff !important; }
 
     .grid-table th,
     .grid-table tfoot td {
@@ -791,8 +516,8 @@ main {
         print-color-adjust: exact;
     }
 
-    /* سلفة الاستقطاع تُطبع كنص عادي بدون شارة */
-    .grid-table .ded-badge {
+    /* الجهة الممولة تُطبع كنص عادي بدون شارة */
+    .grid-table .party-badge {
         padding: 0;
         border: 0;
         background: none;
@@ -801,34 +526,29 @@ main {
         font-weight: 400;
     }
 
-    .grid-table .negative {
-        color: #000;
-    }
+    .grid-table .negative { color: #000; }
 
-    /* بطاقات الخلاصة بدون ألوان */
     .stat,
-    .stat-main {
-        background: #fff;
-        border: 1px solid #000;
-    }
-
+    .stat-main { background: #fff; border: 1px solid #000; }
     .stat-main .stat-label,
-    .stat-main .stat-value {
-        color: #000;
-    }
+    .stat-main .stat-value { color: #000; }
 
     /* كشف المصروفات بعد إخفاء الأزرار */
-    .col-r-amount  { width: 14%; }
-    .col-r-date    { width: 12%; }
-    .col-r-details { width: 38%; }
-    .col-r-note    { width: 16%; }
-    .col-r-ded     { width: 20%; }
+    .col-e-amount  { width: 9%; }
+    .col-e-date    { width: 9%; }
+    .col-e-details { width: 25%; }
+    .col-e-note    { width: 12%; }
+    .col-e-dest    { width: 12%; }
+    .col-e-spender { width: 12%; }
+    .col-e-funder  { width: 12%; }
+    .col-e-acc     { width: 9%; }
 
-    /* كشف السلف بعد إخفاء الأزرار */
-    .col-lr-amount { width: 20%; }
-    .col-lr-date   { width: 18%; }
-    .col-lr-source { width: 38%; }
-    .col-lr-type   { width: 24%; }
+    /* كشف المقبوضات بعد إخفاء الأزرار */
+    .col-l-amount { width: 15%; }
+    .col-l-date   { width: 13%; }
+    .col-l-funder { width: 25%; }
+    .col-l-note   { width: 33%; }
+    .col-l-acc    { width: 14%; }
 
     .grid-table thead { display: table-header-group; }   /* يتكرر الرأس في كل صفحة */
     .grid-table tfoot { display: table-row-group; }      /* المجموع في آخر صفحة فقط */

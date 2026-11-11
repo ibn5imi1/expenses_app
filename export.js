@@ -7,7 +7,10 @@ const BORDERS = { top: EDGE, left: EDGE, bottom: EDGE, right: EDGE };
 
 // ورقة واحدة: spec = { name, columns: [{header, width}], rows: [[...]], total: [...], mergeTotal, extraRows }
 function writeSheet(wb, spec, title, subtitle) {
-    const ws = wb.addWorksheet(spec.name || 'الكشف', { views: [{ rightToLeft: true }] });
+    // الرأس مثبّت عند التمرير، والورقة من اليمين لليسار
+    const ws = wb.addWorksheet(spec.name || 'الكشف', {
+        views: [{ rightToLeft: true, state: 'frozen', ySplit: 4 }],
+    });
     const colCount = spec.columns.length;
 
     spec.columns.forEach((c, i) => {
@@ -62,13 +65,20 @@ function writeSheet(wb, spec, title, subtitle) {
 
     spec.rows.forEach((values, i) => writeRow(5 + i, values, false));
 
-    const totalRowNumber = 5 + spec.rows.length;
+    // سهم الفلترة على رأس كل عمود (يشمل الصفوف فقط، وليس صف الإجمالي)
+    ws.autoFilter = {
+        from: { row: 4, column: 1 },
+        to: { row: 4 + Math.max(spec.rows.length, 1), column: colCount },
+    };
+
+    // صف فارغ يفصل الإجمالي عن البيانات، حتى لا يدخل في الفلترة والترتيب
+    const totalRowNumber = 5 + spec.rows.length + 1;
     writeRow(totalRowNumber, spec.total, true);
     if (spec.mergeTotal !== false && colCount > 2) {
         ws.mergeCells(totalRowNumber, 2, totalRowNumber, colCount);
     }
 
-    // أسطر إضافية تحت الإجمالي (مثل مجموع السلف في الخلاصة)
+    // أسطر إضافية تحت الإجمالي (مثل مجموع المقبوضات في الخلاصة)
     (spec.extraRows || []).forEach((values, i) => writeRow(totalRowNumber + 1 + i, values, true));
 
     ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 };

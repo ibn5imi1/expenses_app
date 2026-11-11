@@ -42,7 +42,7 @@ function runAdminRecovery(resetArg) {
 
 function createWindow() {
     const win = new BrowserWindow({
-        width: 1280,
+        width: 1366,
         height: 800,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
@@ -114,11 +114,20 @@ app.whenReady().then(() => {
         db.updateAccountant(id, displayName, username, password), { admin: true });
     handle('deleteAccountant', (e, id) => db.deleteAccountant(id), { admin: true });
 
-    /* ---------- جهات الصرف ---------- */
+    /* ---------- الجهات المستفيدة ---------- */
     handle('getDestinations', () => db.getDestinations());
     handle('addDestination', (e, name) => db.addDestination(name));
     handle('updateDestination', (e, id, name) => db.updateDestination(id, name));
     handle('deleteDestination', (e, id) => db.deleteDestination(id));
+
+    /* ---------- الجهات القائمة بالصرف ---------- */
+    handle('getSpenders', () => db.getSpenders());
+    handle('addSpender', (e, name) => db.addSpender(name));
+    handle('updateSpender', (e, id, name) => db.updateSpender(id, name));
+    handle('deleteSpender', (e, id) => db.deleteSpender(id));
+
+    /* ---------- الجهات الممولة ---------- */
+    handle('getFundingParties', () => db.getFundingParties());
 
     /* ---------- المصروفات ---------- */
     handle('getExpenses', () => db.getExpenses());
@@ -126,13 +135,7 @@ app.whenReady().then(() => {
     handle('updateExpense', (e, id, data) => db.updateExpense(id, data, session.displayName));
     handle('deleteExpense', (e, id) => db.deleteExpense(id));
 
-    /* ---------- أنواع السلف ---------- */
-    handle('getLoanTypes', () => db.getLoanTypes());
-    handle('addLoanType', (e, name) => db.addLoanType(name));
-    handle('updateLoanType', (e, id, name) => db.updateLoanType(id, name));
-    handle('deleteLoanType', (e, id) => db.deleteLoanType(id));
-
-    /* ---------- السلف ---------- */
+    /* ---------- المقبوضات ---------- */
     handle('getLoans', () => db.getLoans());
     handle('addLoan', (e, data) => db.addLoan(data, session.displayName));
     handle('updateLoan', (e, id, data) => db.updateLoan(id, data, session.displayName));
@@ -142,7 +145,7 @@ app.whenReady().then(() => {
     handle('getMonthCashReport', (e, filters) => db.getMonthCashReport(filters));
     handle('getMonthSummary', (e, filters) => db.getMonthSummary(filters));
 
-    /* ---------- كشف المصروفات والسلف ---------- */
+    /* ---------- كشف المصروفات والمقبوضات ---------- */
     handle('getExpensesReport', (e, filters) => db.getExpensesReport(filters));
     handle('getLoansReport', (e, filters) => db.getLoansReport(filters));
 
@@ -160,11 +163,14 @@ app.whenReady().then(() => {
         return { saved: true, fileName: path.basename(result.filePath) };
     });
 
-    // الطباعة عبر نافذة الطباعة، ونعرف منها هل تمت أم أُلغيت
+    // الطباعة بالعرض لتتسع الأعمدة، ونعرف هل تمت أم أُلغيت
     handle('printPage', e => new Promise(resolve => {
-        e.sender.print({ silent: false, printBackground: true }, (success, reason) => {
-            resolve({ success, cancelled: !success && /cancel/i.test(String(reason)) });
-        });
+        e.sender.print(
+            { silent: false, printBackground: true, landscape: true },
+            (success, reason) => {
+                resolve({ success, cancelled: !success && /cancel/i.test(String(reason)) });
+            },
+        );
     }));
 
     createWindow();
