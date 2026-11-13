@@ -1,3 +1,5 @@
+// start electron-main.js
+
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const db = require('./db');
@@ -128,12 +130,18 @@ app.whenReady().then(() => {
 
     /* ---------- الجهات الممولة ---------- */
     handle('getFundingParties', () => db.getFundingParties());
+    handle('addFundingParty', (e, name) => db.addFundingParty(name));
 
     /* ---------- المصروفات ---------- */
     handle('getExpenses', () => db.getExpenses());
     handle('addExpense', (e, data) => db.addExpense(data, session.displayName));
     handle('updateExpense', (e, id, data) => db.updateExpense(id, data, session.displayName));
     handle('deleteExpense', (e, id) => db.deleteExpense(id));
+
+    /* ---------- الديون ---------- */
+    handle('getDebtsSummary', () => db.getDebtsSummary());
+    handle('getDebtItems', (e, destinationId) => db.getDebtItems(destinationId));
+    handle('settleDebt', (e, data) => db.settleDebt(data, session.displayName));
 
     /* ---------- المقبوضات ---------- */
     handle('getLoans', () => db.getLoans());
@@ -179,3 +187,5 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 });
+
+// end electron-main.js

@@ -1,3 +1,5 @@
+// start preload.js
+
 const { contextBridge, ipcRenderer } = require('electron');
 
 const call = channel => (...args) => ipcRenderer.invoke(channel, ...args);
@@ -29,12 +31,18 @@ contextBridge.exposeInMainWorld('api', {
 
     // الجهات الممولة
     getFundingParties: call('getFundingParties'),
+    addFundingParty: call('addFundingParty'),
 
     // المصروفات
     getExpenses: call('getExpenses'),
     addExpense: call('addExpense'),
     updateExpense: call('updateExpense'),
     deleteExpense: call('deleteExpense'),
+
+    // الديون
+    getDebtsSummary: call('getDebtsSummary'),
+    getDebtItems: call('getDebtItems'),
+    settleDebt: call('settleDebt'),
 
     // المقبوضات
     getLoans: call('getLoans'),
@@ -54,3 +62,5 @@ contextBridge.exposeInMainWorld('api', {
     exportReport: call('exportReport'),
     printPage: call('printPage'),
 });
+
+// end preload.js

@@ -21,7 +21,9 @@
     --radius-large: 10px;
 }
 
-* { box-sizing: border-box; }
+* {
+    box-sizing: border-box;
+}
 
 body {
     margin: 0;
@@ -31,7 +33,9 @@ body {
     background-color: var(--background-color);
 }
 
-.hidden { display: none !important; }
+.hidden {
+    display: none !important;
+}
 
 /* ---------- النافبار ---------- */
 .navbar {
@@ -45,9 +49,16 @@ body {
     background-color: var(--green-color);
 }
 
-.brand { color: var(--white-color); font-weight: 700; white-space: nowrap; }
+.brand {
+    color: var(--white-color);
+    font-weight: 700;
+    white-space: nowrap;
+}
 
-.nav-links { display: flex; flex-wrap: wrap; }
+.nav-links {
+    display: flex;
+    flex-wrap: wrap;
+}
 
 .nav-link {
     padding: 15px 10px;
@@ -60,8 +71,14 @@ body {
     cursor: pointer;
 }
 
-.nav-link:hover { color: var(--white-color); }
-.nav-link.active { color: var(--white-color); border-bottom-color: var(--gold-color); }
+.nav-link:hover {
+    color: var(--white-color);
+}
+
+.nav-link.active {
+    color: var(--white-color);
+    border-bottom-color: var(--gold-color);
+}
 
 .user-box {
     display: flex;
@@ -72,21 +89,35 @@ body {
     white-space: nowrap;
 }
 
-.user-name { font-weight: 700; }
+.user-name {
+    font-weight: 700;
+}
 
 /* ---------- المحتوى العام ---------- */
-main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
+main {
+    max-width: none;
+    margin: 22px auto;
+    padding: 0 20px;
+}
 
 .card {
-    margin-bottom: 20px;
+    margin: 0 auto 20px;
+    max-width: 1360px;
     padding: 20px;
     background-color: var(--white-color);
     border: 1px solid var(--off-white-color);
     border-radius: var(--radius-large);
 }
 
-.card h2 { margin: 0 0 16px; font-size: 18px; }
-.sub-title { margin: 26px 0 10px; font-size: 16px; }
+.card h2 {
+    margin: 0 0 16px;
+    font-size: 18px;
+}
+
+.sub-title {
+    margin: 26px 0 10px;
+    font-size: 16px;
+}
 
 /* ---------- الفورمات ---------- */
 .form-grid {
@@ -95,8 +126,13 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
     gap: 14px 16px;
 }
 
-.form-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
-.span-full { grid-column: 1 / -1; }
+.form-grid.cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.span-full {
+    grid-column: 1 / -1;
+}
 
 .field label {
     display: block;
@@ -116,7 +152,11 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
     background-color: var(--white-color);
 }
 
-.field textarea { resize: vertical; overflow: hidden; min-height: 80px; }
+.field textarea {
+    resize: vertical;
+    overflow: hidden;
+    min-height: 80px;
+}
 
 .field input:focus,
 .field select:focus,
@@ -127,7 +167,10 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
     outline-offset: 1px;
 }
 
-.form-actions { display: flex; gap: 10px; }
+.form-actions {
+    display: flex;
+    gap: 10px;
+}
 
 .invalid {
     border-color: var(--red-color) !important;
@@ -142,24 +185,62 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
     color: var(--red-color);
 }
 
-.inline-form { display: flex; align-items: flex-end; gap: 12px; }
-.inline-form .field { width: 320px; }
-.inline-form + .form-error { margin-top: 12px; }
-.inline-form.period-form .field { width: 180px; }
+.inline-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+}
 
-.stack { display: grid; gap: 14px; }
-.narrow { max-width: 460px; margin-inline: auto; }
-.medium { max-width: 720px; margin-inline: auto; }
+.inline-form .field {
+    width: 320px;
+}
+
+.inline-form+.form-error {
+    margin-top: 12px;
+}
+
+.inline-form.period-form .field {
+    width: 180px;
+}
+
+.stack {
+    display: grid;
+    gap: 14px;
+}
+
+.narrow {
+    max-width: 460px;
+    margin-inline: auto;
+}
+
+.medium {
+    max-width: 720px;
+    margin-inline: auto;
+}
 
 /* ---------- التقويم وإظهار كلمة المرور ---------- */
-.flatpickr-calendar { font-family: var(--font-main); }
-.flatpickr-day.selected { background-color: var(--green-color); border-color: var(--green-color); }
+.flatpickr-calendar {
+    font-family: var(--font-main);
+}
+
+.flatpickr-day.selected {
+    background-color: var(--green-color);
+    border-color: var(--green-color);
+}
 
 .date-wrap,
-.password-wrap { position: relative; }
+.password-wrap {
+    position: relative;
+}
 
-.field .date-wrap input { padding-inline-end: 38px; cursor: pointer; }
-.field .password-wrap input { padding-inline-end: 40px; }
+.field .date-wrap input {
+    padding-inline-end: 38px;
+    cursor: pointer;
+}
+
+.field .password-wrap input {
+    padding-inline-end: 40px;
+}
 
 .date-icon,
 .password-toggle {
@@ -176,7 +257,9 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
 }
 
 .date-icon:hover,
-.password-toggle:hover { color: var(--green-color); }
+.password-toggle:hover {
+    color: var(--green-color);
+}
 
 /* ---------- الأزرار ---------- */
 .btn {
@@ -189,11 +272,31 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
     cursor: pointer;
 }
 
-.btn:hover { opacity: .9; }
-.btn:disabled { opacity: .5; cursor: not-allowed; }
-.btn-light { background-color: var(--white-color); color: var(--green-color); }
-.btn-danger { border-color: var(--red-color); background-color: var(--white-color); color: var(--red-color); }
-.btn-small { padding: 4px 12px; font-size: var(--small-font-size); white-space: nowrap; }
+.btn:hover {
+    opacity: .9;
+}
+
+.btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.btn-light {
+    background-color: var(--white-color);
+    color: var(--green-color);
+}
+
+.btn-danger {
+    border-color: var(--red-color);
+    background-color: var(--white-color);
+    color: var(--red-color);
+}
+
+.btn-small {
+    padding: 4px 12px;
+    font-size: var(--small-font-size);
+    white-space: nowrap;
+}
 
 .link-btn {
     padding: 0;
@@ -206,11 +309,47 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
 }
 
 /* ---------- الجداول ---------- */
-.table-wrap { overflow-x: auto; }              /* تمرير أفقي عند ضيق الشاشة */
-.table-wide { min-width: 1250px; }
-.table-mid  { min-width: 820px; }
+/* السكرول الأفقي داخل حاوية الجدول فقط: حقول الإدخال تبقى ثابتة،
+   وارتفاع الحاوية بحجم الشاشة فيبقى شريط السكرول ظاهراً أسفل الجدول */
+.table-wrap {
+    overflow: auto;
+    max-height: calc(100vh - 150px);
+}
 
-.table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.table-wrap thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    box-shadow: 0 1px 0 var(--grid-color);
+}
+
+/* أقل عرض للجدول: تحته يظهر السكرول، وفوقه تتمدد الأعمدة بنفس النسبة */
+.table-wide {
+    min-width: 2600px;
+}
+
+.table-debts {
+    min-width: 1225px;
+}
+
+.table-mid {
+    min-width: 770px;
+}
+
+/* البطاقة العريضة تأخذ عرض الشاشة كاملاً */
+.card-wide {
+    max-width: none;
+}
+
+.card-wide .pay-form {
+    max-width: 1100px;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
 
 .table th,
 .table td {
@@ -227,14 +366,29 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
     white-space: nowrap;
 }
 
-.table td { white-space: normal; overflow-wrap: anywhere; }
+.table td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
 
 .table th.center,
-.table td.center { text-align: center; }
+.table td.center {
+    text-align: center;
+}
 
-.table td.details-cell { white-space: pre-wrap; }
-.table td.num-cell { font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.table td.date-cell { white-space: nowrap; }
+.table td.details-cell {
+    white-space: pre-wrap;
+}
+
+.table td.num-cell {
+    font-weight: 700;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.table td.date-cell {
+    white-space: nowrap;
+}
 
 .table td.money-cell {
     direction: ltr;
@@ -245,12 +399,22 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
 }
 
 .table td.party-cell,
-.table td.actions-cell { text-align: center; }
+.table td.actions-cell {
+    text-align: center;
+}
 
-.data-table tbody tr:nth-child(even) { background-color: var(--zebra-color); }
-.table tbody tr:hover { background-color: var(--table-head-color); }
+.data-table tbody tr:nth-child(even) {
+    background-color: var(--zebra-color);
+}
 
-.table tr.opening-row td { background-color: var(--table-head-color); font-weight: 700; }
+.table tbody tr:hover {
+    background-color: var(--table-head-color);
+}
+
+.table tr.opening-row td {
+    background-color: var(--table-head-color);
+    font-weight: 700;
+}
 
 .table tfoot td {
     background-color: var(--table-head-color);
@@ -259,10 +423,19 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
 }
 
 .grid-table th,
-.grid-table td { border: 1px solid var(--grid-color); }
+.grid-table td {
+    border: 1px solid var(--grid-color);
+}
 
-.row-actions { display: flex; flex-wrap: wrap; gap: 6px; }
-.actions-cell .row-actions { justify-content: center; }
+.row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.actions-cell .row-actions {
+    justify-content: center;
+}
 
 .badge {
     display: inline-block;
@@ -288,55 +461,214 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
     text-align: center;
 }
 
-.negative { color: var(--red-color); font-weight: 700; }
+.negative {
+    color: var(--red-color);
+    font-weight: 700;
+}
 
-/* ---------- عروض الأعمدة ---------- */
+/* ---------- عروض الأعمدة (بكسل) ---------- */
 /* المصروفات (القائمة والكشف) */
-.col-e-amount  { width: 9%; }
-.col-e-date    { width: 9%; }
-.col-e-details { width: 19%; }
-.col-e-note    { width: 10%; }
-.col-e-dest    { width: 11%; }
-.col-e-spender { width: 11%; }
-.col-e-funder  { width: 11%; }
-.col-e-acc     { width: 9%; }
-.col-e-actions { width: 11%; }
+.col-e-receipt {
+    width: 80px;
+}
+
+.col-e-amount {
+    width: 60px;
+}
+
+.col-e-paid {
+    width: 60px;
+}
+
+.col-e-rem {
+    width: 60px;
+}
+
+.col-e-date {
+    width: 80px;
+}
+
+.col-e-details {
+    width: 400px;
+}
+
+.col-e-note {
+    width: 130px;
+}
+
+.col-e-dest {
+    width: 130px;
+}
+
+.col-e-spender {
+    width: 140px;
+}
+
+.col-e-funder {
+    width: 130px;
+}
+
+.col-e-acc {
+    width: 100px;
+}
+
+.col-e-actions {
+    width: 120px;
+}
+
+/* الديون */
+.col-debt-name {
+    width: 60%;
+}
+
+.col-debt-total {
+    width: 40%;
+}
+
+.col-d-receipt {
+    width: 80px;
+}
+
+.col-d-amount {
+    width: 110px;
+}
+
+.col-d-paid {
+    width: 110px;
+}
+
+.col-d-rem {
+    width: 100px;
+}
+
+.col-d-date {
+    width: 95px;
+}
+
+.col-d-details {
+    width: 340px;
+}
+
+.col-d-spender {
+    width: 150px;
+}
+
+.col-d-funder {
+    width: 130px;
+}
+
+.col-d-actions {
+    width: 110px;
+}
+
+.medium-field {
+    max-width: 360px;
+}
+
+.pay-form {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--off-white-color);
+}
 
 /* المقبوضات (القائمة والكشف) */
-.col-l-amount  { width: 13%; }
-.col-l-date    { width: 12%; }
-.col-l-funder  { width: 22%; }
-.col-l-note    { width: 28%; }
-.col-l-acc     { width: 12%; }
-.col-l-actions { width: 13%; }
+.col-l-amount {
+    width: 18%;
+}
+
+.col-l-date {
+    width: 15%;
+}
+
+.col-l-funder {
+    width: 29%;
+}
+
+.col-l-acc {
+    width: 17%;
+}
+
+.col-l-actions {
+    width: 21%;
+}
 
 /* قوائم الجهات */
-.col-n-name    { width: 40%; }
-.col-n-count   { width: 18%; }
-.col-n-total   { width: 24%; }
-.col-n-actions { width: 18%; }
+.col-n-name {
+    width: 40%;
+}
+
+.col-n-count {
+    width: 18%;
+}
+
+.col-n-total {
+    width: 24%;
+}
+
+.col-n-actions {
+    width: 18%;
+}
 
 /* القاصة وكشفها */
-.col-cash-type { width: 34%; }
-.col-cash-num  { width: 22%; }
-.col-cr-date { width: 12%; }
-.col-cr-text { width: 40%; }
-.col-cr-in   { width: 16%; }
-.col-cr-out  { width: 16%; }
-.col-cr-bal  { width: 16%; }
+.col-cash-type {
+    width: 34%;
+}
+
+.col-cash-num {
+    width: 22%;
+}
+
+.col-cr-date {
+    width: 12%;
+}
+
+.col-cr-text {
+    width: 40%;
+}
+
+.col-cr-in {
+    width: 16%;
+}
+
+.col-cr-out {
+    width: 16%;
+}
+
+.col-cr-bal {
+    width: 16%;
+}
 
 /* الخلاصة */
-.col-sum-name  { width: 50%; }
-.col-sum-count { width: 20%; }
-.col-sum-total { width: 30%; }
+.col-sum-name {
+    width: 50%;
+}
+
+.col-sum-count {
+    width: 20%;
+}
+
+.col-sum-total {
+    width: 30%;
+}
 
 /* المحاسبون */
-.col-acc-name    { width: 40%; }
-.col-acc-user    { width: 30%; }
-.col-acc-actions { width: 30%; }
+.col-acc-name {
+    width: 40%;
+}
+
+.col-acc-user {
+    width: 30%;
+}
+
+.col-acc-actions {
+    width: 30%;
+}
 
 /* ---------- القاصة والخلاصة ---------- */
-.cash-hint { margin: 0 0 14px; color: var(--muted-color); }
+.cash-hint {
+    margin: 0 0 14px;
+    color: var(--muted-color);
+}
 
 .stats {
     display: grid;
@@ -352,14 +684,35 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
     border-radius: var(--radius-large);
 }
 
-.stat-label { display: block; font-size: var(--small-font-size); color: var(--muted-color); }
-.stat-value { display: block; margin-top: 6px; font-size: 24px; }
+.stat-label {
+    display: block;
+    font-size: var(--small-font-size);
+    color: var(--muted-color);
+}
 
-.stat-main { background-color: var(--green-color); border-color: var(--green-color); }
-.stat-main .stat-label { color: var(--off-white-color); }
-.stat-main .stat-value { color: var(--white-color); }
+.stat-value {
+    display: block;
+    margin-top: 6px;
+    font-size: 24px;
+}
 
-.summary-hint { margin: 0 0 20px; color: var(--muted-color); }
+.stat-main {
+    background-color: var(--green-color);
+    border-color: var(--green-color);
+}
+
+.stat-main .stat-label {
+    color: var(--off-white-color);
+}
+
+.stat-main .stat-value {
+    color: var(--white-color);
+}
+
+.summary-hint {
+    margin: 0 0 20px;
+    color: var(--muted-color);
+}
 
 /* ---------- الكشوفات ---------- */
 .report-form {
@@ -369,7 +722,9 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
     align-items: end;
 }
 
-.report-form + div { margin-top: 12px; }
+.report-form+div {
+    margin-top: 12px;
+}
 
 .group-label {
     display: block;
@@ -378,7 +733,11 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
     color: var(--muted-color);
 }
 
-.mode-switch { display: flex; flex-wrap: wrap; gap: 10px; }
+.mode-switch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
 
 .mode-option {
     display: flex;
@@ -398,12 +757,34 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
     font-weight: 600;
 }
 
-.mode-option input { margin: 0; accent-color: var(--green-color); }
+.mode-option input {
+    margin: 0;
+    accent-color: var(--green-color);
+}
 
-.check-list { display: flex; flex-wrap: wrap; gap: 8px 22px; }
-.check-item { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-.check-item input { width: auto; margin: 0; }
-.check-actions { display: flex; gap: 16px; margin-top: 8px; }
+.check-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 22px;
+}
+
+.check-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.check-item input {
+    width: auto;
+    margin: 0;
+}
+
+.check-actions {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+}
 
 .report-head {
     display: flex;
@@ -413,9 +794,19 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
     margin-bottom: 12px;
 }
 
-.report-head h2 { margin: 0; }
-.report-sub { margin: 4px 0 0; color: var(--muted-color); }
-.report-buttons { display: flex; gap: 8px; }
+.report-head h2 {
+    margin: 0;
+}
+
+.report-sub {
+    margin: 4px 0 0;
+    color: var(--muted-color);
+}
+
+.report-buttons {
+    display: flex;
+    gap: 8px;
+}
 
 /* ---------- رسالة التأكيد ---------- */
 .toast {
@@ -437,8 +828,14 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
     transition: opacity .25s, transform .25s;
 }
 
-.toast.show { opacity: 1; transform: translate(-50%, 0); }
-.toast-error { background-color: var(--red-color); }
+.toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+.toast-error {
+    background-color: var(--red-color);
+}
 
 /* ---------- تسجيل الدخول ---------- */
 .login-screen {
@@ -459,9 +856,23 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
     border-radius: var(--radius-large);
 }
 
-.login-box h1 { margin: 0 0 4px; font-size: 22px; text-align: center; color: var(--green-color); }
-.login-box p { margin: 0 0 22px; text-align: center; color: var(--muted-color); }
-.login-box .btn { width: 100%; padding: 10px 20px; }
+.login-box h1 {
+    margin: 0 0 4px;
+    font-size: 22px;
+    text-align: center;
+    color: var(--green-color);
+}
+
+.login-box p {
+    margin: 0 0 22px;
+    text-align: center;
+    color: var(--muted-color);
+}
+
+.login-box .btn {
+    width: 100%;
+    padding: 10px 20px;
+}
 
 .login-credit {
     margin-top: 26px;
@@ -472,36 +883,81 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
     color: var(--muted-color);
 }
 
-.login-credit strong { font-size: 18px; color: var(--green-color); }
+.login-credit strong {
+    font-size: 18px;
+    color: var(--green-color);
+}
 
 /* ---------- الطباعة: بالعرض، الصفحة المعروضة فقط ---------- */
-@page { size: A4 landscape; margin: 10mm; }
+@page {
+    size: A4 landscape;
+    margin: 10mm;
+}
 
 @media print {
+
     .navbar,
     .noprint,
-    .toast { display: none !important; }
+    .toast {
+        display: none !important;
+    }
 
-    body { background-color: #fff; color: #000; }
-    main { max-width: none; margin: 0; padding: 0; }
-    .card { border: 0; padding: 0; }
+    body {
+        background-color: #fff;
+        color: #000;
+    }
 
-    .table-wrap { overflow: visible; }
+    main {
+        max-width: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .card {
+        border: 0;
+        padding: 0;
+        max-width: none;
+    }
+
+    .table-wrap {
+        overflow: visible;
+        max-height: none;
+    }
+
+    .table-wrap thead th {
+        position: static;
+        box-shadow: none;
+    }
+
     .table-wide,
-    .table-mid { min-width: 0; }
+    .table-debts,
+    .table-mid {
+        min-width: 0;
+    }
 
-    .report-head h2 { font-size: 18px; }
+    .report-head h2 {
+        font-size: 18px;
+    }
 
     .report-sub,
     .cash-hint,
-    .summary-hint { color: #000; }
+    .summary-hint {
+        color: #000;
+    }
 
-    .grid-table { font-size: 12px; }
+    .grid-table {
+        font-size: 12px;
+    }
 
     .grid-table th,
-    .grid-table td { border: 1px solid #000; color: #000; }
+    .grid-table td {
+        border: 1px solid #000;
+        color: #000;
+    }
 
-    .grid-table tbody tr { background-color: #fff !important; }
+    .grid-table tbody tr {
+        background-color: #fff !important;
+    }
 
     .grid-table th,
     .grid-table tfoot td {
@@ -526,31 +982,94 @@ main { max-width: 1400px; margin: 22px auto; padding: 0 20px; }
         font-weight: 400;
     }
 
-    .grid-table .negative { color: #000; }
+    .grid-table .negative {
+        color: #000;
+    }
 
     .stat,
-    .stat-main { background: #fff; border: 1px solid #000; }
+    .stat-main {
+        background: #fff;
+        border: 1px solid #000;
+    }
+
     .stat-main .stat-label,
-    .stat-main .stat-value { color: #000; }
+    .stat-main .stat-value {
+        color: #000;
+    }
 
     /* كشف المصروفات بعد إخفاء الأزرار */
-    .col-e-amount  { width: 9%; }
-    .col-e-date    { width: 9%; }
-    .col-e-details { width: 25%; }
-    .col-e-note    { width: 12%; }
-    .col-e-dest    { width: 12%; }
-    .col-e-spender { width: 12%; }
-    .col-e-funder  { width: 12%; }
-    .col-e-acc     { width: 9%; }
+    .col-e-receipt {
+        width: 7%;
+    }
+
+    .col-e-amount {
+        width: 9%;
+    }
+
+    .col-e-paid {
+        width: 9%;
+    }
+
+    .col-e-rem {
+        width: 9%;
+    }
+
+    .col-e-date {
+        width: 8%;
+    }
+
+    .col-e-details {
+        width: 17%;
+    }
+
+    .col-e-note {
+        width: 9%;
+    }
+
+    .col-e-dest {
+        width: 9%;
+    }
+
+    .col-e-spender {
+        width: 9%;
+    }
+
+    .col-e-funder {
+        width: 9%;
+    }
+
+    .col-e-acc {
+        width: 5%;
+    }
 
     /* كشف المقبوضات بعد إخفاء الأزرار */
-    .col-l-amount { width: 15%; }
-    .col-l-date   { width: 13%; }
-    .col-l-funder { width: 25%; }
-    .col-l-note   { width: 33%; }
-    .col-l-acc    { width: 14%; }
+    .col-l-amount {
+        width: 18%;
+    }
 
-    .grid-table thead { display: table-header-group; }   /* يتكرر الرأس في كل صفحة */
-    .grid-table tfoot { display: table-row-group; }      /* المجموع في آخر صفحة فقط */
-    .grid-table tr    { break-inside: avoid; }
+    .col-l-date {
+        width: 16%;
+    }
+
+    .col-l-funder {
+        width: 38%;
+    }
+
+    .col-l-acc {
+        width: 28%;
+    }
+
+    .grid-table thead {
+        display: table-header-group;
+    }
+
+    /* يتكرر الرأس في كل صفحة */
+    .grid-table tfoot {
+        display: table-row-group;
+    }
+
+    /* المجموع في آخر صفحة فقط */
+    .grid-table tr {
+        break-inside: avoid;
+    }
 }

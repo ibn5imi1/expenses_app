@@ -44,6 +44,7 @@
           <button class="nav-link" data-page="expenses">المصروفات</button>
           <button class="nav-link" data-page="cash">القاصة</button>
           <button class="nav-link" data-page="loans">المقبوضات</button>
+          <button class="nav-link" data-page="debts">الديون</button>
           <button class="nav-link" data-page="destinations">الجهات المستفيدة</button>
           <button class="nav-link" data-page="spenders">الجهات القائمة بالصرف</button>
           <button class="nav-link" data-page="summary">الخلاصة</button>
@@ -68,12 +69,20 @@
 
             <form id="expense-form" class="form-grid cols-3" novalidate>
               <div class="field">
-                <label for="expense-amount">المبلغ</label>
+                <label for="expense-amount">المبلغ الكلي</label>
                 <input type="text" id="expense-amount" inputmode="decimal" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label for="expense-paid">المدفوع نقداً (الباقي يُسجَّل ديناً تلقائياً)</label>
+                <input type="text" id="expense-paid" inputmode="decimal" autocomplete="off" />
               </div>
               <div class="field">
                 <label for="expense-date">التاريخ</label>
                 <input type="text" id="expense-date" />
+              </div>
+              <div class="field">
+                <label for="expense-receipt">رقم الوصل</label>
+                <input type="text" id="expense-receipt" autocomplete="off" />
               </div>
               <div class="field">
                 <label for="expense-destination">الجهة المستفيدة</label>
@@ -105,19 +114,23 @@
             </form>
           </div>
 
-          <div class="card">
+          <div class="card card-wide">
             <h2>آخر 100 مصروف</h2>
 
             <div class="table-wrap">
-              <table class="table table-wide data-table">
+              <table class="table table-wide grid-table data-table">
                 <colgroup>
-                  <col class="col-e-amount" /><col class="col-e-date" /><col class="col-e-details" />
+                  <col class="col-e-receipt" /><col class="col-e-amount" /><col class="col-e-paid" />
+                  <col class="col-e-rem" /><col class="col-e-date" /><col class="col-e-details" />
                   <col class="col-e-note" /><col class="col-e-dest" /><col class="col-e-spender" />
                   <col class="col-e-funder" /><col class="col-e-acc" /><col class="col-e-actions" />
                 </colgroup>
                 <thead>
                   <tr>
-                    <th>المبلغ</th>
+                    <th>رقم الوصل</th>
+                    <th>المبلغ الكلي</th>
+                    <th>المدفوع نقداً</th>
+                    <th>المتبقي</th>
                     <th>التاريخ</th>
                     <th>التفاصيل</th>
                     <th>ملاحظات</th>
@@ -139,7 +152,7 @@
           <div class="card">
             <h2>إضافة مقبوض</h2>
 
-            <form id="loan-form" class="form-grid" novalidate>
+            <form id="loan-form" class="form-grid cols-3" novalidate>
               <div class="field">
                 <label for="loan-amount">المبلغ</label>
                 <input type="text" id="loan-amount" inputmode="decimal" autocomplete="off" />
@@ -150,12 +163,7 @@
               </div>
               <div class="field">
                 <label for="loan-funder">الجهة الممولة</label>
-                <input type="text" id="loan-funder" list="funders-list" autocomplete="off" />
-                <datalist id="funders-list"></datalist>
-              </div>
-              <div class="field">
-                <label for="loan-note">البيان (اختياري)</label>
-                <input type="text" id="loan-note" autocomplete="off" />
+                <select id="loan-funder"></select>
               </div>
 
               <div class="form-error span-full hidden" id="loan-error"></div>
@@ -168,26 +176,125 @@
           </div>
 
           <div class="card">
-            <h2>آخر المقبوضات</h2>
+            <h2>إضافة جهة ممولة</h2>
+            <form id="funder-add-form" class="inline-form" novalidate>
+              <div class="field">
+                <label for="funder-add-name">اسم الجهة الممولة</label>
+                <input type="text" id="funder-add-name" autocomplete="off" />
+              </div>
+              <button type="submit" class="btn">إضافة الجهة</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <h2>آخر 100 مقبوض</h2>
 
             <div class="table-wrap">
-              <table class="table table-mid data-table">
+              <table class="table table-mid grid-table data-table">
                 <colgroup>
                   <col class="col-l-amount" /><col class="col-l-date" /><col class="col-l-funder" />
-                  <col class="col-l-note" /><col class="col-l-acc" /><col class="col-l-actions" />
+                  <col class="col-l-acc" /><col class="col-l-actions" />
                 </colgroup>
                 <thead>
                   <tr>
                     <th>المبلغ</th>
                     <th>التاريخ</th>
                     <th>الجهة الممولة</th>
-                    <th>البيان</th>
                     <th>المحاسب</th>
                     <th class="center">تعديل / حذف</th>
                   </tr>
                 </thead>
                 <tbody id="loans-body"></tbody>
               </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== الديون ===== -->
+        <section class="page hidden" id="page-debts">
+          <div class="card noprint">
+            <div class="mode-switch">
+              <button type="button" class="btn" id="debts-tab-list">كشف الديون</button>
+              <button type="button" class="btn btn-light" id="debts-tab-pay">تسديد الديون</button>
+            </div>
+          </div>
+
+          <div id="debts-view-list">
+            <div class="card">
+              <h2>كشف الديون</h2>
+              <table class="table grid-table">
+                <colgroup>
+                  <col class="col-debt-name" /><col class="col-debt-total" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>الجهة الدائنة</th>
+                    <th>مجموع الديون</th>
+                  </tr>
+                </thead>
+                <tbody id="debts-body"></tbody>
+                <tfoot>
+                  <tr>
+                    <td>المجموع</td>
+                    <td id="debts-total"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <div id="debts-view-pay" class="hidden">
+            <div class="card">
+              <h2>تسديد الديون</h2>
+              <div class="field medium-field">
+                <label for="debt-creditor">الجهة الدائنة</label>
+                <select id="debt-creditor"></select>
+              </div>
+            </div>
+
+            <div class="card card-wide hidden" id="debt-items-card">
+              <h2 id="debt-items-title"></h2>
+
+              <div class="table-wrap">
+                <table class="table table-debts grid-table data-table">
+                  <colgroup>
+                    <col class="col-d-receipt" /><col class="col-d-amount" /><col class="col-d-paid" />
+                    <col class="col-d-rem" /><col class="col-d-date" /><col class="col-d-details" />
+                    <col class="col-d-spender" /><col class="col-d-funder" /><col class="col-d-actions" />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th>رقم الوصل</th>
+                      <th>المبلغ الكلي</th>
+                      <th>المدفوع نقداً</th>
+                      <th>المتبقي</th>
+                      <th>التاريخ</th>
+                      <th>التفاصيل</th>
+                      <th>الجهة القائمة بالصرف</th>
+                      <th>الجهة الممولة</th>
+                      <th class="center">تسديد</th>
+                    </tr>
+                  </thead>
+                  <tbody id="debt-items-body"></tbody>
+                </table>
+              </div>
+
+              <form id="debt-pay-form" class="report-form pay-form hidden" novalidate>
+                <p class="report-sub span-full" id="debt-pay-info"></p>
+                <div class="field">
+                  <label for="debt-pay-amount">مبلغ التسديد</label>
+                  <input type="text" id="debt-pay-amount" inputmode="decimal" autocomplete="off" />
+                </div>
+                <div class="field">
+                  <label for="debt-pay-date">تاريخ التسديد</label>
+                  <input type="text" id="debt-pay-date" />
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn" id="debt-pay-submit">تأكيد التسديد</button>
+                  <button type="button" class="btn btn-light" id="debt-pay-cancel">إلغاء</button>
+                </div>
+                <div class="form-error span-full hidden" id="debt-pay-error"></div>
+              </form>
             </div>
           </div>
         </section>
@@ -206,7 +313,7 @@
                 <label for="cash-month">الشهر</label>
                 <select id="cash-month"></select>
               </div>
-              <button type="submit" class="btn">عرض الكشف</button>
+              <button type="submit" class="btn">كشف</button>
             </form>
             <div class="hidden" id="cash-error"></div>
           </div>
@@ -248,29 +355,6 @@
                 </tr>
               </tfoot>
             </table>
-
-            <h3 class="sub-title">كشف القاصة</h3>
-
-            <table class="table grid-table data-table">
-              <thead>
-                <tr>
-                  <th class="col-cr-date">التاريخ</th>
-                  <th class="col-cr-text">البيان</th>
-                  <th class="col-cr-in">وارد</th>
-                  <th class="col-cr-out">صادر</th>
-                  <th class="col-cr-bal">الرصيد</th>
-                </tr>
-              </thead>
-              <tbody id="cash-ledger-body"></tbody>
-              <tfoot>
-                <tr>
-                  <td colspan="2" id="cash-ledger-count"></td>
-                  <td id="cash-ledger-in"></td>
-                  <td id="cash-ledger-out"></td>
-                  <td id="cash-ledger-closing"></td>
-                </tr>
-              </tfoot>
-            </table>
           </div>
         </section>
 
@@ -291,7 +375,7 @@
 
           <div class="card">
             <h2>الجهات المستفيدة</h2>
-            <table class="table">
+            <table class="table grid-table">
               <colgroup>
                 <col class="col-n-name" /><col class="col-n-count" />
                 <col class="col-n-total" /><col class="col-n-actions" />
@@ -334,7 +418,7 @@
 
           <div class="card">
             <h2>الجهات القائمة بالصرف</h2>
-            <table class="table">
+            <table class="table grid-table">
               <colgroup>
                 <col class="col-n-name" /><col class="col-n-count" />
                 <col class="col-n-total" /><col class="col-n-actions" />
@@ -484,7 +568,7 @@
             <div class="hidden" id="expenses-report-error"></div>
           </div>
 
-          <div class="card hidden" id="expenses-report-result">
+          <div class="card card-wide hidden" id="expenses-report-result">
             <div class="report-head">
               <div>
                 <h2 id="expenses-report-title"></h2>
@@ -500,7 +584,10 @@
               <table class="table table-wide grid-table data-table">
                 <thead>
                   <tr>
-                    <th class="col-e-amount">المبلغ</th>
+                    <th class="col-e-receipt">رقم الوصل</th>
+                    <th class="col-e-amount">المبلغ الكلي</th>
+                    <th class="col-e-paid">المدفوع نقداً</th>
+                    <th class="col-e-rem">المتبقي</th>
                     <th class="col-e-date">التاريخ</th>
                     <th class="col-e-details">التفاصيل</th>
                     <th class="col-e-note">ملاحظات</th>
@@ -514,8 +601,9 @@
                 <tbody id="expenses-report-body"></tbody>
                 <tfoot>
                   <tr>
+                    <td colspan="2" id="expenses-report-count"></td>
                     <td id="expenses-report-total"></td>
-                    <td colspan="7" id="expenses-report-count"></td>
+                    <td colspan="8">المجموع = المصروف نقداً فعلياً (كل تسديد يُحسب بمبلغه فقط)</td>
                     <td class="noprint"></td>
                   </tr>
                 </tfoot>
@@ -573,7 +661,6 @@
                     <th class="col-l-amount">المبلغ</th>
                     <th class="col-l-date">التاريخ</th>
                     <th class="col-l-funder">الجهة الممولة</th>
-                    <th class="col-l-note">البيان</th>
                     <th class="col-l-acc">المحاسب</th>
                     <th class="col-l-actions center noprint">تعديل / حذف</th>
                   </tr>
@@ -582,7 +669,7 @@
                 <tfoot>
                   <tr>
                     <td id="loans-report-total"></td>
-                    <td colspan="4" id="loans-report-count"></td>
+                    <td colspan="3" id="loans-report-count"></td>
                     <td class="noprint"></td>
                   </tr>
                 </tfoot>
@@ -645,7 +732,7 @@
 
           <div class="card medium">
             <h2>المحاسبون</h2>
-            <table class="table">
+            <table class="table grid-table">
               <colgroup>
                 <col class="col-acc-name" /><col class="col-acc-user" /><col class="col-acc-actions" />
               </colgroup>
