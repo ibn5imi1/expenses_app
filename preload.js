@@ -23,15 +23,10 @@ contextBridge.exposeInMainWorld('api', {
     updateDestination: call('updateDestination'),
     deleteDestination: call('deleteDestination'),
 
-    // الجهات القائمة بالصرف
-    getSpenders: call('getSpenders'),
-    addSpender: call('addSpender'),
-    updateSpender: call('updateSpender'),
-    deleteSpender: call('deleteSpender'),
-
-    // الجهات الممولة
+    // الجهات القائمة بالصرف (= الجهات الممولة)
     getFundingParties: call('getFundingParties'),
     addFundingParty: call('addFundingParty'),
+    getSpendersReport: call('getSpendersReport'),
 
     // المصروفات
     getExpenses: call('getExpenses'),
@@ -43,6 +38,7 @@ contextBridge.exposeInMainWorld('api', {
     getDebtsSummary: call('getDebtsSummary'),
     getDebtItems: call('getDebtItems'),
     settleDebt: call('settleDebt'),
+    getDebtsReport: call('getDebtsReport'),
 
     // المقبوضات
     getLoans: call('getLoans'),

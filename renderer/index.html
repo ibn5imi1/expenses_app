@@ -93,10 +93,6 @@
                 <select id="expense-spender"></select>
               </div>
               <div class="field">
-                <label for="expense-funder">الجهة الممولة</label>
-                <select id="expense-funder"></select>
-              </div>
-              <div class="field">
                 <label for="expense-note">ملاحظات</label>
                 <input type="text" id="expense-note" />
               </div>
@@ -123,7 +119,7 @@
                   <col class="col-e-receipt" /><col class="col-e-amount" /><col class="col-e-paid" />
                   <col class="col-e-rem" /><col class="col-e-date" /><col class="col-e-details" />
                   <col class="col-e-note" /><col class="col-e-dest" /><col class="col-e-spender" />
-                  <col class="col-e-funder" /><col class="col-e-acc" /><col class="col-e-actions" />
+                  <col class="col-e-acc" /><col class="col-e-actions" />
                 </colgroup>
                 <thead>
                   <tr>
@@ -136,7 +132,6 @@
                     <th>ملاحظات</th>
                     <th>الجهة المستفيدة</th>
                     <th>الجهة القائمة بالصرف</th>
-                    <th>الجهة الممولة</th>
                     <th>المحاسب</th>
                     <th class="center">تعديل / حذف</th>
                   </tr>
@@ -162,7 +157,7 @@
                 <input type="text" id="loan-date" />
               </div>
               <div class="field">
-                <label for="loan-funder">الجهة الممولة</label>
+                <label for="loan-funder">الجهة القائمة بالصرف</label>
                 <select id="loan-funder"></select>
               </div>
 
@@ -176,10 +171,10 @@
           </div>
 
           <div class="card">
-            <h2>إضافة جهة ممولة</h2>
+            <h2>إضافة جهة قائمة بالصرف</h2>
             <form id="funder-add-form" class="inline-form" novalidate>
               <div class="field">
-                <label for="funder-add-name">اسم الجهة الممولة</label>
+                <label for="funder-add-name">اسم الجهة القائمة بالصرف</label>
                 <input type="text" id="funder-add-name" autocomplete="off" />
               </div>
               <button type="submit" class="btn">إضافة الجهة</button>
@@ -199,7 +194,7 @@
                   <tr>
                     <th>المبلغ</th>
                     <th>التاريخ</th>
-                    <th>الجهة الممولة</th>
+                    <th>الجهة القائمة بالصرف</th>
                     <th>المحاسب</th>
                     <th class="center">تعديل / حذف</th>
                   </tr>
@@ -210,7 +205,7 @@
           </div>
         </section>
 
-        <!-- ===== الديون ===== -->
+                <!-- ===== الديون ===== -->
         <section class="page hidden" id="page-debts">
           <div class="card noprint">
             <div class="mode-switch">
@@ -219,9 +214,81 @@
             </div>
           </div>
 
+          <!-- ===== كشف الديون ===== -->
           <div id="debts-view-list">
+            <!-- اختيار الجهات الدائنة -->
+            <div class="card noprint">
+              <h2>كشف الديون حسب الجهة</h2>
+
+              <form id="debts-report-form" class="report-form" novalidate>
+                <div class="report-group span-full">
+                  <span class="group-label">الجهات الدائنة (يمكن اختيار أكثر من جهة)</span>
+                  <div class="check-list" id="debts-report-creditors"></div>
+                  <div class="check-actions">
+                    <button type="button" class="link-btn" id="debts-report-all">تحديد الكل</button>
+                    <button type="button" class="link-btn" id="debts-report-none">إلغاء التحديد</button>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn">عرض الكشف</button>
+                </div>
+              </form>
+              <div class="hidden" id="debts-report-error"></div>
+            </div>
+
+            <!-- نتيجة الكشف التفصيلي -->
+            <div class="card card-wide hidden" id="debts-report-result">
+              <div class="report-head">
+                <div>
+                  <h2 id="debts-report-title"></h2>
+                  <p class="report-sub" id="debts-report-subtitle"></p>
+                </div>
+                <div class="report-buttons noprint">
+                  <button type="button" class="btn btn-light" id="debts-report-print">طباعة</button>
+                  <button type="button" class="btn" id="debts-report-excel">تصدير Excel</button>
+                </div>
+              </div>
+
+              <div class="table-wrap">
+                <table class="table table-debts grid-table data-table">
+                  <thead>
+                    <tr>
+                      <th class="col-d-dest">الجهة الدائنة</th>
+                      <th class="col-d-receipt">رقم الوصل</th>
+                      <th class="col-d-amount">المبلغ الكلي</th>
+                      <th class="col-d-paid">المدفوع نقداً</th>
+                      <th class="col-d-rem">المتبقي</th>
+                      <th class="col-d-date">التاريخ</th>
+                      <th class="col-d-details">التفاصيل</th>
+                      <th class="col-d-spender">الجهة القائمة بالصرف</th>
+                      <th class="col-d-acc">المحاسب</th>
+                    </tr>
+                  </thead>
+                  <tbody id="debts-report-body"></tbody>
+                  <tfoot>
+                    <tr>
+                      <td colspan="4">المجموع</td>
+                      <td id="debts-report-total"></td>
+                      <td colspan="4"></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+
+            <!-- ملخص الديون لكل الجهات -->
             <div class="card">
-              <h2>كشف الديون</h2>
+              <div class="report-head">
+                <div>
+                  <h2>ملخص الديون</h2>
+                  <p class="report-sub" id="debts-subtitle"></p>
+                </div>
+                <div class="report-buttons noprint">
+                  <button type="button" class="btn btn-light" id="debts-print">طباعة</button>
+                  <button type="button" class="btn" id="debts-excel">تصدير Excel</button>
+                </div>
+              </div>
+
               <table class="table grid-table">
                 <colgroup>
                   <col class="col-debt-name" /><col class="col-debt-total" />
@@ -243,8 +310,9 @@
             </div>
           </div>
 
+          <!-- ===== تسديد الديون ===== -->
           <div id="debts-view-pay" class="hidden">
-            <div class="card">
+            <div class="card noprint">
               <h2>تسديد الديون</h2>
               <div class="field medium-field">
                 <label for="debt-creditor">الجهة الدائنة</label>
@@ -253,33 +321,45 @@
             </div>
 
             <div class="card card-wide hidden" id="debt-items-card">
-              <h2 id="debt-items-title"></h2>
+              <div class="report-head">
+                <div>
+                  <h2 id="debt-items-title"></h2>
+                  <p class="report-sub" id="debt-items-subtitle"></p>
+                </div>
+                <div class="report-buttons noprint">
+                  <button type="button" class="btn btn-light" id="debt-items-print">طباعة</button>
+                  <button type="button" class="btn" id="debt-items-excel">تصدير Excel</button>
+                </div>
+              </div>
 
               <div class="table-wrap">
                 <table class="table table-debts grid-table data-table">
-                  <colgroup>
-                    <col class="col-d-receipt" /><col class="col-d-amount" /><col class="col-d-paid" />
-                    <col class="col-d-rem" /><col class="col-d-date" /><col class="col-d-details" />
-                    <col class="col-d-spender" /><col class="col-d-funder" /><col class="col-d-actions" />
-                  </colgroup>
                   <thead>
                     <tr>
-                      <th>رقم الوصل</th>
-                      <th>المبلغ الكلي</th>
-                      <th>المدفوع نقداً</th>
-                      <th>المتبقي</th>
-                      <th>التاريخ</th>
-                      <th>التفاصيل</th>
-                      <th>الجهة القائمة بالصرف</th>
-                      <th>الجهة الممولة</th>
-                      <th class="center">تسديد</th>
+                      <th class="col-d-receipt">رقم الوصل</th>
+                      <th class="col-d-amount">المبلغ الكلي</th>
+                      <th class="col-d-paid">المدفوع نقداً</th>
+                      <th class="col-d-rem">المتبقي</th>
+                      <th class="col-d-date">التاريخ</th>
+                      <th class="col-d-details">التفاصيل</th>
+                      <th class="col-d-spender">الجهة القائمة بالصرف</th>
+                      <th class="col-d-acc">المحاسب</th>
+                      <th class="col-d-actions center noprint">تسديد</th>
                     </tr>
                   </thead>
                   <tbody id="debt-items-body"></tbody>
+                  <tfoot>
+                    <tr>
+                      <td colspan="3">المجموع</td>
+                      <td id="debt-items-total"></td>
+                      <td colspan="4"></td>
+                      <td class="noprint"></td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
 
-              <form id="debt-pay-form" class="report-form pay-form hidden" novalidate>
+              <form id="debt-pay-form" class="report-form pay-form noprint hidden" novalidate>
                 <p class="report-sub span-full" id="debt-pay-info"></p>
                 <div class="field">
                   <label for="debt-pay-amount">مبلغ التسديد</label>
@@ -339,7 +419,7 @@
               </colgroup>
               <thead>
                 <tr>
-                  <th>الجهة الممولة</th>
+                  <th>الجهة القائمة بالصرف</th>
                   <th>صافي المقبوضات</th>
                   <th>المصروف منها</th>
                   <th>المتبقي</th>
@@ -401,34 +481,46 @@
           </div>
         </section>
 
-        <!-- ===== الجهات القائمة بالصرف ===== -->
+        <!-- ===== كشف الجهات القائمة بالصرف ===== -->
         <section class="page hidden" id="page-spenders">
-          <div class="card">
-            <h2>إضافة جهة قائمة بالصرف</h2>
-            <form id="spn-form" class="inline-form" novalidate>
+          <div class="card noprint">
+            <h2>كشف الجهات القائمة بالصرف</h2>
+
+            <form id="spn-form" class="inline-form period-form" novalidate>
               <div class="field">
-                <label for="spn-name">اسم الجهة القائمة بالصرف</label>
-                <input type="text" id="spn-name" autocomplete="off" />
+                <label for="spn-year">السنة</label>
+                <input type="number" id="spn-year" min="2000" max="2100" inputmode="numeric" />
               </div>
-              <button type="submit" class="btn" id="spn-submit">إضافة الجهة</button>
-              <button type="button" class="btn btn-light hidden" id="spn-cancel">إلغاء</button>
+              <div class="field">
+                <label for="spn-month">الشهر</label>
+                <select id="spn-month"></select>
+              </div>
+              <button type="submit" class="btn">عرض الكشف</button>
             </form>
-            <div class="form-error hidden" id="spn-error"></div>
+            <div class="hidden" id="spn-error"></div>
           </div>
 
-          <div class="card">
-            <h2>الجهات القائمة بالصرف</h2>
+          <div class="card" id="spn-result">
+            <div class="report-head">
+              <div>
+                <h2 id="spn-title"></h2>
+                <p class="report-sub" id="spn-subtitle"></p>
+              </div>
+              <div class="report-buttons noprint">
+                <button type="button" class="btn btn-light" id="spn-print">طباعة</button>
+                <button type="button" class="btn" id="spn-excel">تصدير Excel</button>
+              </div>
+            </div>
+
             <table class="table grid-table">
               <colgroup>
-                <col class="col-n-name" /><col class="col-n-count" />
-                <col class="col-n-total" /><col class="col-n-actions" />
+                <col class="col-sum-name" /><col class="col-sum-count" /><col class="col-sum-total" />
               </colgroup>
               <thead>
                 <tr>
                   <th>الجهة القائمة بالصرف</th>
                   <th>عدد المصروفات</th>
                   <th>مجموع المصروفات</th>
-                  <th class="center">تعديل / حذف</th>
                 </tr>
               </thead>
               <tbody id="spn-body"></tbody>
@@ -437,7 +529,6 @@
                   <td>المجموع</td>
                   <td id="spn-total-count"></td>
                   <td id="spn-total-sum"></td>
-                  <td></td>
                 </tr>
               </tfoot>
             </table>
@@ -593,7 +684,6 @@
                     <th class="col-e-note">ملاحظات</th>
                     <th class="col-e-dest">الجهة المستفيدة</th>
                     <th class="col-e-spender">الجهة القائمة بالصرف</th>
-                    <th class="col-e-funder">الجهة الممولة</th>
                     <th class="col-e-acc">المحاسب</th>
                     <th class="col-e-actions center noprint">تعديل / حذف</th>
                   </tr>
@@ -603,7 +693,7 @@
                   <tr>
                     <td colspan="2" id="expenses-report-count"></td>
                     <td id="expenses-report-total"></td>
-                    <td colspan="8">المجموع = المصروف نقداً فعلياً (كل تسديد يُحسب بمبلغه فقط)</td>
+                    <td colspan="7">المجموع = المصروف نقداً فعلياً (كل تسديد يُحسب بمبلغه فقط)</td>
                     <td class="noprint"></td>
                   </tr>
                 </tfoot>
@@ -615,11 +705,11 @@
         <!-- ===== كشف المقبوضات ===== -->
         <section class="page hidden" id="page-loans-report">
           <div class="card noprint">
-            <h2>كشف المقبوضات حسب الجهة الممولة</h2>
+            <h2>كشف المقبوضات حسب الجهة القائمة بالصرف</h2>
 
             <form id="loans-report-form" class="report-form" novalidate>
               <div class="report-group span-full">
-                <span class="group-label">الجهات الممولة (يمكن اختيار أكثر من جهة)</span>
+                <span class="group-label">الجهات القائمة بالصرف (يمكن اختيار أكثر من جهة)</span>
                 <div class="check-list" id="report-funders"></div>
                 <div class="check-actions">
                   <button type="button" class="link-btn" id="report-funder-all">تحديد الكل</button>
@@ -660,7 +750,7 @@
                   <tr>
                     <th class="col-l-amount">المبلغ</th>
                     <th class="col-l-date">التاريخ</th>
-                    <th class="col-l-funder">الجهة الممولة</th>
+                    <th class="col-l-funder">الجهة القائمة بالصرف</th>
                     <th class="col-l-acc">المحاسب</th>
                     <th class="col-l-actions center noprint">تعديل / حذف</th>
                   </tr>

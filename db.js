@@ -7,21 +7,13 @@ const Database = require("better-sqlite3");
 let db;
 
 /*
-  ملاحظة: جدول loan_types وعمود loan_type_id يمثلان الآن "الجهات الممولة".
-  أبقينا أسماءهما القديمة داخل قاعدة البيانات لحماية البيانات الموجودة،
-  وكل ما يخرج من هذا الملف إلى الواجهة يستخدم الأسماء الجديدة (funding_party).
-  وعمود loans.source يمثل الآن "البيان" (ملاحظة المقبوض).
+  ملاحظة: جدول loan_types وعمود loan_type_id يمثلان الآن "الجهات القائمة بالصرف"
+  (وهي نفسها الجهات الممولة). أبقينا أسماءهما القديمة داخل قاعدة البيانات لحماية البيانات.
+  جدول spenders وعمود expenses.spender_id لم يعودا مستخدمين (بقيا لحماية البيانات القديمة).
+  عمود loans.carry_deduct يمثل الآن المبلغ المخصوم من المقبوض لأنه لم يُصرف في شهره.
 */
 
-const SYSTEM_USER = "النظام";
-const MIN_DATE = "0000-01-01";
-const CARRY_LOCKED_MESSAGE =
-  "هذا مقبوض مرحّل تلقائياً من القاصة ولا يمكن تعديله أو حذفه";
-
-const MONTH_NAMES = [
-  "كانون الثاني", "شباط", "آذار", "نيسان", "أيار", "حزيران",
-  "تموز", "آب", "أيلول", "تشرين الأول", "تشرين الثاني", "كانون الأول",
-];
+const MIN_PASSWORD = 6;
 
 function init() {
   const file = path.join(app.getPath("userData"), "college.db");
@@ -98,7 +90,7 @@ function init() {
 
   seed();
   migrate();
-  syncCarry();
+  syncCash();
   pruneFundingParties();
 }
 
@@ -128,7 +120,7 @@ function seed() {
     }
 
     db.prepare(
-      `INSERT INTO settings (key, value) VALUES ('schema_version', '8')
+      `INSERT INTO settings (key, value) VALUES ('schema_version', '9')
        ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
     ).run();
   })();
@@ -142,7 +134,7 @@ function migrate() {
       .all()
       .some((c) => c.name === column);
 
-  // عمود الجهة الممولة في المصروفات (قواعد قديمة جداً)
+  // عمود الجهة في المصروفات (قواعد قديمة جداً)
   if (!hasColumn("expenses", "loan_type_id")) {
     db.exec(
       "ALTER TABLE expenses ADD COLUMN loan_type_id INTEGER REFERENCES loan_types(id)",
@@ -172,31 +164,17 @@ function migrate() {
      WHERE display_name IS NULL OR display_name = ''`,
   ).run();
 
-  // علامة المقبوضات المرحّلة تلقائياً من القاصة
   if (!hasColumn("loans", "is_carry")) {
     db.exec("ALTER TABLE loans ADD COLUMN is_carry INTEGER NOT NULL DEFAULT 0");
   }
 
-  // الجهة القائمة بالصرف: المصروفات القديمة تُنسب إلى "غير محددة"
   if (!hasColumn("expenses", "spender_id")) {
     db.exec(
       "ALTER TABLE expenses ADD COLUMN spender_id INTEGER REFERENCES spenders(id)",
     );
   }
-  const orphans = db
-    .prepare("SELECT COUNT(*) AS c FROM expenses WHERE spender_id IS NULL")
-    .get().c;
-  if (orphans > 0) {
-    db.prepare("INSERT OR IGNORE INTO spenders (name) VALUES ('غير محددة')").run();
-    const unknown = db
-      .prepare("SELECT id FROM spenders WHERE name = 'غير محددة'")
-      .get();
-    db.prepare("UPDATE expenses SET spender_id = ? WHERE spender_id IS NULL").run(
-      unknown.id,
-    );
-  }
 
-  // الجهات الممولة: لم تعد هناك جهة ثابتة
+  // الجهات: لم تعد هناك جهة ثابتة
   db.prepare("UPDATE loan_types SET is_fixed = 0 WHERE is_fixed = 1").run();
 
   // الديون: المتبقي، المصروف نقداً، ربط التسديد، رقم الوصل
@@ -219,15 +197,15 @@ function migrate() {
     "UPDATE expenses SET cash_out = amount - remaining WHERE cash_out IS NULL",
   ).run();
 
-  // الترحيل الجديد: خصم المتبقي من آخر المقبوضات
   if (!hasColumn("loans", "carry_deduct")) {
     db.exec("ALTER TABLE loans ADD COLUMN carry_deduct REAL NOT NULL DEFAULT 0");
   }
-  if (getSetting("carry_model") !== "2") {
-    // مقبوضات الترحيل القديمة (بنفس الجهة الممولة) تُحذف وتُعاد بالنموذج الجديد
+
+  // النموذج الجديد (3): لا ترحيل للشهر التالي، بل يُصفَّر المتبقي لكل جهة عند انتهاء الشهر
+  if (getSetting("carry_model") !== "3") {
     db.prepare("DELETE FROM loans WHERE is_carry = 1").run();
     db.prepare("UPDATE loans SET carry_deduct = 0").run();
-    setSetting("carry_model", "2");
+    setSetting("carry_model", "3");
   }
 }
 
@@ -248,7 +226,7 @@ function setSetting(key, value) {
   ).run(key, value);
 }
 
-/* ---------- ترحيل متبقي القاصة تلقائياً ---------- */
+/* ---------- تصفير القاصة تلقائياً عند انتهاء كل شهر ---------- */
 const round2 = (n) => Math.round(n * 100) / 100;
 
 // 'YYYY-MM' + عدد أشهر
@@ -263,88 +241,41 @@ function currentMonthKey() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
-// partyId = null يعني كل الجهات. raw = المبلغ الأصلي بدون خصم الترحيل
-function sumLoans(partyId, from, to, includeCarry, raw = false) {
-  const conds = ["date >= ?", "date <= ?"];
-  const params = [from, to];
-  if (partyId !== null) {
-    conds.push("loan_type_id = ?");
-    params.push(partyId);
-  }
-  if (!includeCarry) conds.push("is_carry = 0");
-
+// raw = المبلغ الأصلي بدون خصم غير المصروف
+function sumLoans(partyId, from, to, raw = false) {
   return db
     .prepare(
       `SELECT COALESCE(SUM(${raw ? "amount" : "amount - carry_deduct"}), 0) AS s
-       FROM loans WHERE ${conds.join(" AND ")}`,
+       FROM loans WHERE loan_type_id = ? AND date >= ? AND date <= ?`,
     )
-    .get(...params).s;
+    .get(partyId, from, to).s;
 }
 
 // المصروف الفعلي من القاصة = المدفوع نقداً فقط (cash_out)
 function sumExpenses(partyId, from, to) {
-  const conds = ["date >= ?", "date <= ?"];
-  const params = [from, to];
-  if (partyId !== null) {
-    conds.push("loan_type_id = ?");
-    params.push(partyId);
-  }
-
   return db
     .prepare(
       `SELECT COALESCE(SUM(cash_out), 0) AS s
-       FROM expenses WHERE ${conds.join(" AND ")}`,
+       FROM expenses WHERE loan_type_id = ? AND date >= ? AND date <= ?`,
     )
-    .get(...params).s;
+    .get(partyId, from, to).s;
 }
 
-// ينشئ أو يحدّث أو يحذف مقبوض الترحيل بتاريخ 1 من الشهر التالي،
-// بجهة ممولة اسمها «المتبقي في القاصة لشهر ...» والمحاسب «النظام»
-function upsertCarry(fromMonth, remaining) {
-  const amount = round2(Math.max(remaining, 0));
-  const date = `${shiftMonthKey(fromMonth, 1)}-01`;
-  const note = `المتبقي في القاصة لشهر ${MONTH_NAMES[Number(fromMonth.slice(5, 7)) - 1]}`;
-  const now = new Date().toISOString();
-
-  const existing = db
-    .prepare(
-      "SELECT id, amount, loan_type_id FROM loans WHERE is_carry = 1 AND date = ?",
-    )
-    .get(date);
-
-  if (amount > 0) {
-    const partyId = ensureFundingParty(note);
-    if (!existing) {
-      db.prepare(
-        `INSERT INTO loans (amount, date, source, loan_type_id, is_carry, created_by, created_at)
-         VALUES (?, ?, ?, ?, 1, ?, ?)`,
-      ).run(amount, date, note, partyId, SYSTEM_USER, now);
-    } else if (round2(existing.amount) !== amount || existing.loan_type_id !== partyId) {
-      db.prepare(
-        `UPDATE loans SET amount = ?, source = ?, loan_type_id = ?, updated_by = ?, updated_at = ?
-         WHERE id = ?`,
-      ).run(amount, note, partyId, SYSTEM_USER, now, existing.id);
-    }
-  } else if (existing) {
-    db.prepare("DELETE FROM loans WHERE id = ?").run(existing.id);
-  }
-}
-
-// ينقص المتبقي من آخر المقبوضات في الفترة (الأحدث أولاً) ويخزنه في carry_deduct
+// ينقص غير المصروف من مقبوضات الجهة في الشهر (الأحدث أولاً) ويخزنه في carry_deduct
 // المبلغ الأصلي يبقى محفوظاً في amount، والمعروض = amount - carry_deduct
-function applyDeductions(from, to, includeCarry, amountToMove) {
-  const where = `date >= ? AND date <= ?${includeCarry ? "" : " AND is_carry = 0"}`;
+function applyDeductions(partyId, from, to, amountToRemove) {
+  const where = "loan_type_id = ? AND date >= ? AND date <= ?";
 
   db.prepare(
     `UPDATE loans SET carry_deduct = 0 WHERE ${where} AND carry_deduct <> 0`,
-  ).run(from, to);
+  ).run(partyId, from, to);
 
-  let left = round2(Math.max(amountToMove, 0));
+  let left = round2(Math.max(amountToRemove, 0));
   if (left <= 0) return;
 
   const rows = db
     .prepare(`SELECT id, amount FROM loans WHERE ${where} ORDER BY date DESC, id DESC`)
-    .all(from, to);
+    .all(partyId, from, to);
   const update = db.prepare("UPDATE loans SET carry_deduct = ? WHERE id = ?");
 
   for (const r of rows) {
@@ -355,43 +286,44 @@ function applyDeductions(from, to, includeCarry, amountToMove) {
   }
 }
 
-// يضمن أن الترحيل صحيح لكل الأشهر المنتهية. آمنة للتكرار.
-// نهاية كل شهر: المتبقي في القاصة (كل المقبوضات − المدفوع نقداً) يُنقص من آخر المقبوضات
-// ويظهر مقبوضاً جديداً في أول الشهر التالي بجهة ممولة خاصة به.
-function syncCarry() {
+// عند انتهاء كل شهر: لكل جهة، المتبقي (مقبوضاتها − المدفوع نقداً منها) يُنقَص من مقبوضاتها
+// فتصبح المقبوضات مساوية للمصروف فعلاً، ويتصفّر المتبقي. لا ترحيل للشهر التالي.
+// آمنة للتكرار، وتُعيد الحساب عند أي تعديل.
+function syncCash() {
   db.transaction(() => {
-    const current = currentMonthKey();
-    const target = shiftMonthKey(current, -1); // آخر شهر منتهٍ
+    const target = shiftMonthKey(currentMonthKey(), -1); // آخر شهر منتهٍ
 
-    // إن رجع تاريخ الجهاز للوراء: نحذف الترحيل المستقبلي ونلغي الخصم عن الأشهر غير المنتهية
-    db.prepare("DELETE FROM loans WHERE is_carry = 1 AND date > ?").run(`${current}-31`);
-    db.prepare("UPDATE loans SET carry_deduct = 0 WHERE date > ? AND carry_deduct <> 0").run(
-      `${target}-31`,
+    // الشهر الحالي وما بعده لا يُخصم منه شيء
+    db.prepare(
+      "UPDATE loans SET carry_deduct = 0 WHERE date > ? AND carry_deduct <> 0",
+    ).run(`${target}-31`);
+
+    const first = db
+      .prepare(
+        `SELECT MIN(d) AS d FROM (
+           SELECT MIN(date) AS d FROM loans
+           UNION ALL
+           SELECT MIN(date) AS d FROM expenses
+         )`,
+      )
+      .get().d;
+    if (!first) return;
+
+    const partiesIn = db.prepare(
+      "SELECT DISTINCT loan_type_id AS id FROM loans WHERE date >= ? AND date <= ?",
     );
 
-    let start = getSetting("carry_start_month");
-    if (!start) {
-      start = target; // أول تفعيل: نبدأ من آخر شهر منتهٍ
-      setSetting("carry_start_month", start);
-    }
-    if (start > target) return;
-
-    for (let m = start; m <= target; m = shiftMonthKey(m, 1)) {
-      // شهر البداية تراكمي (كل البيانات السابقة)، وما بعده شهري ويشمل المرحّل إليه
-      const cumulative = m === start;
-      const from = cumulative ? MIN_DATE : `${m}-01`;
+    for (let m = first.slice(0, 7); m <= target; m = shiftMonthKey(m, 1)) {
+      const from = `${m}-01`;
       const to = `${m}-31`;
-      const includeCarry = !cumulative;
 
-      const remaining = round2(
-        sumLoans(null, from, to, includeCarry, true) - sumExpenses(null, from, to),
-      );
-
-      applyDeductions(from, to, includeCarry, remaining);
-      upsertCarry(m, remaining);
+      for (const p of partiesIn.all(from, to)) {
+        const remaining = round2(
+          sumLoans(p.id, from, to, true) - sumExpenses(p.id, from, to),
+        );
+        applyDeductions(p.id, from, to, remaining);
+      }
     }
-
-    pruneFundingParties();
   })();
 }
 
@@ -408,12 +340,7 @@ function parsePeriod(f) {
   return { key, from: `${key}-01`, to: `${key}-31` };
 }
 
-/* ---------- قوائم الأسماء: الجهات المستفيدة والجهات القائمة بالصرف ---------- */
-const NAMED = {
-  destinations: { column: "destination_id" },
-  spenders: { column: "spender_id" },
-};
-
+/* ---------- الجهات المستفيدة ---------- */
 function cleanListName(name) {
   const clean = String(name || "").replace(/\s+/g, " ").trim();
   if (!clean) throw new Error("اسم الجهة مطلوب");
@@ -421,24 +348,23 @@ function cleanListName(name) {
   return clean;
 }
 
-function getNamed(table) {
-  const col = NAMED[table].column;
+function getDestinations() {
   return db
     .prepare(
       `SELECT n.id, n.name, n.is_fixed,
-              (SELECT COUNT(*) FROM expenses WHERE ${col} = n.id) AS expenses_count,
-              COALESCE((SELECT SUM(cash_out) FROM expenses WHERE ${col} = n.id), 0) AS expenses_total
-       FROM ${table} n
+              (SELECT COUNT(*) FROM expenses WHERE destination_id = n.id) AS expenses_count,
+              COALESCE((SELECT SUM(cash_out) FROM expenses WHERE destination_id = n.id), 0) AS expenses_total
+       FROM destinations n
        ORDER BY n.id`,
     )
     .all();
 }
 
-function addNamed(table, name) {
+function addDestination(name) {
   const clean = cleanListName(name);
   try {
     return db
-      .prepare(`INSERT INTO ${table} (name, is_fixed) VALUES (?, 0)`)
+      .prepare("INSERT INTO destinations (name, is_fixed) VALUES (?, 0)")
       .run(clean).lastInsertRowid;
   } catch (err) {
     if (isConstraintError(err)) throw new Error("هذه الجهة موجودة مسبقاً");
@@ -446,62 +372,39 @@ function addNamed(table, name) {
   }
 }
 
-function updateNamed(table, id, name) {
+function updateDestination(id, name) {
   const clean = cleanListName(name);
-  const row = db.prepare(`SELECT is_fixed FROM ${table} WHERE id = ?`).get(id);
+  const row = db.prepare("SELECT is_fixed FROM destinations WHERE id = ?").get(id);
   if (!row) throw new Error("الجهة غير موجودة");
   if (row.is_fixed) throw new Error("لا يمكن تعديل هذه الجهة");
 
   try {
-    db.prepare(`UPDATE ${table} SET name = ? WHERE id = ?`).run(clean, id);
+    db.prepare("UPDATE destinations SET name = ? WHERE id = ?").run(clean, id);
   } catch (err) {
     if (isConstraintError(err)) throw new Error("هذه الجهة موجودة مسبقاً");
     throw err;
   }
 }
 
-function deleteNamed(table, id) {
-  const col = NAMED[table].column;
-  const row = db.prepare(`SELECT is_fixed FROM ${table} WHERE id = ?`).get(id);
+function deleteDestination(id) {
+  const row = db.prepare("SELECT is_fixed FROM destinations WHERE id = ?").get(id);
   if (!row) throw new Error("الجهة غير موجودة");
   if (row.is_fixed) throw new Error("لا يمكن حذف هذه الجهة");
 
   const count = db
-    .prepare(`SELECT COUNT(*) AS c FROM expenses WHERE ${col} = ?`)
+    .prepare("SELECT COUNT(*) AS c FROM expenses WHERE destination_id = ?")
     .get(id).c;
   if (count) throw new Error(`لا يمكن حذف جهة لديها ${count} مصروف`);
 
-  db.prepare(`DELETE FROM ${table} WHERE id = ?`).run(id);
+  db.prepare("DELETE FROM destinations WHERE id = ?").run(id);
 }
 
-const getDestinations = () => getNamed("destinations");
-const addDestination = (name) => addNamed("destinations", name);
-const updateDestination = (id, name) => updateNamed("destinations", id, name);
-const deleteDestination = (id) => deleteNamed("destinations", id);
-
-const getSpenders = () => getNamed("spenders");
-const addSpender = (name) => addNamed("spenders", name);
-const updateSpender = (id, name) => updateNamed("spenders", id, name);
-const deleteSpender = (id) => deleteNamed("spenders", id);
-
-/* ---------- الجهات الممولة (تُنشأ من المقبوضات) ---------- */
+/* ---------- الجهات القائمة بالصرف (= الجهات الممولة، وتُنشأ من المقبوضات) ---------- */
 function getFundingParties() {
   return db.prepare("SELECT id, name FROM loan_types ORDER BY id").all();
 }
 
-function ensureFundingParty(name) {
-  const clean = String(name || "").replace(/\s+/g, " ").trim();
-  if (!clean) throw new Error("الجهة الممولة مطلوبة");
-  if (clean.length > 60) throw new Error("اسم الجهة الممولة طويل جداً");
-
-  const found = db.prepare("SELECT id FROM loan_types WHERE name = ?").get(clean);
-  if (found) return found.id;
-  return db
-    .prepare("INSERT INTO loan_types (name, is_fixed) VALUES (?, 0)")
-    .run(clean).lastInsertRowid;
-}
-
-// تُحذف الجهة الممولة التي لا يستخدمها أي مقبوض أو مصروف
+// تُحذف الجهات القديمة «المتبقي في القاصة لشهر ...» التي لا يستخدمها أي مقبوض أو مصروف
 function pruneFundingParties() {
   db.prepare(
     `DELETE FROM loan_types
@@ -510,10 +413,11 @@ function pruneFundingParties() {
        AND id NOT IN (SELECT loan_type_id FROM expenses WHERE loan_type_id IS NOT NULL)`,
   ).run();
 }
+
 function addFundingParty(name) {
   const clean = String(name || "").replace(/\s+/g, " ").trim();
-  if (!clean) throw new Error("اسم الجهة الممولة مطلوب");
-  if (clean.length > 60) throw new Error("اسم الجهة الممولة طويل جداً");
+  if (!clean) throw new Error("اسم الجهة القائمة بالصرف مطلوب");
+  if (clean.length > 60) throw new Error("اسم الجهة طويل جداً");
   if (db.prepare("SELECT 1 FROM loan_types WHERE name = ?").get(clean))
     throw new Error("هذه الجهة موجودة مسبقاً");
   return db
@@ -521,20 +425,35 @@ function addFundingParty(name) {
     .run(clean).lastInsertRowid;
 }
 
+// كشف الجهات القائمة بالصرف لشهر وسنة: عدد المصروفات ومجموع المدفوع نقداً
+function getSpendersReport(f) {
+  const { from, to } = parsePeriod(f);
+  return db
+    .prepare(
+      `SELECT t.id, t.name,
+              (SELECT COUNT(*) FROM expenses
+               WHERE loan_type_id = t.id AND date >= ? AND date <= ?) AS expenses_count,
+              COALESCE((SELECT SUM(cash_out) FROM expenses
+                        WHERE loan_type_id = t.id AND date >= ? AND date <= ?), 0) AS expenses_total
+       FROM loan_types t
+       ORDER BY t.id`,
+    )
+    .all(from, to, from, to);
+}
+
 /* ---------- المصروفات ---------- */
 // remaining = المتبقي (دين) بعد هذا القيد، paid = المدفوع نقداً تراكمياً
 // cash_out = ما خرج فعلاً من القاصة بهذا القيد (للتسديد: مبلغ التسديد فقط)
 // settles_id = القيد السابق الذي سدّد منه هذا القيد (للتسديدات فقط)
+// الجهة القائمة بالصرف (spender) = loan_type_id
 const EXPENSE_SELECT = `
   SELECT e.id, e.amount, e.remaining, (e.amount - e.remaining) AS paid, e.cash_out,
          e.settles_id, e.receipt_no, e.details, e.date, e.note,
          e.destination_id, d.name AS destination,
-         e.spender_id, s.name AS spender,
-         e.loan_type_id AS funding_party_id, t.name AS funding_party,
+         e.loan_type_id AS spender_id, t.name AS spender,
          e.created_by, e.created_at, e.updated_by, e.updated_at
   FROM expenses e
   JOIN destinations d ON d.id = e.destination_id
-  LEFT JOIN spenders s ON s.id = e.spender_id
   JOIN loan_types t ON t.id = e.loan_type_id
 `;
 
@@ -548,10 +467,8 @@ function validateExpense(d) {
 
   if (!db.prepare("SELECT id FROM destinations WHERE id = ?").get(d.destinationId))
     throw new Error("الجهة المستفيدة غير موجودة");
-  if (!db.prepare("SELECT id FROM spenders WHERE id = ?").get(d.spenderId))
+  if (!db.prepare("SELECT id FROM loan_types WHERE id = ?").get(d.spenderId))
     throw new Error("الجهة القائمة بالصرف غير موجودة");
-  if (!db.prepare("SELECT id FROM loan_types WHERE id = ?").get(d.fundingPartyId))
-    throw new Error("الجهة الممولة غير موجودة");
 }
 
 function readRemaining(d, max) {
@@ -579,8 +496,8 @@ function addExpense(d, user) {
     .prepare(
       `INSERT INTO expenses
          (amount, remaining, cash_out, receipt_no, details, date, note,
-          destination_id, spender_id, loan_type_id, created_by, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          destination_id, loan_type_id, created_by, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       amount,
@@ -592,11 +509,10 @@ function addExpense(d, user) {
       String(d.note || "").trim(),
       d.destinationId,
       d.spenderId,
-      d.fundingPartyId,
       user,
       new Date().toISOString(),
     );
-  syncCarry();
+  syncCash();
   return result.lastInsertRowid;
 }
 
@@ -638,7 +554,7 @@ function updateExpense(id, d, user) {
   db.prepare(
     `UPDATE expenses
      SET amount = ?, remaining = ?, cash_out = ?, receipt_no = ?, details = ?, date = ?,
-         note = ?, destination_id = ?, spender_id = ?, loan_type_id = ?,
+         note = ?, destination_id = ?, loan_type_id = ?,
          updated_by = ?, updated_at = ?
      WHERE id = ?`,
   ).run(
@@ -651,13 +567,11 @@ function updateExpense(id, d, user) {
     String(d.note || "").trim(),
     d.destinationId,
     d.spenderId,
-    d.fundingPartyId,
     user,
     new Date().toISOString(),
     id,
   );
-  syncCarry();
-  pruneFundingParties();
+  syncCash();
 }
 
 function deleteExpense(id) {
@@ -665,8 +579,7 @@ function deleteExpense(id) {
     throw new Error("لا يمكن حذف هذا المصروف لأن عليه تسديداً، احذف التسديد أولاً");
   }
   db.prepare("DELETE FROM expenses WHERE id = ?").run(id);
-  syncCarry();
-  pruneFundingParties();
+  syncCash();
 }
 
 /* ---------- الديون ---------- */
@@ -699,6 +612,20 @@ function getDebtItems(destinationId) {
     )
     .all(Number(destinationId));
 }
+// ids = أرقام الجهات الدائنة المختارة
+function getDebtsReport(ids) {
+  const list = cleanIds(ids);
+  if (!list.length) return [];
+
+  return db
+    .prepare(
+      `${EXPENSE_SELECT}
+       WHERE e.destination_id IN (${list.map(() => "?").join(",")})
+         AND ${ACTIVE_DEBT}
+       ORDER BY e.destination_id, e.date ASC, e.id ASC`,
+    )
+    .all(...list);
+}
 
 // تسديد: قيد جديد بنفس بيانات القيد القديم، والأصل لا يتغير
 // d = { expenseId, amount, date }
@@ -720,8 +647,8 @@ function settleDebt(d, user) {
     .prepare(
       `INSERT INTO expenses
          (amount, remaining, cash_out, settles_id, receipt_no, details, date, note,
-          destination_id, spender_id, loan_type_id, created_by, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          destination_id, loan_type_id, created_by, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       old.amount,
@@ -733,19 +660,18 @@ function settleDebt(d, user) {
       d.date,
       "تسديد قديم",
       old.destination_id,
-      old.spender_id,
       old.loan_type_id,
       user,
       new Date().toISOString(),
     );
-  syncCarry();
+  syncCash();
   return result.lastInsertRowid;
 }
 
 /* ---------- المقبوضات ---------- */
 const LOAN_SELECT = `
   SELECT l.id, (l.amount - l.carry_deduct) AS amount, l.amount AS raw_amount,
-         l.carry_deduct, l.date, l.source AS note, l.is_carry,
+         l.carry_deduct, l.date, l.source AS note,
          l.loan_type_id AS funding_party_id, t.name AS funding_party,
          l.created_by, l.created_at, l.updated_by, l.updated_at
   FROM loans l
@@ -757,11 +683,11 @@ function validateLoan(d) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(d.date)))
     throw new Error("التاريخ غير صحيح");
   if (!db.prepare("SELECT id FROM loan_types WHERE id = ?").get(d.fundingPartyId))
-    throw new Error("الجهة الممولة غير موجودة");
+    throw new Error("الجهة القائمة بالصرف غير موجودة");
 }
 
 function getLoans() {
-  syncCarry(); // لتظهر مقبوضات الترحيل فور بداية شهر جديد
+  syncCash(); // ليُصفَّر المتبقي فور بداية شهر جديد
   return db
     .prepare(`${LOAN_SELECT} ORDER BY l.date DESC, l.id DESC LIMIT 100`)
     .all();
@@ -776,13 +702,14 @@ function addLoan(d, user) {
     )
     .run(Number(d.amount), d.date, d.fundingPartyId, user, new Date().toISOString())
     .lastInsertRowid;
-  syncCarry();
+  syncCash();
   return id;
 }
 
 function updateLoan(id, d, user) {
   validateLoan(d);
-  assertNotCarry(id);
+  if (!db.prepare("SELECT 1 FROM loans WHERE id = ?").get(id))
+    throw new Error("المقبوض غير موجود");
 
   db.prepare(
     `UPDATE loans
@@ -790,37 +717,21 @@ function updateLoan(id, d, user) {
      WHERE id = ?`,
   ).run(Number(d.amount), d.date, d.fundingPartyId, user, new Date().toISOString(), id);
 
-  syncCarry();
-  pruneFundingParties();
+  syncCash();
 }
-
-function assertNotCarry(id) {
-  const row = db.prepare("SELECT is_carry FROM loans WHERE id = ?").get(id);
-  if (!row) throw new Error("المقبوض غير موجود");
-  if (row.is_carry) throw new Error(CARRY_LOCKED_MESSAGE);
-}
-
-
 
 function deleteLoan(id) {
-  assertNotCarry(id);
-  db.prepare("DELETE FROM loans WHERE id = ?").run(id);
-  syncCarry();
-  pruneFundingParties();
+  const result = db.prepare("DELETE FROM loans WHERE id = ?").run(id);
+  if (result.changes === 0) throw new Error("المقبوض غير موجود");
+  syncCash();
 }
 
 /* ---------- القاصة الشهرية ---------- */
-// لكل جهة ممولة: صافي المقبوضات (بعد خصم المتبقي المرحّل للشهر التالي، ويشمل المرحّل إليها)
-// والمصروف منها نقداً خلال الشهر. الأشهر حتى بداية الترحيل تراكمية حتى نهاية الشهر.
-// تظهر فقط الجهات التي لها حركة في الفترة.
+// لكل جهة قائمة بالصرف: صافي المقبوضات (بعد خصم غير المصروف في الأشهر المنتهية)
+// والمصروف منها نقداً خلال الشهر. تظهر فقط الجهات التي لها حركة في الشهر.
 function getMonthCashReport(f) {
-  const { key, to, from } = parsePeriod(f);
-  syncCarry();
-
-  const start = getSetting("carry_start_month") || "0000-00";
-  const cumulative = key <= start;
-  const rangeFrom = cumulative ? MIN_DATE : from;
-  const raw = key < start; // قبل بداية الترحيل لا خصم، نعرض المبالغ الأصلية
+  const { from, to } = parsePeriod(f);
+  syncCash();
 
   const byParty = db
     .prepare("SELECT id, name FROM loan_types ORDER BY id")
@@ -828,18 +739,19 @@ function getMonthCashReport(f) {
     .map((p) => ({
       id: p.id,
       name: p.name,
-      loans_total: round2(sumLoans(p.id, rangeFrom, to, !cumulative, raw)),
-      spent_total: round2(sumExpenses(p.id, rangeFrom, to)),
+      loans_total: round2(sumLoans(p.id, from, to)),
+      spent_total: round2(sumExpenses(p.id, from, to)),
     }))
     .filter((p) => p.loans_total !== 0 || p.spent_total !== 0);
 
-  return { cumulative, byParty };
+  return { byParty };
 }
 
 /* ---------- الخلاصة الشهرية ---------- */
-// مصروفات الشهر لكل جهة مستفيدة، ومجموع مقبوضات الشهر بدون المرحّل (فتبدأ الأشهر من صفر)
+// مصروفات الشهر لكل جهة مستفيدة، ومجموع صافي مقبوضات الشهر
 function getMonthSummary(f) {
   const { from, to } = parsePeriod(f);
+  syncCash();
 
   const destinations = db
     .prepare(
@@ -855,8 +767,8 @@ function getMonthSummary(f) {
 
   const loansTotal = db
     .prepare(
-      `SELECT COALESCE(SUM(amount), 0) AS v FROM loans
-       WHERE is_carry = 0 AND date >= ? AND date <= ?`,
+      `SELECT COALESCE(SUM(amount - carry_deduct), 0) AS v FROM loans
+       WHERE date >= ? AND date <= ?`,
     )
     .get(from, to).v;
 
@@ -881,7 +793,7 @@ function getExpensesReport(f) {
   const ids = cleanIds(f.ids);
   if (!ids.length) return [];
 
-  const column = f.by === "spender" ? "e.spender_id" : "e.destination_id";
+  const column = f.by === "spender" ? "e.loan_type_id" : "e.destination_id";
 
   return db
     .prepare(
@@ -901,6 +813,8 @@ function getLoansReport(f) {
   const ids = cleanIds(f.fundingPartyIds);
   if (!ids.length) return [];
 
+  syncCash();
+
   return db
     .prepare(
       `${LOAN_SELECT}
@@ -912,8 +826,6 @@ function getLoansReport(f) {
 }
 
 /* ---------- المستخدمون ---------- */
-const MIN_PASSWORD = 6;
-
 function assertPassword(password) {
   if (String(password || "").length < MIN_PASSWORD) {
     throw new Error(`كلمة المرور يجب ألا تقل عن ${MIN_PASSWORD} أحرف`);
@@ -1075,17 +987,16 @@ module.exports = {
   addDestination,
   updateDestination,
   deleteDestination,
-  getSpenders,
-  addSpender,
-  updateSpender,
-  deleteSpender,
   getFundingParties,
+  addFundingParty,
+  getSpendersReport,
   getExpenses,
   addExpense,
   updateExpense,
   deleteExpense,
   getDebtsSummary,
   getDebtItems,
+  getDebtsReport,
   settleDebt,
   getLoans,
   addLoan,
@@ -1102,8 +1013,6 @@ module.exports = {
   updateAccountant,
   deleteAccountant,
   recoverAdmin,
-  addFundingParty,
-  getFundingParties,
 };
 
 // end db.js

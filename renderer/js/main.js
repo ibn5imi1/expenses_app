@@ -19,7 +19,7 @@ function showPage(name) {
     if (name === 'cash') loadCash();
     if (name === 'summary') loadSummary();
     if (name === 'destinations') beneficiaries.load();
-    if (name === 'spenders') spenders.load();
+    if (name === 'spenders') loadSpendersReport();
     if (name === 'admin') loadAccountants();
 }
 
@@ -219,7 +219,7 @@ function createMoneyCell(value) {
     return td;
 }
 
-// خلية الجهة الممولة: شارة واضحة
+// خلية الجهة القائمة بالصرف: شارة واضحة
 function createPartyCell(name) {
     const td = document.createElement('td');
     td.className = 'party-cell';
@@ -249,17 +249,6 @@ function createActionsCell(onEdit, onDelete, className = '') {
     box.appendChild(createButton('تعديل', 'btn btn-light btn-small', onEdit));
     box.appendChild(createButton('حذف', 'btn btn-danger btn-small', onDelete));
     td.appendChild(box);
-    return td;
-}
-
-// خلية بدل الأزرار للمقبوضات المرحّلة تلقائياً (لا تُعدَّل ولا تُحذف)
-function createCarryCell(className = '') {
-    const td = document.createElement('td');
-    td.className = `actions-cell ${className}`.trim();
-    const badge = document.createElement('span');
-    badge.className = 'badge';
-    badge.textContent = 'مرحّل تلقائياً';
-    td.appendChild(badge);
     return td;
 }
 
@@ -327,13 +316,12 @@ const setAllChecked = (container, state) =>
 
 /* ================= الحالة العامة ================= */
 let destinations = [];     // الجهات المستفيدة
-let spenderList = [];      // الجهات القائمة بالصرف
-let fundingParties = [];   // الجهات الممولة
+let fundingParties = [];   // الجهات القائمة بالصرف (= الجهات الممولة)
 let expenses = [];
 let loans = [];
 
-/* ================= الجهات المستفيدة والجهات القائمة بالصرف ================= */
-// قسمان متطابقان في الشكل: إضافة وتعديل وحذف
+/* ================= الجهات المستفيدة ================= */
+// إضافة وتعديل وحذف
 function createNameList(cfg) {
     const p = cfg.prefix;
     const form = document.getElementById(`${p}-form`);
@@ -474,16 +462,6 @@ const beneficiaries = createNameList({
     afterChange: () => refreshAll({ silent: true }),
 });
 
-const spenders = createNameList({
-    prefix: 'spn',
-    list: () => window.api.getSpenders(),
-    add: name => window.api.addSpender(name),
-    update: (id, name) => window.api.updateSpender(id, name),
-    remove: id => window.api.deleteSpender(id),
-    onLoaded: items => { spenderList = items; syncSelects(); },
-    afterChange: () => refreshAll({ silent: true }),
-});
-
 /* ================= المصروفات ================= */
 let editingId = null;         // رقم المصروف الذي يجري تعديله، أو null عند الإضافة
 let returnToReport = false;   // هل بدأ التعديل من كشف المصروفات؟ للعودة إليه بعد الحفظ
@@ -495,7 +473,6 @@ const receiptInput = document.getElementById('expense-receipt');
 const dateInput = document.getElementById('expense-date');
 const destinationSelect = document.getElementById('expense-destination');
 const spenderSelect = document.getElementById('expense-spender');
-const funderSelect = document.getElementById('expense-funder');
 const noteInput = document.getElementById('expense-note');
 const detailsInput = document.getElementById('expense-details');
 const errorBox = document.getElementById('expense-error');
@@ -541,7 +518,6 @@ function resetExpenseForm() {
     datePicker.setDate(new Date());
     setDefaultDestination();
     spenderSelect.value = '';
-    funderSelect.value = '';
     clearErrors();
 }
 
@@ -559,7 +535,6 @@ function startEdit(expense) {
     datePicker.setDate(expense.date);
     destinationSelect.value = expense.destination_id;
     spenderSelect.value = expense.spender_id;
-    funderSelect.value = expense.funding_party_id;
     noteInput.value = expense.note;
     detailsInput.value = expense.details;
     autoGrow(detailsInput);
@@ -596,14 +571,12 @@ function validateExpense() {
     check(dateInput.value, 'التاريخ', datePicker.altInput);
     check(destinationSelect.value, 'الجهة المستفيدة', destinationSelect);
     check(spenderSelect.value, 'الجهة القائمة بالصرف', spenderSelect);
-    check(funderSelect.value, 'الجهة الممولة', funderSelect);
     check(detailsInput.value.trim(), 'التفاصيل', detailsInput);
 
     if (!missing.length) return true;
 
     let message = `الرجاء إكمال الحقول التالية: ${missing.join('، ')}`;
-    if (!spenderList.length) message += ' — أضف جهة قائمة بالصرف من قسم «الجهات القائمة بالصرف»';
-    if (!fundingParties.length) message += ' — أضف جهة ممولة من صفحة «المقبوضات»';
+    if (!fundingParties.length) message += ' — أضف جهة قائمة بالصرف من صفحة «المقبوضات»';
 
     badFields.forEach(el => el.classList.add('invalid'));
     showError(message);
@@ -622,7 +595,6 @@ expenseForm.addEventListener('submit', async e => {
         date: dateInput.value,                          // YYYY-MM-DD
         destinationId: Number(destinationSelect.value),
         spenderId: Number(spenderSelect.value),
-        fundingPartyId: Number(funderSelect.value),
         note: noteInput.value.trim(),
         details: detailsInput.value.trim(),
     };
@@ -658,8 +630,7 @@ function buildExpenseRow(e, onEdit, onDelete, actionsClass = '') {
     tr.appendChild(createCell(e.details, 'details-cell'));
     tr.appendChild(createCell(e.note));
     tr.appendChild(createCell(e.destination));
-    tr.appendChild(createCell(e.spender || '—'));
-    tr.appendChild(createPartyCell(e.funding_party));
+    tr.appendChild(createPartyCell(e.spender));
     tr.appendChild(createCell(accountantOf(e)));
     tr.appendChild(createActionsCell(onEdit, onDelete, actionsClass));
     return tr;
@@ -680,7 +651,7 @@ async function removeExpense(id) {
 function renderExpenses() {
     expensesBody.innerHTML = '';
     if (!expenses.length) {
-        emptyRow(expensesBody, 'لا توجد مصروفات بعد', 12);
+        emptyRow(expensesBody, 'لا توجد مصروفات بعد', 11);
         return;
     }
     expenses.forEach(e => {
@@ -735,11 +706,11 @@ function resetLoanForm() {
 function startLoanEdit(loan) {
     returnToLoansReport = false;
     editingLoanId = loan.id;
-    // نعدّل على المبلغ الأصلي، أما الجدول فيعرض المبلغ بعد خصم المتبقي المرحّل
+    // نعدّل على المبلغ الأصلي، أما الجدول فيعرض المبلغ بعد خصم غير المصروف
     loanAmountInput.value = formatAmount(loan.raw_amount ?? loan.amount);
     if (loan.carry_deduct > 0) {
         showToast(
-            `المبلغ الأصلي ${formatMoney(loan.raw_amount)}، ورُحِّل منه ${formatMoney(loan.carry_deduct)} للشهر التالي`,
+            `المبلغ الأصلي ${formatMoney(loan.raw_amount)}، وخُصم منه ${formatMoney(loan.carry_deduct)} لأنه لم يُصرف في ذلك الشهر`,
             false,
             LONG_TOAST,
         );
@@ -774,12 +745,12 @@ function validateLoanForm() {
 
     check(parseAmount(loanAmountInput.value) > 0, 'المبلغ', loanAmountInput);
     check(loanDateInput.value, 'التاريخ', loanDatePicker.altInput);
-    check(loanFunderSelect.value, 'الجهة الممولة', loanFunderSelect);
+    check(loanFunderSelect.value, 'الجهة القائمة بالصرف', loanFunderSelect);
 
     if (!missing.length) return true;
 
     let message = `الرجاء إكمال الحقول التالية: ${missing.join('، ')}`;
-    if (!fundingParties.length) message += ' — أضف جهة ممولة من الصندوق أدناه';
+    if (!fundingParties.length) message += ' — أضف جهة قائمة بالصرف من الصندوق أدناه';
 
     badFields.forEach(el => el.classList.add('invalid'));
     showLoanError(message);
@@ -813,7 +784,7 @@ loanForm.addEventListener('submit', async e => {
     }
 });
 
-/* ---------- إضافة جهة ممولة (حقل وزر فقط) ---------- */
+/* ---------- إضافة جهة قائمة بالصرف (حقل وزر فقط) ---------- */
 funderAddName.addEventListener('input', () => funderAddName.classList.remove('invalid'));
 
 funderAddForm.addEventListener('submit', async e => {
@@ -822,7 +793,7 @@ funderAddForm.addEventListener('submit', async e => {
     const name = funderAddName.value.replace(/\s+/g, ' ').trim();
     let message = '';
 
-    if (!name) message = 'اكتب اسم الجهة الممولة';
+    if (!name) message = 'اكتب اسم الجهة القائمة بالصرف';
     else if (fundingParties.some(p => p.name === name)) message = 'هذه الجهة موجودة مسبقاً';
 
     if (message) {
@@ -837,7 +808,7 @@ funderAddForm.addEventListener('submit', async e => {
         funderAddForm.reset();
         await reloadFundingParties();               // تظهر في كل القوائم المنسدلة
         loanFunderSelect.value = String(id);        // وتُختار في نموذج المقبوض
-        showToast(`تمت إضافة الجهة الممولة: ${name}`);
+        showToast(`تمت إضافة الجهة القائمة بالصرف: ${name}`);
     } catch (err) {
         console.error(err);
         showToast(cleanError(err), true, LONG_TOAST);
@@ -848,16 +819,14 @@ funderAddForm.addEventListener('submit', async e => {
 function buildLoanRow(l, onEdit, onDelete, actionsClass = '') {
     const tr = document.createElement('tr');
     tr.title = auditTitle(l) + (l.carry_deduct > 0
-        ? `\nالمبلغ الأصلي ${formatMoney(l.raw_amount)} — رُحِّل منه ${formatMoney(l.carry_deduct)} للشهر التالي`
+        ? `\nالمبلغ الأصلي ${formatMoney(l.raw_amount)} — خُصم منه ${formatMoney(l.carry_deduct)} لأنه لم يُصرف`
         : '');
 
     tr.appendChild(createCell(formatMoney(l.amount), 'num-cell'));
     tr.appendChild(createDateCell(l.date));
     tr.appendChild(createPartyCell(l.funding_party));
     tr.appendChild(createCell(accountantOf(l)));
-    tr.appendChild(l.is_carry
-        ? createCarryCell(actionsClass)
-        : createActionsCell(onEdit, onDelete, actionsClass));
+    tr.appendChild(createActionsCell(onEdit, onDelete, actionsClass));
     return tr;
 }
 
@@ -896,14 +865,13 @@ function syncSelects() {
     fillSelect(destinationSelect, destinations);
     if (!hadDestination) setDefaultDestination();
 
-    fillSelect(spenderSelect, spenderList, 'اختر الجهة القائمة بالصرف');
-    fillSelect(funderSelect, fundingParties, 'اختر الجهة الممولة');
+    fillSelect(spenderSelect, fundingParties, 'اختر الجهة القائمة بالصرف');
 
     fillCheckList(reportDestinations, destinations);
-    fillCheckList(reportSpenders, spenderList);
+    fillCheckList(reportSpenders, fundingParties);
     fillCheckList(reportFunders, fundingParties);
 
-    fillSelect(loanFunderSelect, fundingParties, 'اختر الجهة الممولة');
+    fillSelect(loanFunderSelect, fundingParties, 'اختر الجهة القائمة بالصرف');
 }
 
 async function reloadFundingParties() {
@@ -916,7 +884,7 @@ async function refreshMoneyData() {
     await Promise.all([loadExpenses(), loadLoans(), reloadFundingParties()]);
 }
 
-/* ================= السنة والشهر (القاصة والخلاصة) ================= */
+/* ================= السنة والشهر (القاصة والخلاصة والجهات القائمة بالصرف) ================= */
 function initPeriodFields(yearInput, monthSelect) {
     MONTHS.forEach((name, i) => {
         const option = document.createElement('option');
@@ -982,9 +950,7 @@ function renderCash(data, year, month) {
 
     cashTitle.textContent = title;
     cashSubtitle.textContent = subtitle;
-    cashHint.textContent = data.cumulative
-        ? 'أرقام تراكمية حتى نهاية هذا الشهر (قبل بدء الترحيل التلقائي).'
-        : 'المصروف منها = المدفوع نقداً فقط. المتبقي في نهاية الشهر يُنقَص من آخر مقبوض ويظهر مقبوضاً جديداً في أول الشهر التالي.';
+    cashHint.textContent = 'المصروف منها = المدفوع نقداً فقط. عند انتهاء الشهر يُصفَّر المتبقي لكل جهة، وتُعدَّل مقبوضاتها لتساوي ما صُرف منها فعلاً.';
 
     cashBody.innerHTML = '';
     let totalLoans = 0;
@@ -1020,7 +986,7 @@ function renderCash(data, year, month) {
             {
                 name: 'القاصة',
                 columns: [
-                    { header: 'الجهة الممولة', width: 40 },
+                    { header: 'الجهة القائمة بالصرف', width: 40 },
                     { header: 'صافي المقبوضات', width: 20 },
                     { header: 'المصروف منها', width: 20 },
                     { header: 'المتبقي', width: 20 },
@@ -1054,6 +1020,94 @@ cashForm.addEventListener('submit', e => {
 
 document.getElementById('cash-print').addEventListener('click', printReport);
 cashExcelBtn.addEventListener('click', () => exportReport(cashExport));
+
+/* ================= كشف الجهات القائمة بالصرف (شهري) ================= */
+const spnForm = document.getElementById('spn-form');
+const spnYear = document.getElementById('spn-year');
+const spnMonth = document.getElementById('spn-month');
+const spnError = document.getElementById('spn-error');
+const spnTitle = document.getElementById('spn-title');
+const spnSubtitle = document.getElementById('spn-subtitle');
+const spnBody = document.getElementById('spn-body');
+const spnTotalCount = document.getElementById('spn-total-count');
+const spnTotalSum = document.getElementById('spn-total-sum');
+const spnExcelBtn = document.getElementById('spn-excel');
+
+initPeriodFields(spnYear, spnMonth);
+
+let spendersExport = null;   // آخر كشف معروض (للتصدير)
+
+function renderSpendersReport(rows, year, month) {
+    const { from, to } = periodRange(year, month);
+    const title = `كشف الجهات القائمة بالصرف — ${MONTHS[month - 1]} ${year}`;
+    const subtitle = periodText(from, to);
+
+    spnTitle.textContent = title;
+    spnSubtitle.textContent = subtitle;
+    spnBody.innerHTML = '';
+
+    let totalCount = 0;
+    let totalSum = 0;
+    const excelRows = [];
+
+    rows.forEach(r => {
+        totalCount += r.expenses_count;
+        totalSum = round2(totalSum + r.expenses_total);
+        excelRows.push([r.name, r.expenses_count, r.expenses_total]);
+
+        const tr = document.createElement('tr');
+        tr.appendChild(createCell(r.name));
+        tr.appendChild(createCell(String(r.expenses_count)));
+        tr.appendChild(createMoneyCell(r.expenses_total));
+        spnBody.appendChild(tr);
+    });
+
+    if (!rows.length) emptyRow(spnBody, 'لا توجد جهات قائمة بالصرف، أضفها من صفحة «المقبوضات»', 3);
+
+    spnTotalCount.textContent = String(totalCount);
+    spnTotalSum.textContent = formatMoney(totalSum);
+
+    spendersExport = {
+        title,
+        subtitle,
+        fileName: `spenders-${year}-${pad2(month)}.xlsx`,
+        sheets: [
+            {
+                name: 'الجهات القائمة بالصرف',
+                columns: [
+                    { header: 'الجهة القائمة بالصرف', width: 40 },
+                    { header: 'عدد المصروفات', width: 20 },
+                    { header: 'مجموع المصروفات', width: 22 },
+                ],
+                rows: excelRows,
+                total: ['المجموع', totalCount, totalSum],
+                mergeTotal: false,
+            },
+        ],
+    };
+
+    spnExcelBtn.disabled = !rows.length;
+}
+
+async function loadSpendersReport() {
+    const period = readPeriod(spnYear, spnMonth, spnError);
+    if (!period) return;
+
+    try {
+        renderSpendersReport(await window.api.getSpendersReport(period), period.year, period.month);
+    } catch (err) {
+        console.error(err);
+        showNote(spnError, cleanError(err));
+    }
+}
+
+spnForm.addEventListener('submit', e => {
+    e.preventDefault();
+    loadSpendersReport();
+});
+
+document.getElementById('spn-print').addEventListener('click', printReport);
+spnExcelBtn.addEventListener('click', () => exportReport(spendersExport));
 
 /* ================= الخلاصة (شهرية) ================= */
 const summaryForm = document.getElementById('summary-form');
@@ -1198,7 +1252,7 @@ document.querySelectorAll('input[name="report-mode"]').forEach(radio => {
 });
 
 function renderExpensesReport(rows, mode, ids, from, to) {
-    const source = mode === 'spender' ? spenderList : destinations;
+    const source = mode === 'spender' ? fundingParties : destinations;
     const names = source.filter(i => ids.includes(i.id)).map(i => i.name).join('، ');
     const title = mode === 'spender'
         ? `كشف مصروفات الجهة القائمة بالصرف: ${names}`
@@ -1210,7 +1264,7 @@ function renderExpensesReport(rows, mode, ids, from, to) {
     expensesReportSubtitle.textContent = subtitle;
 
     expensesReportBody.innerHTML = '';
-    if (!rows.length) emptyRow(expensesReportBody, 'لا توجد مصروفات في هذه الفترة', 12);
+    if (!rows.length) emptyRow(expensesReportBody, 'لا توجد مصروفات في هذه الفترة', 11);
 
     rows.forEach(r => {
         expensesReportBody.appendChild(buildExpenseRow(
@@ -1238,14 +1292,13 @@ function renderExpensesReport(rows, mode, ids, from, to) {
             { header: 'ملاحظات', width: 24 },
             { header: 'الجهة المستفيدة', width: 22 },
             { header: 'الجهة القائمة بالصرف', width: 24 },
-            { header: 'الجهة الممولة', width: 22 },
             { header: 'المحاسب', width: 18 },
         ],
         rows: rows.map(r => [
             r.receipt_no || '', r.amount, r.paid, r.remaining, formatDate(r.date),
-            r.details, r.note, r.destination, r.spender || '—', r.funding_party, accountantOf(r),
+            r.details, r.note, r.destination, r.spender, accountantOf(r),
         ]),
-        total: [`المجموع (المصروف نقداً فعلياً) — عدد القيود: ${rows.length}`, '', total, '', '', '', '', '', '', '', ''],
+        total: [`المجموع (المصروف نقداً فعلياً) — عدد القيود: ${rows.length}`, '', total, '', '', '', '', '', '', ''],
         mergeTotal: false,
     };
 
@@ -1313,7 +1366,7 @@ document.getElementById('report-spn-none').addEventListener('click', () => setAl
 document.getElementById('expenses-report-print').addEventListener('click', printReport);
 expensesReportExcelBtn.addEventListener('click', () => exportReport(expensesReport));
 
-/* ================= كشف المقبوضات (حسب الجهة الممولة) ================= */
+/* ================= كشف المقبوضات (حسب الجهة القائمة بالصرف) ================= */
 const loansReportForm = document.getElementById('loans-report-form');
 const reportFunders = document.getElementById('report-funders');
 const loanFromInput = document.getElementById('loan-from');
@@ -1334,7 +1387,7 @@ let loansReport = null;
 
 function renderLoansReport(rows, ids, from, to) {
     const names = fundingParties.filter(p => ids.includes(p.id)).map(p => p.name).join('، ');
-    const title = `كشف المقبوضات حسب الجهة الممولة: ${names}`;
+    const title = `كشف المقبوضات حسب الجهة القائمة بالصرف: ${names}`;
     const subtitle = periodText(from, to);
     const total = round2(rows.reduce((s, r) => s + r.amount, 0));
 
@@ -1363,7 +1416,7 @@ function renderLoansReport(rows, ids, from, to) {
         columns: [
             { header: 'المبلغ', width: 18 },
             { header: 'التاريخ', width: 14 },
-            { header: 'الجهة الممولة', width: 30 },
+            { header: 'الجهة القائمة بالصرف', width: 30 },
             { header: 'المحاسب', width: 18 },
         ],
         rows: rows.map(r => [r.amount, formatDate(r.date), r.funding_party, accountantOf(r)]),
@@ -1404,7 +1457,7 @@ loansReportForm.addEventListener('submit', async e => {
     const to = loanToInput.value;
 
     if (!ids.length) {
-        showNote(loansReportError, 'اختر جهة ممولة واحدة على الأقل');
+        showNote(loansReportError, 'اختر جهة قائمة بالصرف واحدة على الأقل');
         return;
     }
     if (from > to) {
@@ -1431,23 +1484,40 @@ const debtsTabList = document.getElementById('debts-tab-list');
 const debtsTabPay = document.getElementById('debts-tab-pay');
 const debtsViewList = document.getElementById('debts-view-list');
 const debtsViewPay = document.getElementById('debts-view-pay');
+const debtsSubtitle = document.getElementById('debts-subtitle');
 const debtsBody = document.getElementById('debts-body');
 const debtsTotal = document.getElementById('debts-total');
+const debtsExcelBtn = document.getElementById('debts-excel');
 const debtCreditor = document.getElementById('debt-creditor');
 const debtItemsCard = document.getElementById('debt-items-card');
 const debtItemsTitle = document.getElementById('debt-items-title');
+const debtItemsSubtitle = document.getElementById('debt-items-subtitle');
 const debtItemsBody = document.getElementById('debt-items-body');
+const debtItemsTotal = document.getElementById('debt-items-total');
+const debtItemsExcelBtn = document.getElementById('debt-items-excel');
 const debtPayForm = document.getElementById('debt-pay-form');
 const debtPayInfo = document.getElementById('debt-pay-info');
 const debtPayAmount = document.getElementById('debt-pay-amount');
 const debtPayDate = document.getElementById('debt-pay-date');
 const debtPayError = document.getElementById('debt-pay-error');
+const debtsReportForm = document.getElementById('debts-report-form');
+const debtsReportCreditors = document.getElementById('debts-report-creditors');
+const debtsReportError = document.getElementById('debts-report-error');
+const debtsReportResult = document.getElementById('debts-report-result');
+const debtsReportTitle = document.getElementById('debts-report-title');
+const debtsReportSubtitle = document.getElementById('debts-report-subtitle');
+const debtsReportBody = document.getElementById('debts-report-body');
+const debtsReportTotal = document.getElementById('debts-report-total');
+const debtsReportExcelBtn = document.getElementById('debts-report-excel');
 
+let debtsReportExport = null;   // كشف الديون المعروض (للتصدير)
 attachAmountFormat(debtPayAmount);
 const debtPayPicker = createDatePicker(debtPayDate);
 
 let debtCreditors = [];     // [{ id, name, total }] الجهات الدائنة وديونها
 let payingDebt = null;      // القيد الذي يجري تسديده
+let debtsExport = null;     // كشف الديون (للتصدير)
+let debtItemsExport = null; // ديون جهة معينة (للتصدير)
 
 function showDebtsView(view) {
     const isPay = view === 'pay';
@@ -1485,6 +1555,8 @@ function showDebtPayError(message) {
     debtPayError.classList.remove('hidden');
 }
 
+const todayText = () => ` في تاريخ ${formatDate(toISO(new Date()))}`;
+
 function renderDebts() {
     debtsBody.innerHTML = '';
     let total = 0;
@@ -1499,7 +1571,23 @@ function renderDebts() {
 
     if (!debtCreditors.length) emptyRow(debtsBody, 'لا توجد ديون', 2);
     debtsTotal.textContent = formatMoney(total);
+    debtsSubtitle.textContent = todayText();
 
+    debtsExport = {
+        title: 'كشف الديون',
+        subtitle: todayText(),
+        fileName: `debts-${toISO(new Date())}.xlsx`,
+        columns: [
+            { header: 'الجهة الدائنة', width: 40 },
+            { header: 'مجموع الديون', width: 24 },
+        ],
+        rows: debtCreditors.map(c => [c.name, c.total]),
+        total: ['المجموع', total],
+        mergeTotal: false,
+    };
+    debtsExcelBtn.disabled = !debtCreditors.length;
+
+    fillCheckList(debtsReportCreditors, debtCreditors);
     fillSelect(debtCreditor, debtCreditors, 'اختر الجهة الدائنة');
 }
 
@@ -1509,18 +1597,26 @@ async function loadDebtItems() {
 
     if (!id) {
         cancelDebtPayment();
+        debtItemsExport = null;
         debtItemsCard.classList.add('hidden');
         return;
     }
 
     const items = await window.api.getDebtItems(id);
     const creditor = debtCreditors.find(c => c.id === id);
-    debtItemsTitle.textContent = `الصرفيات التي بها متبقي — ${creditor ? creditor.name : ''}`;
+    const creditorName = creditor ? creditor.name : '';
+    const title = `الصرفيات التي بها متبقي — ${creditorName}`;
+    debtItemsTitle.textContent = title;
+    debtItemsSubtitle.textContent = todayText();
 
     // إن تغيّر القيد الذي نسدده (حُدّث من حاسبة أخرى) نلغي نموذج التسديد
     if (payingDebt && !items.some(i => i.id === payingDebt.id)) cancelDebtPayment();
 
+    let totalRemaining = 0;
+
     items.forEach(item => {
+        totalRemaining = round2(totalRemaining + item.remaining);
+
         const tr = document.createElement('tr');
         tr.title = auditTitle(item);
 
@@ -1530,11 +1626,11 @@ async function loadDebtItems() {
         tr.appendChild(createCell(formatMoney(item.remaining), 'num-cell negative'));
         tr.appendChild(createDateCell(item.date));
         tr.appendChild(createCell(item.details, 'details-cell'));
-        tr.appendChild(createCell(item.spender || '—'));
-        tr.appendChild(createPartyCell(item.funding_party));
+        tr.appendChild(createPartyCell(item.spender));
+        tr.appendChild(createCell(accountantOf(item)));
 
         const td = document.createElement('td');
-        td.className = 'actions-cell';
+        td.className = 'actions-cell noprint';   // زر التسديد لا يُطبع
         const box = document.createElement('div');
         box.className = 'row-actions';
         box.appendChild(createButton('تسديد', 'btn btn-small', () => startDebtPayment(item)));
@@ -1545,8 +1641,115 @@ async function loadDebtItems() {
     });
 
     if (!items.length) emptyRow(debtItemsBody, 'لا توجد صرفيات بها متبقي لهذه الجهة', 9);
+    debtItemsTotal.textContent = formatMoney(totalRemaining);
+
+    const safeName = creditorName.replace(/[\\/:*?"<>|]/g, '_');
+    debtItemsExport = {
+        title,
+        subtitle: todayText(),
+        fileName: `debts-${safeName}-${toISO(new Date())}.xlsx`,
+        columns: [
+            { header: 'رقم الوصل', width: 14 },
+            { header: 'المبلغ الكلي', width: 16 },
+            { header: 'المدفوع نقداً', width: 16 },
+            { header: 'المتبقي', width: 16 },
+            { header: 'التاريخ', width: 14 },
+            { header: 'التفاصيل', width: 50 },
+            { header: 'الجهة القائمة بالصرف', width: 24 },
+            { header: 'المحاسب', width: 18 },
+        ],
+        rows: items.map(i => [
+            i.receipt_no || '', i.amount, i.paid, i.remaining, formatDate(i.date),
+            i.details, i.spender, accountantOf(i),
+        ]),
+        total: ['المجموع', '', '', totalRemaining, '', '', '', ''],
+        mergeTotal: false,
+    };
+    debtItemsExcelBtn.disabled = !items.length;
+
     debtItemsCard.classList.remove('hidden');
 }
+
+function renderDebtsReport(items, ids) {
+    const allSelected = ids.length === debtCreditors.length;
+    const names = debtCreditors.filter(c => ids.includes(c.id)).map(c => c.name).join('، ');
+    const title = allSelected ? 'كشف الديون — كل الجهات' : `كشف الديون — ${names}`;
+    const subtitle = todayText();
+    const total = round2(items.reduce((s, i) => s + i.remaining, 0));
+
+    debtsReportTitle.textContent = title;
+    debtsReportSubtitle.textContent = subtitle;
+    debtsReportBody.innerHTML = '';
+
+    if (!items.length) emptyRow(debtsReportBody, 'لا توجد ديون للجهات المختارة', 9);
+
+    items.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.title = auditTitle(item);
+
+        tr.appendChild(createCell(item.destination));
+        tr.appendChild(createCell(item.receipt_no || '—'));
+        tr.appendChild(createCell(formatMoney(item.amount), 'num-cell'));
+        tr.appendChild(createCell(formatMoney(item.paid), 'num-cell'));
+        tr.appendChild(createCell(formatMoney(item.remaining), 'num-cell negative'));
+        tr.appendChild(createDateCell(item.date));
+        tr.appendChild(createCell(item.details, 'details-cell'));
+        tr.appendChild(createPartyCell(item.spender));
+        tr.appendChild(createCell(accountantOf(item)));
+        debtsReportBody.appendChild(tr);
+    });
+
+    debtsReportTotal.textContent = formatMoney(total);
+
+    debtsReportExport = {
+        title,
+        subtitle,
+        fileName: `debts-report-${toISO(new Date())}.xlsx`,
+        columns: [
+            { header: 'الجهة الدائنة', width: 22 },
+            { header: 'رقم الوصل', width: 14 },
+            { header: 'المبلغ الكلي', width: 16 },
+            { header: 'المدفوع نقداً', width: 16 },
+            { header: 'المتبقي', width: 16 },
+            { header: 'التاريخ', width: 14 },
+            { header: 'التفاصيل', width: 50 },
+            { header: 'الجهة القائمة بالصرف', width: 24 },
+            { header: 'المحاسب', width: 18 },
+        ],
+        rows: items.map(i => [
+            i.destination, i.receipt_no || '', i.amount, i.paid, i.remaining,
+            formatDate(i.date), i.details, i.spender, accountantOf(i),
+        ]),
+        total: ['المجموع', '', '', '', total, '', '', '', ''],
+        mergeTotal: false,
+    };
+
+    debtsReportExcelBtn.disabled = !items.length;
+    debtsReportResult.classList.remove('hidden');
+}
+
+debtsReportForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    hideNote(debtsReportError);
+
+    const ids = getCheckedIds(debtsReportCreditors);
+    if (!ids.length) {
+        showNote(debtsReportError, 'اختر جهة دائنة واحدة على الأقل');
+        return;
+    }
+
+    try {
+        renderDebtsReport(await window.api.getDebtsReport(ids), ids);
+    } catch (err) {
+        console.error(err);
+        showNote(debtsReportError, cleanError(err));
+    }
+});
+
+document.getElementById('debts-report-all').addEventListener('click', () => setAllChecked(debtsReportCreditors, true));
+document.getElementById('debts-report-none').addEventListener('click', () => setAllChecked(debtsReportCreditors, false));
+document.getElementById('debts-report-print').addEventListener('click', printReport);
+debtsReportExcelBtn.addEventListener('click', () => exportReport(debtsReportExport));
 
 async function loadDebts() {
     debtCreditors = await window.api.getDebtsSummary();
@@ -1561,6 +1764,11 @@ debtCreditor.addEventListener('change', () => {
 
 debtPayForm.addEventListener('input', e => e.target.classList.remove('invalid'));
 document.getElementById('debt-pay-cancel').addEventListener('click', cancelDebtPayment);
+
+document.getElementById('debts-print').addEventListener('click', printReport);
+document.getElementById('debt-items-print').addEventListener('click', printReport);
+debtsExcelBtn.addEventListener('click', () => exportReport(debtsExport));
+debtItemsExcelBtn.addEventListener('click', () => exportReport(debtItemsExport));
 
 debtPayForm.addEventListener('submit', async e => {
     e.preventDefault();
@@ -1601,16 +1809,17 @@ async function doRefresh(silent) {
     try {
         await Promise.all([
             beneficiaries.load(),
-            spenders.load(),
             refreshMoneyData(),
             loadCash(),
             loadSummary(),
+            loadSpendersReport(),
             loadDebts(),
             currentUser && currentUser.role === 'admin' ? loadAccountants() : null,
         ]);
 
         // إذا كان كشف معروضاً، نعيد عرضه بالأرقام الجديدة
         if (!expensesReportResult.classList.contains('hidden')) expensesReportForm.requestSubmit();
+        if (!debtsReportResult.classList.contains('hidden')) debtsReportForm.requestSubmit();
         if (!loansReportResult.classList.contains('hidden')) loansReportForm.requestSubmit();
 
         if (!silent) showToast('تم تحديث البيانات');
@@ -1667,7 +1876,7 @@ const loginSubmit = document.getElementById('login-submit');
 const adminLink = document.querySelector('.admin-only');
 
 async function loadAllData() {
-    await Promise.all([beneficiaries.load(), spenders.load(), reloadFundingParties()]);
+    await Promise.all([beneficiaries.load(), reloadFundingParties()]);
     await Promise.all([loadExpenses(), loadLoans(), loadDebts()]);
 }
 

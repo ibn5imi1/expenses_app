@@ -446,7 +446,7 @@ main {
     font-size: var(--small-font-size);
 }
 
-/* شارة الجهة الممولة */
+/* شارة الجهة القائمة بالصرف */
 .party-badge {
     display: inline-block;
     max-width: 100%;
@@ -504,10 +504,6 @@ main {
     width: 140px;
 }
 
-.col-e-funder {
-    width: 130px;
-}
-
 .col-e-acc {
     width: 100px;
 }
@@ -553,8 +549,8 @@ main {
     width: 150px;
 }
 
-.col-d-funder {
-    width: 130px;
+.col-d-acc {
+    width: 110px;
 }
 
 .col-d-actions {
@@ -638,7 +634,7 @@ main {
     width: 16%;
 }
 
-/* الخلاصة */
+/* الخلاصة وكشف الجهات القائمة بالصرف */
 .col-sum-name {
     width: 50%;
 }
@@ -972,7 +968,7 @@ main {
         print-color-adjust: exact;
     }
 
-    /* الجهة الممولة تُطبع كنص عادي بدون شارة */
+    /* الجهة القائمة بالصرف تُطبع كنص عادي بدون شارة */
     .grid-table .party-badge {
         padding: 0;
         border: 0;
@@ -1019,27 +1015,23 @@ main {
     }
 
     .col-e-details {
-        width: 17%;
+        width: 22%;
     }
 
     .col-e-note {
-        width: 9%;
+        width: 10%;
     }
 
     .col-e-dest {
-        width: 9%;
+        width: 10%;
     }
 
     .col-e-spender {
-        width: 9%;
-    }
-
-    .col-e-funder {
-        width: 9%;
+        width: 10%;
     }
 
     .col-e-acc {
-        width: 5%;
+        width: 6%;
     }
 
     /* كشف المقبوضات بعد إخفاء الأزرار */
@@ -1057,6 +1049,39 @@ main {
 
     .col-l-acc {
         width: 28%;
+    }
+
+    /* تسديد الديون بعد إخفاء عمود التسديد */
+    .col-d-receipt {
+        width: 9%;
+    }
+
+    .col-d-amount {
+        width: 11%;
+    }
+
+    .col-d-paid {
+        width: 11%;
+    }
+
+    .col-d-rem {
+        width: 11%;
+    }
+
+    .col-d-date {
+        width: 10%;
+    }
+
+    .col-d-details {
+        width: 26%;
+    }
+
+    .col-d-spender {
+        width: 14%;
+    }
+
+    .col-d-acc {
+        width: 8%;
     }
 
     .grid-table thead {

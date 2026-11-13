@@ -122,15 +122,10 @@ app.whenReady().then(() => {
     handle('updateDestination', (e, id, name) => db.updateDestination(id, name));
     handle('deleteDestination', (e, id) => db.deleteDestination(id));
 
-    /* ---------- الجهات القائمة بالصرف ---------- */
-    handle('getSpenders', () => db.getSpenders());
-    handle('addSpender', (e, name) => db.addSpender(name));
-    handle('updateSpender', (e, id, name) => db.updateSpender(id, name));
-    handle('deleteSpender', (e, id) => db.deleteSpender(id));
-
-    /* ---------- الجهات الممولة ---------- */
+    /* ---------- الجهات القائمة بالصرف (= الجهات الممولة) ---------- */
     handle('getFundingParties', () => db.getFundingParties());
     handle('addFundingParty', (e, name) => db.addFundingParty(name));
+    handle('getSpendersReport', (e, filters) => db.getSpendersReport(filters));
 
     /* ---------- المصروفات ---------- */
     handle('getExpenses', () => db.getExpenses());
@@ -141,6 +136,7 @@ app.whenReady().then(() => {
     /* ---------- الديون ---------- */
     handle('getDebtsSummary', () => db.getDebtsSummary());
     handle('getDebtItems', (e, destinationId) => db.getDebtItems(destinationId));
+    handle('getDebtsReport', (e, ids) => db.getDebtsReport(ids));
     handle('settleDebt', (e, data) => db.settleDebt(data, session.displayName));
 
     /* ---------- المقبوضات ---------- */
