@@ -1,0 +1,298 @@
+/* حاوية الجدول: سكرول أفقي وعمودي، والرأس ثابت، وشريط السكرول ظاهر أسفل الجدول */
+.table-wrap {
+    overflow: auto;
+    max-height: calc(100vh - 170px);
+    background: var(--white);
+    border: 1px solid var(--grid);
+    border-radius: var(--radius-s);
+}
+
+.table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+}
+
+.table-wide {
+    min-width: 2050px;
+}
+
+.table-debts {
+    min-width: 1400px;
+}
+
+.table-mid {
+    min-width: 830px;
+}
+
+.table th,
+.table td {
+    padding: 11px 12px;
+    text-align: right;
+    vertical-align: middle;
+    overflow-wrap: anywhere;
+    border-left: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+}
+
+.table th:last-child,
+.table td:last-child {
+    border-left: 0;
+}
+
+.table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--white);
+    background: var(--green);
+    border-left-color: rgba(255, 255, 255, .22);
+    border-bottom: 0;
+}
+
+.table th.center,
+.table td.center {
+    text-align: center;
+}
+
+.table tbody tr:nth-child(even) {
+    background: var(--zebra);
+}
+
+.table tbody tr:hover {
+    background: var(--green-hover);
+}
+
+.table>tbody:last-child>tr:last-child>td {
+    border-bottom: 0;
+}
+
+.table tfoot td {
+    font-weight: 700;
+    background: var(--head);
+    border-top: 2px solid var(--green);
+    border-bottom: 0;
+}
+
+/* أنواع الخلايا */
+.table td.num-cell {
+    font-weight: 700;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.table td.money-cell {
+    direction: ltr;
+    text-align: right;
+    font-weight: 700;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.table td.date-cell {
+    white-space: nowrap;
+}
+
+.table td.details-cell {
+    white-space: pre-wrap;
+}
+
+.table td.tag-cell,
+.table td.actions-cell {
+    text-align: center;
+}
+
+.table td.empty-cell {
+    padding: 26px;
+    text-align: center;
+    color: var(--muted);
+}
+
+.amount-note {
+    display: block;
+    margin-top: 2px;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--muted);
+}
+
+.negative {
+    color: var(--red);
+    font-weight: 700;
+}
+
+.row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+}
+
+/* عروض الأعمدة */
+.col-e-receipt {
+    width: 100px;
+}
+
+.col-e-amount {
+    width: 130px;
+}
+
+.col-e-paid {
+    width: 130px;
+}
+
+.col-e-rem {
+    width: 120px;
+}
+
+.col-e-date {
+    width: 110px;
+}
+
+.col-e-details {
+    width: 360px;
+}
+
+.col-e-note {
+    width: 160px;
+}
+
+.col-e-dest {
+    width: 160px;
+}
+
+.col-e-spender {
+    width: 170px;
+}
+
+.col-e-source {
+    width: 170px;
+}
+
+.col-e-acc {
+    width: 130px;
+}
+
+.col-e-actions {
+    width: 150px;
+}
+
+.col-l-amount {
+    width: 170px;
+}
+
+.col-l-date {
+    width: 120px;
+}
+
+.col-l-source {
+    width: 220px;
+}
+
+.col-l-acc {
+    width: 150px;
+}
+
+.col-l-actions {
+    width: 170px;
+}
+
+.col-d-dest {
+    width: 170px;
+}
+
+.col-d-receipt {
+    width: 100px;
+}
+
+.col-d-amount {
+    width: 130px;
+}
+
+.col-d-paid {
+    width: 130px;
+}
+
+.col-d-rem {
+    width: 120px;
+}
+
+.col-d-date {
+    width: 110px;
+}
+
+.col-d-details {
+    width: 340px;
+}
+
+.col-d-spender {
+    width: 170px;
+}
+
+.col-d-acc {
+    width: 130px;
+}
+
+.col-d-actions {
+    width: 120px;
+}
+
+.col-debt-name {
+    width: 60%;
+}
+
+.col-debt-total {
+    width: 40%;
+}
+
+.col-n-name {
+    width: 40%;
+}
+
+.col-n-count {
+    width: 18%;
+}
+
+.col-n-total {
+    width: 24%;
+}
+
+.col-n-actions {
+    width: 18%;
+}
+
+.col-cash-type {
+    width: 34%;
+}
+
+.col-cash-num {
+    width: 22%;
+}
+
+.col-sum-name {
+    width: 50%;
+}
+
+.col-sum-count {
+    width: 20%;
+}
+
+.col-sum-total {
+    width: 30%;
+}
+
+.col-acc-name {
+    width: 40%;
+}
+
+.col-acc-user {
+    width: 30%;
+}
+
+.col-acc-actions {
+    width: 30%;
+}

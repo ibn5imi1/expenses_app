@@ -1,0 +1,147 @@
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px 18px;
+}
+
+.form-grid.cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.field label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.field input,
+.field select,
+.field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    font: inherit;
+    color: var(--text);
+    background-color: var(--white);
+    border: 1px solid var(--grid);
+    border-radius: var(--radius-s);
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.field textarea {
+    resize: vertical;
+    overflow: hidden;
+    min-height: 90px;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+    outline: 0;
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(31, 92, 77, .15);
+}
+
+/* القائمة المنسدلة بسهم مرسوم بالتدرج (بدون صور) */
+.field select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    padding-inline-end: 12px;
+    padding-left: 34px;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+        linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: 15px calc(50% + 1px), 21px calc(50% + 1px);
+    background-size: 6px 6px;
+    background-repeat: no-repeat;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.invalid {
+    border-color: var(--red) !important;
+    background-color: var(--red-soft) !important;
+}
+
+.form-error {
+    padding: 10px 14px;
+    color: var(--red);
+    background: var(--red-soft);
+    border: 1px solid var(--red);
+    border-radius: var(--radius-s);
+}
+
+.inline-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+.inline-form .field {
+    width: 320px;
+}
+
+.inline-form.period-form .field {
+    width: 180px;
+}
+
+.inline-form+.form-error {
+    margin-top: 12px;
+}
+
+.inline-form+div,
+.report-form+div {
+    margin-top: 12px;
+}
+
+.medium-field {
+    max-width: 360px;
+}
+
+/* التقويم وإظهار كلمة المرور */
+.flatpickr-calendar {
+    font-family: var(--font);
+}
+
+.flatpickr-day.selected {
+    background: var(--green);
+    border-color: var(--green);
+}
+
+.date-wrap,
+.password-wrap {
+    position: relative;
+}
+
+.field .date-wrap input {
+    padding-inline-end: 40px;
+    cursor: pointer;
+}
+
+.field .password-wrap input {
+    padding-inline-end: 42px;
+}
+
+.date-icon,
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    inset-inline-end: 11px;
+    transform: translateY(-50%);
+    display: flex;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+}
+
+.date-icon:hover,
+.password-toggle:hover {
+    color: var(--green);
+}

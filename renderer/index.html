@@ -3,21 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="lib/flatpickr.min.css" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; style-src 'self' 'unsafe-inline'"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'none'"
     />
-    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="lib/flatpickr.min.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/navbar.css" />
+    <link rel="stylesheet" href="css/forms.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/tables.css" />
+    <link rel="stylesheet" href="css/pages.css" />
+    <link rel="stylesheet" href="css/login.css" />
+    <link rel="stylesheet" href="css/print.css" />
     <title>مصروفات كلية العمارة</title>
   </head>
   <body>
-    <!-- شاشة الدخول -->
+    <!-- ===== شاشة الدخول ===== -->
     <div class="login-screen" id="login-screen">
       <div class="login-box">
         <h1>مصروفات كلية العمارة</h1>
         <p>تسجيل الدخول</p>
-
         <form id="login-form" class="stack" novalidate>
           <div class="field">
             <label for="login-username">اسم المستخدم</label>
@@ -25,39 +31,52 @@
           </div>
           <div class="field">
             <label for="login-password">كلمة المرور</label>
-            <input type="password" id="login-password" autocomplete="current-password" />
+            <input
+              type="password"
+              id="login-password"
+              autocomplete="current-password"
+            />
           </div>
           <div class="hidden" id="login-error"></div>
           <button type="submit" class="btn" id="login-submit">دخول</button>
         </form>
-
         <div class="login-credit">برمجة وتطوير: <strong>محمد احمد</strong></div>
       </div>
     </div>
 
     <div id="app" class="hidden">
-      <!-- النافبار -->
+      <!-- ===== النافبار ===== -->
       <nav class="navbar">
         <span class="brand">مصروفات كلية العمارة</span>
-
         <div class="nav-links">
           <button class="nav-link" data-page="expenses">المصروفات</button>
           <button class="nav-link" data-page="cash">القاصة</button>
           <button class="nav-link" data-page="loans">المقبوضات</button>
           <button class="nav-link" data-page="debts">الديون</button>
-          <button class="nav-link" data-page="destinations">الجهات المستفيدة</button>
-          <button class="nav-link" data-page="spenders">الجهات القائمة بالصرف</button>
+          <button class="nav-link" data-page="destinations">
+            الجهات المستفيدة
+          </button>
+          <button class="nav-link" data-page="spenders">
+            الجهات القائمة بالصرف
+          </button>
           <button class="nav-link" data-page="summary">الخلاصة</button>
-          <button class="nav-link" data-page="expenses-report">كشف المصروفات</button>
-          <button class="nav-link" data-page="loans-report">كشف المقبوضات</button>
+          <button class="nav-link" data-page="expenses-report">
+            كشف المصروفات
+          </button>
+          <button class="nav-link" data-page="loans-report">
+            كشف المقبوضات
+          </button>
           <button class="nav-link" id="refresh-btn">تحديث البيانات</button>
           <button class="nav-link" data-page="settings">الاعدادات</button>
-          <button class="nav-link admin-only hidden" data-page="admin">الادمن</button>
+          <button class="nav-link admin-only hidden" data-page="admin">
+            الادمن
+          </button>
         </div>
-
         <div class="user-box">
           <span class="user-name" id="current-user"></span>
-          <button class="btn btn-light btn-small" id="logout-btn">تسجيل الخروج</button>
+          <button class="btn btn-light btn-small" id="logout-btn">
+            تسجيل الخروج
+          </button>
         </div>
       </nav>
 
@@ -66,15 +85,26 @@
         <section class="page" id="page-expenses">
           <div class="card">
             <h2>إضافة مصروف</h2>
-
             <form id="expense-form" class="form-grid cols-3" novalidate>
               <div class="field">
                 <label for="expense-amount">المبلغ الكلي</label>
-                <input type="text" id="expense-amount" inputmode="decimal" autocomplete="off" />
+                <input
+                  type="text"
+                  id="expense-amount"
+                  inputmode="decimal"
+                  autocomplete="off"
+                />
               </div>
               <div class="field">
-                <label for="expense-paid">المدفوع نقداً (الباقي يُسجَّل ديناً تلقائياً)</label>
-                <input type="text" id="expense-paid" inputmode="decimal" autocomplete="off" />
+                <label for="expense-paid"
+                  >المدفوع نقداً (الباقي يُسجَّل ديناً تلقائياً)</label
+                >
+                <input
+                  type="text"
+                  id="expense-paid"
+                  inputmode="decimal"
+                  autocomplete="off"
+                />
               </div>
               <div class="field">
                 <label for="expense-date">التاريخ</label>
@@ -93,6 +123,10 @@
                 <select id="expense-spender"></select>
               </div>
               <div class="field">
+                <label for="expense-source">مصدر الاستقطاع</label>
+                <select id="expense-source"></select>
+              </div>
+              <div class="field span-2">
                 <label for="expense-note">ملاحظات</label>
                 <input type="text" id="expense-note" />
               </div>
@@ -104,36 +138,38 @@
               <div class="form-error span-full hidden" id="expense-error"></div>
 
               <div class="form-actions span-full">
-                <button type="submit" class="btn" id="expense-submit">حفظ المصروف</button>
-                <button type="button" class="btn btn-light hidden" id="expense-cancel">إلغاء التعديل</button>
+                <button type="submit" class="btn" id="expense-submit">
+                  حفظ المصروف
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-light hidden"
+                  id="expense-cancel"
+                >
+                  إلغاء التعديل
+                </button>
               </div>
             </form>
           </div>
 
           <div class="card card-wide">
             <h2>آخر 100 مصروف</h2>
-
             <div class="table-wrap">
-              <table class="table table-wide grid-table data-table">
-                <colgroup>
-                  <col class="col-e-receipt" /><col class="col-e-amount" /><col class="col-e-paid" />
-                  <col class="col-e-rem" /><col class="col-e-date" /><col class="col-e-details" />
-                  <col class="col-e-note" /><col class="col-e-dest" /><col class="col-e-spender" />
-                  <col class="col-e-acc" /><col class="col-e-actions" />
-                </colgroup>
+              <table class="table table-wide">
                 <thead>
                   <tr>
-                    <th>رقم الوصل</th>
-                    <th>المبلغ الكلي</th>
-                    <th>المدفوع نقداً</th>
-                    <th>المتبقي</th>
-                    <th>التاريخ</th>
-                    <th>التفاصيل</th>
-                    <th>ملاحظات</th>
-                    <th>الجهة المستفيدة</th>
-                    <th>الجهة القائمة بالصرف</th>
-                    <th>المحاسب</th>
-                    <th class="center">تعديل / حذف</th>
+                    <th class="col-e-receipt">رقم الوصل</th>
+                    <th class="col-e-amount">المبلغ الكلي</th>
+                    <th class="col-e-paid">المدفوع نقداً</th>
+                    <th class="col-e-rem">المتبقي</th>
+                    <th class="col-e-date">التاريخ</th>
+                    <th class="col-e-details">التفاصيل</th>
+                    <th class="col-e-note">ملاحظات</th>
+                    <th class="col-e-dest">الجهة المستفيدة</th>
+                    <th class="col-e-spender center">الجهة القائمة بالصرف</th>
+                    <th class="col-e-source center">مصدر الاستقطاع</th>
+                    <th class="col-e-acc">المحاسب</th>
+                    <th class="col-e-actions center">تعديل / حذف</th>
                   </tr>
                 </thead>
                 <tbody id="expenses-body"></tbody>
@@ -146,57 +182,64 @@
         <section class="page hidden" id="page-loans">
           <div class="card">
             <h2>إضافة مقبوض</h2>
-
             <form id="loan-form" class="form-grid cols-3" novalidate>
               <div class="field">
                 <label for="loan-amount">المبلغ</label>
-                <input type="text" id="loan-amount" inputmode="decimal" autocomplete="off" />
+                <input
+                  type="text"
+                  id="loan-amount"
+                  inputmode="decimal"
+                  autocomplete="off"
+                />
               </div>
               <div class="field">
                 <label for="loan-date">التاريخ</label>
                 <input type="text" id="loan-date" />
               </div>
               <div class="field">
-                <label for="loan-funder">الجهة القائمة بالصرف</label>
-                <select id="loan-funder"></select>
+                <label for="loan-source">المصدر</label>
+                <select id="loan-source"></select>
               </div>
 
               <div class="form-error span-full hidden" id="loan-error"></div>
 
               <div class="form-actions span-full">
-                <button type="submit" class="btn" id="loan-submit">حفظ المقبوض</button>
-                <button type="button" class="btn btn-light hidden" id="loan-cancel">إلغاء التعديل</button>
+                <button type="submit" class="btn" id="loan-submit">
+                  حفظ المقبوض
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-light hidden"
+                  id="loan-cancel"
+                >
+                  إلغاء التعديل
+                </button>
               </div>
             </form>
           </div>
 
           <div class="card">
-            <h2>إضافة جهة قائمة بالصرف</h2>
-            <form id="funder-add-form" class="inline-form" novalidate>
+            <h2>إضافة مصدر</h2>
+            <form id="source-add-form" class="inline-form" novalidate>
               <div class="field">
-                <label for="funder-add-name">اسم الجهة القائمة بالصرف</label>
-                <input type="text" id="funder-add-name" autocomplete="off" />
+                <label for="source-add-name">اسم المصدر</label>
+                <input type="text" id="source-add-name" autocomplete="off" />
               </div>
-              <button type="submit" class="btn">إضافة الجهة</button>
+              <button type="submit" class="btn">إضافة المصدر</button>
             </form>
           </div>
 
           <div class="card">
             <h2>آخر 100 مقبوض</h2>
-
             <div class="table-wrap">
-              <table class="table table-mid grid-table data-table">
-                <colgroup>
-                  <col class="col-l-amount" /><col class="col-l-date" /><col class="col-l-funder" />
-                  <col class="col-l-acc" /><col class="col-l-actions" />
-                </colgroup>
+              <table class="table table-mid">
                 <thead>
                   <tr>
-                    <th>المبلغ</th>
-                    <th>التاريخ</th>
-                    <th>الجهة القائمة بالصرف</th>
-                    <th>المحاسب</th>
-                    <th class="center">تعديل / حذف</th>
+                    <th class="col-l-amount">المبلغ</th>
+                    <th class="col-l-date">التاريخ</th>
+                    <th class="col-l-source center">المصدر</th>
+                    <th class="col-l-acc">المحاسب</th>
+                    <th class="col-l-actions center">تعديل / حذف</th>
                   </tr>
                 </thead>
                 <tbody id="loans-body"></tbody>
@@ -205,28 +248,43 @@
           </div>
         </section>
 
-                <!-- ===== الديون ===== -->
+        <!-- ===== الديون ===== -->
         <section class="page hidden" id="page-debts">
           <div class="card noprint">
             <div class="mode-switch">
-              <button type="button" class="btn" id="debts-tab-list">كشف الديون</button>
-              <button type="button" class="btn btn-light" id="debts-tab-pay">تسديد الديون</button>
+              <button type="button" class="btn" id="debts-tab-list">
+                كشف الديون
+              </button>
+              <button type="button" class="btn btn-light" id="debts-tab-pay">
+                تسديد الديون
+              </button>
             </div>
           </div>
 
-          <!-- ===== كشف الديون ===== -->
           <div id="debts-view-list">
-            <!-- اختيار الجهات الدائنة -->
             <div class="card noprint">
               <h2>كشف الديون حسب الجهة</h2>
-
               <form id="debts-report-form" class="report-form" novalidate>
                 <div class="report-group span-full">
-                  <span class="group-label">الجهات الدائنة (يمكن اختيار أكثر من جهة)</span>
+                  <span class="group-label"
+                    >الجهات الدائنة (يمكن اختيار أكثر من جهة)</span
+                  >
                   <div class="check-list" id="debts-report-creditors"></div>
                   <div class="check-actions">
-                    <button type="button" class="link-btn" id="debts-report-all">تحديد الكل</button>
-                    <button type="button" class="link-btn" id="debts-report-none">إلغاء التحديد</button>
+                    <button
+                      type="button"
+                      class="link-btn"
+                      id="debts-report-all"
+                    >
+                      تحديد الكل
+                    </button>
+                    <button
+                      type="button"
+                      class="link-btn"
+                      id="debts-report-none"
+                    >
+                      إلغاء التحديد
+                    </button>
                   </div>
                 </div>
                 <div class="form-actions">
@@ -236,7 +294,6 @@
               <div class="hidden" id="debts-report-error"></div>
             </div>
 
-            <!-- نتيجة الكشف التفصيلي -->
             <div class="card card-wide hidden" id="debts-report-result">
               <div class="report-head">
                 <div>
@@ -244,13 +301,20 @@
                   <p class="report-sub" id="debts-report-subtitle"></p>
                 </div>
                 <div class="report-buttons noprint">
-                  <button type="button" class="btn btn-light" id="debts-report-print">طباعة</button>
-                  <button type="button" class="btn" id="debts-report-excel">تصدير Excel</button>
+                  <button
+                    type="button"
+                    class="btn btn-light"
+                    id="debts-report-print"
+                  >
+                    طباعة
+                  </button>
+                  <button type="button" class="btn" id="debts-report-excel">
+                    تصدير Excel
+                  </button>
                 </div>
               </div>
-
               <div class="table-wrap">
-                <table class="table table-debts grid-table data-table">
+                <table class="table table-debts table-debts-report">
                   <thead>
                     <tr>
                       <th class="col-d-dest">الجهة الدائنة</th>
@@ -260,7 +324,7 @@
                       <th class="col-d-rem">المتبقي</th>
                       <th class="col-d-date">التاريخ</th>
                       <th class="col-d-details">التفاصيل</th>
-                      <th class="col-d-spender">الجهة القائمة بالصرف</th>
+                      <th class="col-d-spender center">الجهة القائمة بالصرف</th>
                       <th class="col-d-acc">المحاسب</th>
                     </tr>
                   </thead>
@@ -276,7 +340,6 @@
               </div>
             </div>
 
-            <!-- ملخص الديون لكل الجهات -->
             <div class="card">
               <div class="report-head">
                 <div>
@@ -284,33 +347,34 @@
                   <p class="report-sub" id="debts-subtitle"></p>
                 </div>
                 <div class="report-buttons noprint">
-                  <button type="button" class="btn btn-light" id="debts-print">طباعة</button>
-                  <button type="button" class="btn" id="debts-excel">تصدير Excel</button>
+                  <button type="button" class="btn btn-light" id="debts-print">
+                    طباعة
+                  </button>
+                  <button type="button" class="btn" id="debts-excel">
+                    تصدير Excel
+                  </button>
                 </div>
               </div>
-
-              <table class="table grid-table">
-                <colgroup>
-                  <col class="col-debt-name" /><col class="col-debt-total" />
-                </colgroup>
-                <thead>
-                  <tr>
-                    <th>الجهة الدائنة</th>
-                    <th>مجموع الديون</th>
-                  </tr>
-                </thead>
-                <tbody id="debts-body"></tbody>
-                <tfoot>
-                  <tr>
-                    <td>المجموع</td>
-                    <td id="debts-total"></td>
-                  </tr>
-                </tfoot>
-              </table>
+              <div class="table-wrap">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th class="col-debt-name">الجهة الدائنة</th>
+                      <th class="col-debt-total">مجموع الديون</th>
+                    </tr>
+                  </thead>
+                  <tbody id="debts-body"></tbody>
+                  <tfoot>
+                    <tr>
+                      <td>المجموع</td>
+                      <td id="debts-total"></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             </div>
           </div>
 
-          <!-- ===== تسديد الديون ===== -->
           <div id="debts-view-pay" class="hidden">
             <div class="card noprint">
               <h2>تسديد الديون</h2>
@@ -327,13 +391,20 @@
                   <p class="report-sub" id="debt-items-subtitle"></p>
                 </div>
                 <div class="report-buttons noprint">
-                  <button type="button" class="btn btn-light" id="debt-items-print">طباعة</button>
-                  <button type="button" class="btn" id="debt-items-excel">تصدير Excel</button>
+                  <button
+                    type="button"
+                    class="btn btn-light"
+                    id="debt-items-print"
+                  >
+                    طباعة
+                  </button>
+                  <button type="button" class="btn" id="debt-items-excel">
+                    تصدير Excel
+                  </button>
                 </div>
               </div>
-
               <div class="table-wrap">
-                <table class="table table-debts grid-table data-table">
+                <table class="table table-debts table-debts-items">
                   <thead>
                     <tr>
                       <th class="col-d-receipt">رقم الوصل</th>
@@ -342,7 +413,7 @@
                       <th class="col-d-rem">المتبقي</th>
                       <th class="col-d-date">التاريخ</th>
                       <th class="col-d-details">التفاصيل</th>
-                      <th class="col-d-spender">الجهة القائمة بالصرف</th>
+                      <th class="col-d-spender center">الجهة القائمة بالصرف</th>
                       <th class="col-d-acc">المحاسب</th>
                       <th class="col-d-actions center noprint">تسديد</th>
                     </tr>
@@ -359,21 +430,39 @@
                 </table>
               </div>
 
-              <form id="debt-pay-form" class="report-form pay-form noprint hidden" novalidate>
+              <form
+                id="debt-pay-form"
+                class="report-form pay-form noprint hidden"
+                novalidate
+              >
                 <p class="report-sub span-full" id="debt-pay-info"></p>
                 <div class="field">
                   <label for="debt-pay-amount">مبلغ التسديد</label>
-                  <input type="text" id="debt-pay-amount" inputmode="decimal" autocomplete="off" />
+                  <input
+                    type="text"
+                    id="debt-pay-amount"
+                    inputmode="decimal"
+                    autocomplete="off"
+                  />
                 </div>
                 <div class="field">
                   <label for="debt-pay-date">تاريخ التسديد</label>
                   <input type="text" id="debt-pay-date" />
                 </div>
                 <div class="form-actions">
-                  <button type="submit" class="btn" id="debt-pay-submit">تأكيد التسديد</button>
-                  <button type="button" class="btn btn-light" id="debt-pay-cancel">إلغاء</button>
+                  <button type="submit" class="btn">تأكيد التسديد</button>
+                  <button
+                    type="button"
+                    class="btn btn-light"
+                    id="debt-pay-cancel"
+                  >
+                    إلغاء
+                  </button>
                 </div>
-                <div class="form-error span-full hidden" id="debt-pay-error"></div>
+                <div
+                  class="form-error span-full hidden"
+                  id="debt-pay-error"
+                ></div>
               </form>
             </div>
           </div>
@@ -383,11 +472,16 @@
         <section class="page hidden" id="page-cash">
           <div class="card noprint">
             <h2>القاصة</h2>
-
             <form id="cash-form" class="inline-form period-form" novalidate>
               <div class="field">
                 <label for="cash-year">السنة</label>
-                <input type="number" id="cash-year" min="2000" max="2100" inputmode="numeric" />
+                <input
+                  type="number"
+                  id="cash-year"
+                  min="2000"
+                  max="2100"
+                  inputmode="numeric"
+                />
               </div>
               <div class="field">
                 <label for="cash-month">الشهر</label>
@@ -398,43 +492,43 @@
             <div class="hidden" id="cash-error"></div>
           </div>
 
-          <div class="card" id="cash-result">
+          <div class="card">
             <div class="report-head">
               <div>
                 <h2 id="cash-title"></h2>
                 <p class="report-sub" id="cash-subtitle"></p>
               </div>
               <div class="report-buttons noprint">
-                <button type="button" class="btn btn-light" id="cash-print">طباعة</button>
-                <button type="button" class="btn" id="cash-excel">تصدير Excel</button>
+                <button type="button" class="btn btn-light" id="cash-print">
+                  طباعة
+                </button>
+                <button type="button" class="btn" id="cash-excel">
+                  تصدير Excel
+                </button>
               </div>
             </div>
-
             <p class="cash-hint" id="cash-hint"></p>
-
-            <table class="table grid-table">
-              <colgroup>
-                <col class="col-cash-type" /><col class="col-cash-num" />
-                <col class="col-cash-num" /><col class="col-cash-num" />
-              </colgroup>
-              <thead>
-                <tr>
-                  <th>الجهة القائمة بالصرف</th>
-                  <th>صافي المقبوضات</th>
-                  <th>المصروف منها</th>
-                  <th>المتبقي</th>
-                </tr>
-              </thead>
-              <tbody id="cash-body"></tbody>
-              <tfoot>
-                <tr>
-                  <td>المجموع</td>
-                  <td id="cash-total-loans"></td>
-                  <td id="cash-total-spent"></td>
-                  <td id="cash-total-remaining"></td>
-                </tr>
-              </tfoot>
-            </table>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th class="col-cash-type">المصدر</th>
+                    <th class="col-cash-num">صافي المقبوضات</th>
+                    <th class="col-cash-num">المصروف منها</th>
+                    <th class="col-cash-num">المتبقي</th>
+                  </tr>
+                </thead>
+                <tbody id="cash-body"></tbody>
+                <tfoot>
+                  <tr>
+                    <td>المجموع</td>
+                    <td id="cash-total-loans"></td>
+                    <td id="cash-total-spent"></td>
+                    <td id="cash-total-remaining"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         </section>
 
@@ -447,49 +541,70 @@
                 <label for="ben-name">اسم الجهة المستفيدة</label>
                 <input type="text" id="ben-name" autocomplete="off" />
               </div>
-              <button type="submit" class="btn" id="ben-submit">إضافة الجهة</button>
-              <button type="button" class="btn btn-light hidden" id="ben-cancel">إلغاء</button>
+              <button type="submit" class="btn" id="ben-submit">
+                إضافة الجهة
+              </button>
+              <button
+                type="button"
+                class="btn btn-light hidden"
+                id="ben-cancel"
+              >
+                إلغاء
+              </button>
             </form>
-            <div class="form-error hidden" id="ben-error"></div>
           </div>
 
           <div class="card">
             <h2>الجهات المستفيدة</h2>
-            <table class="table grid-table">
-              <colgroup>
-                <col class="col-n-name" /><col class="col-n-count" />
-                <col class="col-n-total" /><col class="col-n-actions" />
-              </colgroup>
-              <thead>
-                <tr>
-                  <th>الجهة المستفيدة</th>
-                  <th>عدد المصروفات</th>
-                  <th>مجموع المصروفات</th>
-                  <th class="center">تعديل / حذف</th>
-                </tr>
-              </thead>
-              <tbody id="ben-body"></tbody>
-              <tfoot>
-                <tr>
-                  <td>المجموع</td>
-                  <td id="ben-total-count"></td>
-                  <td id="ben-total-sum"></td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th class="col-n-name">الجهة المستفيدة</th>
+                    <th class="col-n-count">عدد المصروفات</th>
+                    <th class="col-n-total">مجموع المصروفات</th>
+                    <th class="col-n-actions center">تعديل / حذف</th>
+                  </tr>
+                </thead>
+                <tbody id="ben-body"></tbody>
+                <tfoot>
+                  <tr>
+                    <td>المجموع</td>
+                    <td id="ben-total-count"></td>
+                    <td id="ben-total-sum"></td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         </section>
 
-        <!-- ===== كشف الجهات القائمة بالصرف ===== -->
+        <!-- ===== الجهات القائمة بالصرف ===== -->
         <section class="page hidden" id="page-spenders">
           <div class="card noprint">
-            <h2>كشف الجهات القائمة بالصرف</h2>
+            <h2>إضافة جهة قائمة بالصرف</h2>
+            <form id="spn-add-form" class="inline-form" novalidate>
+              <div class="field">
+                <label for="spn-add-name">اسم الجهة القائمة بالصرف</label>
+                <input type="text" id="spn-add-name" autocomplete="off" />
+              </div>
+              <button type="submit" class="btn">إضافة الجهة</button>
+            </form>
+          </div>
 
+          <div class="card noprint">
+            <h2>كشف الجهات القائمة بالصرف</h2>
             <form id="spn-form" class="inline-form period-form" novalidate>
               <div class="field">
                 <label for="spn-year">السنة</label>
-                <input type="number" id="spn-year" min="2000" max="2100" inputmode="numeric" />
+                <input
+                  type="number"
+                  id="spn-year"
+                  min="2000"
+                  max="2100"
+                  inputmode="numeric"
+                />
               </div>
               <div class="field">
                 <label for="spn-month">الشهر</label>
@@ -500,38 +615,40 @@
             <div class="hidden" id="spn-error"></div>
           </div>
 
-          <div class="card" id="spn-result">
+          <div class="card">
             <div class="report-head">
               <div>
                 <h2 id="spn-title"></h2>
                 <p class="report-sub" id="spn-subtitle"></p>
               </div>
               <div class="report-buttons noprint">
-                <button type="button" class="btn btn-light" id="spn-print">طباعة</button>
-                <button type="button" class="btn" id="spn-excel">تصدير Excel</button>
+                <button type="button" class="btn btn-light" id="spn-print">
+                  طباعة
+                </button>
+                <button type="button" class="btn" id="spn-excel">
+                  تصدير Excel
+                </button>
               </div>
             </div>
-
-            <table class="table grid-table">
-              <colgroup>
-                <col class="col-sum-name" /><col class="col-sum-count" /><col class="col-sum-total" />
-              </colgroup>
-              <thead>
-                <tr>
-                  <th>الجهة القائمة بالصرف</th>
-                  <th>عدد المصروفات</th>
-                  <th>مجموع المصروفات</th>
-                </tr>
-              </thead>
-              <tbody id="spn-body"></tbody>
-              <tfoot>
-                <tr>
-                  <td>المجموع</td>
-                  <td id="spn-total-count"></td>
-                  <td id="spn-total-sum"></td>
-                </tr>
-              </tfoot>
-            </table>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th class="col-sum-name">الجهة القائمة بالصرف</th>
+                    <th class="col-sum-count">عدد المصروفات</th>
+                    <th class="col-sum-total">مجموع المصروفات</th>
+                  </tr>
+                </thead>
+                <tbody id="spn-body"></tbody>
+                <tfoot>
+                  <tr>
+                    <td>المجموع</td>
+                    <td id="spn-total-count"></td>
+                    <td id="spn-total-sum"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         </section>
 
@@ -539,11 +656,16 @@
         <section class="page hidden" id="page-summary">
           <div class="card noprint">
             <h2>الخلاصة</h2>
-
             <form id="summary-form" class="inline-form period-form" novalidate>
               <div class="field">
                 <label for="summary-year">السنة</label>
-                <input type="number" id="summary-year" min="2000" max="2100" inputmode="numeric" />
+                <input
+                  type="number"
+                  id="summary-year"
+                  min="2000"
+                  max="2100"
+                  inputmode="numeric"
+                />
               </div>
               <div class="field">
                 <label for="summary-month">الشهر</label>
@@ -554,15 +676,19 @@
             <div class="hidden" id="summary-error"></div>
           </div>
 
-          <div class="card" id="summary-result">
+          <div class="card">
             <div class="report-head">
               <div>
                 <h2 id="summary-title"></h2>
                 <p class="report-sub" id="summary-subtitle"></p>
               </div>
               <div class="report-buttons noprint">
-                <button type="button" class="btn btn-light" id="summary-print">طباعة</button>
-                <button type="button" class="btn" id="summary-excel">تصدير Excel</button>
+                <button type="button" class="btn btn-light" id="summary-print">
+                  طباعة
+                </button>
+                <button type="button" class="btn" id="summary-excel">
+                  تصدير Excel
+                </button>
               </div>
             </div>
 
@@ -576,33 +702,33 @@
                 <strong class="stat-value" id="summary-loans"></strong>
               </div>
               <div class="stat stat-main">
-                <span class="stat-label">المجموع الكلي (المصروفات − المقبوضات)</span>
+                <span class="stat-label"
+                  >المجموع الكلي (المصروفات − المقبوضات)</span
+                >
                 <strong class="stat-value" id="summary-total"></strong>
               </div>
             </div>
-
             <p class="summary-hint" id="summary-hint"></p>
 
-            <table class="table grid-table">
-              <colgroup>
-                <col class="col-sum-name" /><col class="col-sum-count" /><col class="col-sum-total" />
-              </colgroup>
-              <thead>
-                <tr>
-                  <th>الجهة المستفيدة</th>
-                  <th>عدد المصروفات</th>
-                  <th>المجموع</th>
-                </tr>
-              </thead>
-              <tbody id="summary-body"></tbody>
-              <tfoot>
-                <tr>
-                  <td>الإجمالي</td>
-                  <td id="summary-total-count"></td>
-                  <td id="summary-total-sum"></td>
-                </tr>
-              </tfoot>
-            </table>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th class="col-sum-name">الجهة المستفيدة</th>
+                    <th class="col-sum-count">عدد المصروفات</th>
+                    <th class="col-sum-total">المجموع</th>
+                  </tr>
+                </thead>
+                <tbody id="summary-body"></tbody>
+                <tfoot>
+                  <tr>
+                    <td>الإجمالي</td>
+                    <td id="summary-total-count"></td>
+                    <td id="summary-total-sum"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         </section>
 
@@ -610,13 +736,17 @@
         <section class="page hidden" id="page-expenses-report">
           <div class="card noprint">
             <h2>كشف المصروفات</h2>
-
             <form id="expenses-report-form" class="report-form" novalidate>
               <div class="report-group span-full">
                 <span class="group-label">طريقة الكشف</span>
                 <div class="mode-switch">
                   <label class="mode-option">
-                    <input type="radio" name="report-mode" value="destination" checked />
+                    <input
+                      type="radio"
+                      name="report-mode"
+                      value="destination"
+                      checked
+                    />
                     حسب الجهة المستفيدة
                   </label>
                   <label class="mode-option">
@@ -627,20 +757,35 @@
               </div>
 
               <div class="report-group span-full" id="report-dest-group">
-                <span class="group-label">الجهات المستفيدة (يمكن اختيار أكثر من جهة)</span>
+                <span class="group-label"
+                  >الجهات المستفيدة (يمكن اختيار أكثر من جهة)</span
+                >
                 <div class="check-list" id="report-destinations"></div>
                 <div class="check-actions">
-                  <button type="button" class="link-btn" id="report-dest-all">تحديد الكل</button>
-                  <button type="button" class="link-btn" id="report-dest-none">إلغاء التحديد</button>
+                  <button type="button" class="link-btn" id="report-dest-all">
+                    تحديد الكل
+                  </button>
+                  <button type="button" class="link-btn" id="report-dest-none">
+                    إلغاء التحديد
+                  </button>
                 </div>
               </div>
 
-              <div class="report-group span-full hidden" id="report-spender-group">
-                <span class="group-label">الجهات القائمة بالصرف (يمكن اختيار أكثر من جهة)</span>
+              <div
+                class="report-group span-full hidden"
+                id="report-spender-group"
+              >
+                <span class="group-label"
+                  >الجهات القائمة بالصرف (يمكن اختيار أكثر من جهة)</span
+                >
                 <div class="check-list" id="report-spenders"></div>
                 <div class="check-actions">
-                  <button type="button" class="link-btn" id="report-spn-all">تحديد الكل</button>
-                  <button type="button" class="link-btn" id="report-spn-none">إلغاء التحديد</button>
+                  <button type="button" class="link-btn" id="report-spn-all">
+                    تحديد الكل
+                  </button>
+                  <button type="button" class="link-btn" id="report-spn-none">
+                    إلغاء التحديد
+                  </button>
                 </div>
               </div>
 
@@ -666,13 +811,20 @@
                 <p class="report-sub" id="expenses-report-subtitle"></p>
               </div>
               <div class="report-buttons noprint">
-                <button type="button" class="btn btn-light" id="expenses-report-print">طباعة</button>
-                <button type="button" class="btn" id="expenses-report-excel">تصدير Excel</button>
+                <button
+                  type="button"
+                  class="btn btn-light"
+                  id="expenses-report-print"
+                >
+                  طباعة
+                </button>
+                <button type="button" class="btn" id="expenses-report-excel">
+                  تصدير Excel
+                </button>
               </div>
             </div>
-
             <div class="table-wrap">
-              <table class="table table-wide grid-table data-table">
+              <table class="table table-wide">
                 <thead>
                   <tr>
                     <th class="col-e-receipt">رقم الوصل</th>
@@ -683,7 +835,8 @@
                     <th class="col-e-details">التفاصيل</th>
                     <th class="col-e-note">ملاحظات</th>
                     <th class="col-e-dest">الجهة المستفيدة</th>
-                    <th class="col-e-spender">الجهة القائمة بالصرف</th>
+                    <th class="col-e-spender center">الجهة القائمة بالصرف</th>
+                    <th class="col-e-source center">مصدر الاستقطاع</th>
                     <th class="col-e-acc">المحاسب</th>
                     <th class="col-e-actions center noprint">تعديل / حذف</th>
                   </tr>
@@ -693,7 +846,9 @@
                   <tr>
                     <td colspan="2" id="expenses-report-count"></td>
                     <td id="expenses-report-total"></td>
-                    <td colspan="7">المجموع = المصروف نقداً فعلياً (كل تسديد يُحسب بمبلغه فقط)</td>
+                    <td colspan="8">
+                      المجموع = المصروف نقداً فعلياً (كل تسديد يُحسب بمبلغه فقط)
+                    </td>
                     <td class="noprint"></td>
                   </tr>
                 </tfoot>
@@ -702,21 +857,29 @@
           </div>
         </section>
 
-        <!-- ===== كشف المقبوضات ===== -->
+        <!-- ===== كشف المقبوضات حسب المصدر ===== -->
         <section class="page hidden" id="page-loans-report">
           <div class="card noprint">
-            <h2>كشف المقبوضات حسب الجهة القائمة بالصرف</h2>
-
+            <h2>كشف المقبوضات حسب المصدر</h2>
             <form id="loans-report-form" class="report-form" novalidate>
               <div class="report-group span-full">
-                <span class="group-label">الجهات القائمة بالصرف (يمكن اختيار أكثر من جهة)</span>
-                <div class="check-list" id="report-funders"></div>
+                <span class="group-label"
+                  >المصادر (يمكن اختيار أكثر من مصدر)</span
+                >
+                <div class="check-list" id="report-sources"></div>
                 <div class="check-actions">
-                  <button type="button" class="link-btn" id="report-funder-all">تحديد الكل</button>
-                  <button type="button" class="link-btn" id="report-funder-none">إلغاء التحديد</button>
+                  <button type="button" class="link-btn" id="report-source-all">
+                    تحديد الكل
+                  </button>
+                  <button
+                    type="button"
+                    class="link-btn"
+                    id="report-source-none"
+                  >
+                    إلغاء التحديد
+                  </button>
                 </div>
               </div>
-
               <div class="field">
                 <label for="loan-from">من تاريخ</label>
                 <input type="text" id="loan-from" />
@@ -739,18 +902,25 @@
                 <p class="report-sub" id="loans-report-subtitle"></p>
               </div>
               <div class="report-buttons noprint">
-                <button type="button" class="btn btn-light" id="loans-report-print">طباعة</button>
-                <button type="button" class="btn" id="loans-report-excel">تصدير Excel</button>
+                <button
+                  type="button"
+                  class="btn btn-light"
+                  id="loans-report-print"
+                >
+                  طباعة
+                </button>
+                <button type="button" class="btn" id="loans-report-excel">
+                  تصدير Excel
+                </button>
               </div>
             </div>
-
             <div class="table-wrap">
-              <table class="table table-mid grid-table data-table">
+              <table class="table table-mid">
                 <thead>
                   <tr>
                     <th class="col-l-amount">المبلغ</th>
                     <th class="col-l-date">التاريخ</th>
-                    <th class="col-l-funder">الجهة القائمة بالصرف</th>
+                    <th class="col-l-source center">المصدر</th>
                     <th class="col-l-acc">المحاسب</th>
                     <th class="col-l-actions center noprint">تعديل / حذف</th>
                   </tr>
@@ -772,19 +942,30 @@
         <section class="page hidden" id="page-settings">
           <div class="card narrow">
             <h2>تغيير كلمة المرور</h2>
-
             <form id="password-form" class="stack" novalidate>
               <div class="field">
                 <label for="old-password">كلمة المرور الحالية</label>
-                <input type="password" id="old-password" autocomplete="current-password" />
+                <input
+                  type="password"
+                  id="old-password"
+                  autocomplete="current-password"
+                />
               </div>
               <div class="field">
                 <label for="new-password">كلمة المرور الجديدة</label>
-                <input type="password" id="new-password" autocomplete="new-password" />
+                <input
+                  type="password"
+                  id="new-password"
+                  autocomplete="new-password"
+                />
               </div>
               <div class="field">
                 <label for="confirm-password">تأكيد كلمة المرور الجديدة</label>
-                <input type="password" id="confirm-password" autocomplete="new-password" />
+                <input
+                  type="password"
+                  id="confirm-password"
+                  autocomplete="new-password"
+                />
               </div>
               <div class="hidden" id="password-error"></div>
               <div class="form-actions">
@@ -798,43 +979,61 @@
         <section class="page hidden" id="page-admin">
           <div class="card narrow">
             <h2 id="accountant-form-title">إضافة محاسب</h2>
-
             <form id="accountant-form" class="stack" novalidate>
               <div class="field">
-                <label for="accountant-name">اسم المحاسب (يظهر في سجلات الإضافة والتعديل)</label>
+                <label for="accountant-name"
+                  >اسم المحاسب (يظهر في سجلات الإضافة والتعديل)</label
+                >
                 <input type="text" id="accountant-name" autocomplete="off" />
               </div>
               <div class="field">
                 <label for="accountant-username">اسم المستخدم</label>
-                <input type="text" id="accountant-username" autocomplete="off" />
+                <input
+                  type="text"
+                  id="accountant-username"
+                  autocomplete="off"
+                />
               </div>
               <div class="field">
-                <label for="accountant-password" id="accountant-password-label">كلمة المرور</label>
-                <input type="password" id="accountant-password" autocomplete="new-password" />
+                <label for="accountant-password" id="accountant-password-label"
+                  >كلمة المرور</label
+                >
+                <input
+                  type="password"
+                  id="accountant-password"
+                  autocomplete="new-password"
+                />
               </div>
               <div class="hidden" id="accountant-error"></div>
               <div class="form-actions">
-                <button type="submit" class="btn" id="accountant-submit">إضافة المحاسب</button>
-                <button type="button" class="btn btn-light hidden" id="accountant-cancel">إلغاء التعديل</button>
+                <button type="submit" class="btn" id="accountant-submit">
+                  إضافة المحاسب
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-light hidden"
+                  id="accountant-cancel"
+                >
+                  إلغاء التعديل
+                </button>
               </div>
             </form>
           </div>
 
           <div class="card medium">
             <h2>المحاسبون</h2>
-            <table class="table grid-table">
-              <colgroup>
-                <col class="col-acc-name" /><col class="col-acc-user" /><col class="col-acc-actions" />
-              </colgroup>
-              <thead>
-                <tr>
-                  <th>الاسم</th>
-                  <th>اسم المستخدم</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="accountants-body"></tbody>
-            </table>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th class="col-acc-name">الاسم</th>
+                    <th class="col-acc-user">اسم المستخدم</th>
+                    <th class="col-acc-actions"></th>
+                  </tr>
+                </thead>
+                <tbody id="accountants-body"></tbody>
+              </table>
+            </div>
           </div>
         </section>
       </main>
@@ -843,6 +1042,32 @@
     <div class="toast noprint" id="toast" role="status"></div>
 
     <script src="lib/flatpickr.js"></script>
-    <script src="js/main.js"></script>
+
+    <!-- المشترك -->
+    <script src="js/core/app.js"></script>
+    <script src="js/core/utils.js"></script>
+    <script src="js/core/dates.js"></script>
+    <script src="js/core/dom.js"></script>
+    <script src="js/core/rows.js"></script>
+    <script src="js/core/add-box.js"></script>
+    <script src="js/core/lists.js"></script>
+
+    <!-- الصفحات -->
+    <script src="js/pages/expenses.js"></script>
+    <script src="js/pages/loans.js"></script>
+    <script src="js/pages/debts.js"></script>
+    <script src="js/pages/cash.js"></script>
+    <script src="js/pages/destinations.js"></script>
+    <script src="js/pages/spenders.js"></script>
+    <script src="js/pages/summary.js"></script>
+    <script src="js/pages/expenses-report.js"></script>
+    <script src="js/pages/loans-report.js"></script>
+    <script src="js/pages/settings.js"></script>
+    <script src="js/pages/admin.js"></script>
+
+    <!-- التشغيل (يجب أن تبقى الأخيرة) -->
+    <script src="js/app/nav.js"></script>
+    <script src="js/app/auth.js"></script>
+    <script src="js/app/main.js"></script>
   </body>
 </html>

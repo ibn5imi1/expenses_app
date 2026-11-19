@@ -1,0 +1,200 @@
+/* الأزرار */
+.btn {
+    padding: 10px 22px;
+    font: inherit;
+    color: var(--white);
+    cursor: pointer;
+    background: var(--green);
+    border: 1px solid var(--green);
+    border-radius: var(--radius-s);
+    transition: background .15s, box-shadow .15s;
+}
+
+.btn:hover {
+    background: var(--green-dark);
+    box-shadow: 0 2px 8px rgba(31, 92, 77, .3);
+}
+
+.btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.btn:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+}
+
+.btn-light {
+    background: var(--white);
+    color: var(--green);
+}
+
+.btn-light:hover {
+    background: var(--green-soft);
+    box-shadow: none;
+}
+
+.btn-danger {
+    background: var(--white);
+    color: var(--red);
+    border-color: var(--red);
+}
+
+.btn-danger:hover {
+    background: var(--red-soft);
+    box-shadow: none;
+}
+
+.btn-small {
+    padding: 5px 14px;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.link-btn {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--green);
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* شارات: الجهة القائمة بالصرف (أخضر) ومصدر الاستقطاع/المصدر (ذهبي) */
+.tag {
+    display: inline-block;
+    max-width: 100%;
+    padding: 4px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: center;
+    border-radius: 999px;
+    border: 1px solid;
+}
+
+.tag-spender {
+    background: var(--green-soft);
+    color: var(--green);
+    border-color: #9cc7b9;
+}
+
+.tag-source {
+    background: var(--gold-soft);
+    color: var(--gold-dark);
+    border-color: #dcc27a;
+}
+
+.badge {
+    display: inline-block;
+    padding: 3px 12px;
+    font-size: 13px;
+    color: var(--muted);
+    background: var(--head);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+}
+
+/* قوائم الاختيار (شيك بوكس) */
+.check-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.check-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 16px;
+    cursor: pointer;
+    background: var(--white);
+    border: 1px solid var(--grid);
+    border-radius: 999px;
+    transition: background .15s, border-color .15s;
+}
+
+.check-item:hover {
+    border-color: var(--green);
+}
+
+.check-item input {
+    width: auto;
+    margin: 0;
+    accent-color: var(--green);
+}
+
+.check-item:has(input:checked) {
+    background: var(--green-soft);
+    border-color: var(--green);
+    color: var(--green-dark);
+    font-weight: 600;
+}
+
+.check-actions {
+    display: flex;
+    gap: 16px;
+    margin-top: 10px;
+}
+
+/* اختيار طريقة الكشف */
+.mode-switch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.mode-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 18px;
+    cursor: pointer;
+    background: var(--head);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-s);
+}
+
+.mode-option input {
+    margin: 0;
+    accent-color: var(--green);
+}
+
+.mode-option:has(input:checked) {
+    background: var(--green-soft);
+    border-color: var(--green);
+    color: var(--green-dark);
+    font-weight: 600;
+}
+
+/* رسالة التنبيه */
+.toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    z-index: 100;
+    min-width: 260px;
+    max-width: 80%;
+    padding: 13px 24px;
+    color: var(--white);
+    text-align: center;
+    background: var(--green);
+    border-radius: var(--radius-s);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .28);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 10px);
+    transition: opacity .25s, transform .25s;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+.toast-error {
+    background: var(--red);
+}

@@ -1,0 +1,92 @@
+/* رأس الكشوفات */
+.report-form {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px 18px;
+    align-items: end;
+}
+
+.report-group .group-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.report-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.report-head h2 {
+    margin: 0;
+}
+
+.report-sub {
+    margin: 4px 0 0;
+    color: var(--muted);
+}
+
+.report-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.cash-hint,
+.summary-hint {
+    margin: 0 0 14px;
+    color: var(--muted);
+}
+
+/* تسديد الديون */
+.pay-form {
+    max-width: 1100px;
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+}
+
+/* بطاقات الخلاصة */
+.stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.stat {
+    padding: 16px 20px;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    box-shadow: var(--shadow);
+}
+
+.stat-label {
+    display: block;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.stat-value {
+    display: block;
+    margin-top: 6px;
+    font-size: 24px;
+}
+
+.stat-main {
+    background: var(--green);
+    border-color: var(--green);
+}
+
+.stat-main .stat-label {
+    color: #cfe0d9;
+}
+
+.stat-main .stat-value {
+    color: var(--white);
+}

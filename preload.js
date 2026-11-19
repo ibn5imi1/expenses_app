@@ -1,62 +1,31 @@
-// start preload.js
-
 const { contextBridge, ipcRenderer } = require('electron');
 
 const call = channel => (...args) => ipcRenderer.invoke(channel, ...args);
 
 contextBridge.exposeInMainWorld('api', {
-    // الجلسة
-    login: call('login'),
-    logout: call('logout'),
-    getSession: call('getSession'),
+    login: call('login'), logout: call('logout'), getSession: call('getSession'),
 
-    // الإعدادات والأدمن
     changePassword: call('changePassword'),
-    getAccountants: call('getAccountants'),
-    addAccountant: call('addAccountant'),
-    updateAccountant: call('updateAccountant'),
-    deleteAccountant: call('deleteAccountant'),
+    getAccountants: call('getAccountants'), addAccountant: call('addAccountant'),
+    updateAccountant: call('updateAccountant'), deleteAccountant: call('deleteAccountant'),
 
-    // الجهات المستفيدة
-    getDestinations: call('getDestinations'),
-    addDestination: call('addDestination'),
-    updateDestination: call('updateDestination'),
-    deleteDestination: call('deleteDestination'),
+    getDestinations: call('getDestinations'), addDestination: call('addDestination'),
+    updateDestination: call('updateDestination'), deleteDestination: call('deleteDestination'),
 
-    // الجهات القائمة بالصرف (= الجهات الممولة)
-    getFundingParties: call('getFundingParties'),
-    addFundingParty: call('addFundingParty'),
-    getSpendersReport: call('getSpendersReport'),
+    getSpenders: call('getSpenders'), addSpender: call('addSpender'), getSpendersReport: call('getSpendersReport'),
+    getSources: call('getSources'), addSource: call('addSource'),
 
-    // المصروفات
-    getExpenses: call('getExpenses'),
-    addExpense: call('addExpense'),
-    updateExpense: call('updateExpense'),
-    deleteExpense: call('deleteExpense'),
+    getExpenses: call('getExpenses'), addExpense: call('addExpense'),
+    updateExpense: call('updateExpense'), deleteExpense: call('deleteExpense'),
 
-    // الديون
-    getDebtsSummary: call('getDebtsSummary'),
-    getDebtItems: call('getDebtItems'),
-    settleDebt: call('settleDebt'),
-    getDebtsReport: call('getDebtsReport'),
+    getDebtsSummary: call('getDebtsSummary'), getDebtItems: call('getDebtItems'),
+    getDebtsReport: call('getDebtsReport'), settleDebt: call('settleDebt'),
 
-    // المقبوضات
-    getLoans: call('getLoans'),
-    addLoan: call('addLoan'),
-    updateLoan: call('updateLoan'),
-    deleteLoan: call('deleteLoan'),
+    getLoans: call('getLoans'), addLoan: call('addLoan'),
+    updateLoan: call('updateLoan'), deleteLoan: call('deleteLoan'),
 
-    // القاصة والخلاصة
-    getMonthCashReport: call('getMonthCashReport'),
-    getMonthSummary: call('getMonthSummary'),
+    getMonthCashReport: call('getMonthCashReport'), getMonthSummary: call('getMonthSummary'),
+    getExpensesReport: call('getExpensesReport'), getLoansReport: call('getLoansReport'),
 
-    // الكشوفات
-    getExpensesReport: call('getExpensesReport'),
-    getLoansReport: call('getLoansReport'),
-
-    // التصدير والطباعة
-    exportReport: call('exportReport'),
-    printPage: call('printPage'),
+    exportReport: call('exportReport'), printPage: call('printPage'),
 });
-
-// end preload.js

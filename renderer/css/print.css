@@ -1,0 +1,275 @@
+@page {
+    size: A4 landscape;
+    margin: 10mm;
+}
+
+@media print {
+
+    .navbar,
+    .noprint,
+    .toast {
+        display: none !important;
+    }
+
+    body {
+        background: #fff;
+        color: #000;
+    }
+
+    main {
+        margin: 0;
+        padding: 0;
+    }
+
+    .card {
+        max-width: none;
+        padding: 0;
+        border: 0;
+        box-shadow: none;
+    }
+
+    .report-head h2 {
+        font-size: 18px;
+        color: #000;
+    }
+
+    .report-sub,
+    .cash-hint,
+    .summary-hint {
+        color: #000;
+    }
+
+    .table-wrap {
+        overflow: visible;
+        max-height: none;
+        border: 0;
+        border-radius: 0;
+    }
+
+    .table-wide,
+    .table-debts,
+    .table-mid {
+        min-width: 0;
+    }
+
+    .table {
+        font-size: 12px;
+        border-top: 1px solid #000;
+        border-right: 1px solid #000;
+    }
+
+    .table th,
+    .table td {
+        color: #000;
+        border-left: 1px solid #000;
+        border-bottom: 1px solid #000;
+    }
+
+    .table th:last-child,
+    .table td:last-child {
+        border-left: 1px solid #000;
+    }
+
+    .table thead th {
+        position: static;
+        background: #e9eeeb;
+        border-left-color: #000;
+        border-bottom: 1px solid #000;
+    }
+
+    .table tbody tr,
+    .table tbody tr:nth-child(even) {
+        background: #fff !important;
+    }
+
+    .table tfoot td {
+        background: #e9eeeb;
+        border-top: 1px solid #000;
+        border-bottom: 1px solid #000;
+    }
+
+    .table th,
+    .table tfoot td {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .table>tbody:last-child>tr:last-child>td {
+        border-bottom: 1px solid #000;
+    }
+
+    .table thead {
+        display: table-header-group;
+    }
+
+    /* يتكرر الرأس في كل صفحة */
+    .table tfoot {
+        display: table-row-group;
+    }
+
+    /* المجموع في آخر صفحة فقط */
+    .table tr {
+        break-inside: avoid;
+    }
+
+    .tag {
+        padding: 0;
+        border: 0;
+        background: none;
+        color: #000;
+        font-size: inherit;
+        font-weight: 400;
+    }
+
+    .negative {
+        color: #000;
+    }
+
+    .amount-note {
+        color: #000;
+    }
+
+    .stat,
+    .stat-main {
+        background: #fff;
+        border: 1px solid #000;
+        box-shadow: none;
+    }
+
+    .stat-main .stat-label,
+    .stat-main .stat-value {
+        color: #000;
+    }
+
+    /* كشف المصروفات بعد إخفاء عمود التعديل */
+    .col-e-receipt {
+        width: 7%;
+    }
+
+    .col-e-amount {
+        width: 9%;
+    }
+
+    .col-e-paid {
+        width: 9%;
+    }
+
+    .col-e-rem {
+        width: 8%;
+    }
+
+    .col-e-date {
+        width: 8%;
+    }
+
+    .col-e-details {
+        width: 18%;
+    }
+
+    .col-e-note {
+        width: 9%;
+    }
+
+    .col-e-dest {
+        width: 9%;
+    }
+
+    .col-e-spender {
+        width: 9%;
+    }
+
+    .col-e-source {
+        width: 8%;
+    }
+
+    .col-e-acc {
+        width: 6%;
+    }
+
+    /* كشف المقبوضات */
+    .col-l-amount {
+        width: 25%;
+    }
+
+    .col-l-date {
+        width: 20%;
+    }
+
+    .col-l-source {
+        width: 35%;
+    }
+
+    .col-l-acc {
+        width: 20%;
+    }
+
+    /* تسديد الديون (بدون عمود التسديد) */
+    .table-debts-items .col-d-receipt {
+        width: 9%;
+    }
+
+    .table-debts-items .col-d-amount {
+        width: 12%;
+    }
+
+    .table-debts-items .col-d-paid {
+        width: 12%;
+    }
+
+    .table-debts-items .col-d-rem {
+        width: 12%;
+    }
+
+    .table-debts-items .col-d-date {
+        width: 10%;
+    }
+
+    .table-debts-items .col-d-details {
+        width: 25%;
+    }
+
+    .table-debts-items .col-d-spender {
+        width: 12%;
+    }
+
+    .table-debts-items .col-d-acc {
+        width: 8%;
+    }
+
+    /* كشف الديون */
+    .table-debts-report .col-d-dest {
+        width: 14%;
+    }
+
+    .table-debts-report .col-d-receipt {
+        width: 8%;
+    }
+
+    .table-debts-report .col-d-amount {
+        width: 10%;
+    }
+
+    .table-debts-report .col-d-paid {
+        width: 10%;
+    }
+
+    .table-debts-report .col-d-rem {
+        width: 10%;
+    }
+
+    .table-debts-report .col-d-date {
+        width: 9%;
+    }
+
+    .table-debts-report .col-d-details {
+        width: 22%;
+    }
+
+    .table-debts-report .col-d-spender {
+        width: 10%;
+    }
+
+    .table-debts-report .col-d-acc {
+        width: 7%;
+    }
+}

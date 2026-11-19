@@ -1,19 +1,22 @@
 college-expenses/
-├── node_modules
-├── electron-main.js
+├── electron-main.js        ← نقطة البداية فقط
 ├── preload.js
-├── recovery.js
-├── db.js
-├── package-lock.json
+├── recovery.js             ← كما هو
 ├── package.json
-├── export.js
-├── map
+├── main/
+│   ├── window.js
+│   ├── session.js
+│   ├── admin-recovery.js
+│   ├── export/excel.js     ← هو export.js القديم، انقله كما هو بدون تعديل
+│   ├── ipc/                ← index, auth, accounts, lists, expenses, debts, loans, reports, files
+│   └── database/           ← index, connection, schema, helpers, queries, cash-sync,
+│                             lists, expenses, debts, loans, reports, users
 └── renderer/
     ├── index.html
-    ├── css/style.css
-    ├── js/main.js
-    └── lib
-        ├── flatpickr.js
-        └──flatpickr.min.css
-
-    
+    ├── css/                ← base, navbar, forms, components, tables, pages, login, print
+    ├── js/
+    │   ├── core/           ← app, utils, dates, dom, rows, add-box, lists
+    │   ├── pages/          ← expenses, loans, debts, cash, destinations, spenders,
+    │   │                     summary, expenses-report, loans-report, settings, admin
+    │   └── app/            ← nav, auth, main
+    └── lib/

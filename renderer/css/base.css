@@ -1,0 +1,87 @@
+:root {
+    --green: #1f5c4d;
+    --green-dark: #17463a;
+    --green-soft: #e6f2ee;
+    --green-hover: #eef6f2;
+    --red: #b3402f;
+    --red-soft: #f8e7e4;
+    --gold: #b88a2a;
+    --gold-soft: #f8f0da;
+    --gold-dark: #7a5a0f;
+    --white: #fff;
+    --bg: #eef1ed;
+    --line: #dde4df;
+    --grid: #c3cdc7;
+    --head: #f4f7f5;
+    --zebra: #fafcfb;
+    --text: #1d2b26;
+    --muted: #66756f;
+    --font: "Segoe UI", Tahoma, Arial, sans-serif;
+    --radius-s: 8px;
+    --radius-l: 14px;
+    --shadow: 0 1px 3px rgba(20, 50, 40, .08), 0 6px 18px rgba(20, 50, 40, .06);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: var(--font);
+    font-size: 15px;
+    color: var(--text);
+    background: var(--bg);
+}
+
+.hidden {
+    display: none !important;
+}
+
+.span-full {
+    grid-column: 1 / -1;
+}
+
+.span-2 {
+    grid-column: span 2;
+}
+
+main {
+    margin: 22px auto;
+    padding: 0 20px;
+}
+
+.card {
+    max-width: 1360px;
+    margin: 0 auto 20px;
+    padding: 22px;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    box-shadow: var(--shadow);
+}
+
+.card-wide {
+    max-width: none;
+}
+
+.narrow {
+    max-width: 460px;
+    margin-inline: auto;
+}
+
+.medium {
+    max-width: 720px;
+    margin-inline: auto;
+}
+
+.card h2 {
+    margin: 0 0 16px;
+    font-size: 18px;
+    color: var(--green-dark);
+}
+
+.stack {
+    display: grid;
+    gap: 14px;
+}
