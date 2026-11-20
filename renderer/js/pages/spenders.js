@@ -1,4 +1,4 @@
-// صفحة الجهات القائمة بالصرف: إضافة جهة + كشف شهري
+// صفحة الجهات القائمة بالصرف: إضافة جهة + كشف شهري + حذف
 (() => {
     const form = $('spn-form');
     const yearInput = $('spn-year');
@@ -13,7 +13,7 @@
     createAddBox({
         form: $('spn-add-form'),
         input: $('spn-add-name'),
-        existing: () => App.lists.spenders,
+        existing: () => activeOnly(App.lists.spenders),
         emptyMessage: 'اكتب اسم الجهة القائمة بالصرف',
         add: name => window.api.addSpender(name),
         onAdded: async (id, name) => {
@@ -21,6 +21,17 @@
             showToast(`تمت إضافة الجهة القائمة بالصرف: ${name}`);
         },
     });
+
+    async function remove(r) {
+        if (!confirm(`هل تريد حذف الجهة «${r.name}»؟`)) return;
+        try {
+            await window.api.deleteSpender(r.id);
+            await App.refreshAll({ silent: true });
+        } catch (err) {
+            console.error(err);
+            showProblem(cleanError(err));   // مثلاً: لا يمكن حذف الجهة لأن عليها مصروفات هذا الشهر
+        }
+    }
 
     function render(rows, year, month) {
         const { from, to } = periodRange(year, month);
@@ -36,17 +47,26 @@
         const excelRows = [];
 
         rows.forEach(r => {
+            const label = r.is_active ? r.name : `${r.name} (محذوفة)`;
             count += r.expenses_count;
             sum = round2(sum + r.expenses_total);
-            excelRows.push([r.name, r.expenses_count, r.expenses_total]);
+            excelRows.push([label, r.expenses_count, r.expenses_total]);
 
             const tr = document.createElement('tr');
-            tr.appendChild(createCell(r.name));
+            tr.appendChild(createCell(label));
             tr.appendChild(createCell(String(r.expenses_count)));
             tr.appendChild(createMoneyCell(r.expenses_total));
+
+            if (r.is_active) {
+                tr.appendChild(createDeleteCell(() => remove(r), 'noprint'));
+            } else {
+                const td = createBadgeCell('محذوفة');
+                td.classList.add('noprint');
+                tr.appendChild(td);
+            }
             body.appendChild(tr);
         });
-        if (!rows.length) emptyRow(body, 'لا توجد جهات قائمة بالصرف، أضفها من الصندوق أعلاه', 3);
+        if (!rows.length) emptyRow(body, 'لا توجد جهات قائمة بالصرف، أضفها من الصندوق أعلاه', 4);
 
         $('spn-total-count').textContent = String(count);
         $('spn-total-sum').textContent = formatMoney(sum);

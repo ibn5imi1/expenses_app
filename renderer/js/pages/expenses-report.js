@@ -1,6 +1,9 @@
-// كشف المصروفات: حسب الجهة المستفيدة أو حسب الجهة القائمة بالصرف
+// كشف المصروفات: حسب الجهة المستفيدة أو حسب الجهة القائمة بالصرف (أزرار بتصميم صفحة الديون)
 (() => {
     const form = $('expenses-report-form');
+    const tabDest = $('exp-tab-dest');
+    const tabSpender = $('exp-tab-spender');
+    const heading = $('expenses-report-heading');
     const destinationsList = $('report-destinations');
     const spendersList = $('report-spenders');
     const destGroup = $('report-dest-group');
@@ -16,16 +19,26 @@
     createDatePicker(toInput);
 
     let exportData = null;
+    let mode = 'destination';   // 'destination' أو 'spender'
 
-    const mode = () => document.querySelector('input[name="report-mode"]:checked').value;
+    function setMode(next) {
+        mode = next;
+        const bySpender = next === 'spender';
 
-    document.querySelectorAll('input[name="report-mode"]').forEach(radio => {
-        radio.addEventListener('change', () => {
-            const bySpender = mode() === 'spender';
-            destGroup.classList.toggle('hidden', bySpender);
-            spenderGroup.classList.toggle('hidden', !bySpender);
-        });
-    });
+        destGroup.classList.toggle('hidden', bySpender);
+        spenderGroup.classList.toggle('hidden', !bySpender);
+        tabDest.classList.toggle('btn-light', bySpender);
+        tabSpender.classList.toggle('btn-light', !bySpender);
+        heading.textContent = bySpender
+            ? 'كشف المصروفات حسب الجهة القائمة بالصرف'
+            : 'كشف المصروفات حسب الجهة المستفيدة';
+
+        hideNote(errorEl);
+        result.classList.add('hidden');   // الكشف المعروض كان بالطريقة الأخرى
+    }
+
+    tabDest.addEventListener('click', () => setMode('destination'));
+    tabSpender.addEventListener('click', () => setMode('spender'));
 
     function render(rows, by, ids, from, to) {
         const source = by === 'spender' ? App.lists.spenders : App.lists.destinations;
@@ -91,7 +104,7 @@
 
     async function run() {
         hideNote(errorEl);
-        const by = mode();
+        const by = mode;
         const ids = getCheckedIds(by === 'spender' ? spendersList : destinationsList);
         const from = fromInput.value;
         const to = toInput.value;

@@ -90,3 +90,18 @@
 .stat-main .stat-value {
     color: var(--white);
 }
+
+/* المستخدمون */
+.col-acc-name { width: 32%; } .col-acc-user { width: 26%; }
+.col-acc-role { width: 14%; } .col-acc-actions { width: 28%; }
+
+/* الجهات القائمة بالصرف (مع عمود الحذف) */
+.col-spn-name { width: 40%; } .col-spn-count { width: 20%; }
+.col-spn-total { width: 25%; } .col-spn-actions { width: 15%; }
+
+/* المصادر */
+.col-src-name { width: 55%; } .col-src-count { width: 25%; } .col-src-actions { width: 20%; }
+
+@media print {
+    .col-spn-name { width: 45%; } .col-spn-count { width: 25%; } .col-spn-total { width: 30%; }
+}

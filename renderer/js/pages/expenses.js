@@ -39,10 +39,21 @@
         errorBox.classList.remove('hidden');
     }
 
+    function fillLists() {
+        const hadDestination = destinationSelect.value;
+        fillSelect(destinationSelect, App.lists.destinations);
+        if (!hadDestination) setDefaultDestination();
+        fillSelect(spenderSelect, App.lists.spenders, 'اختر الجهة القائمة بالصرف');
+        fillSelect(sourceSelect, App.lists.sources, 'اختر مصدر الاستقطاع');
+    }
+
     function reset() {
         form.reset();
         editingId = null;
         returnTo = null;
+        delete spenderSelect.dataset.keep;
+        delete sourceSelect.dataset.keep;
+        fillLists();
         submitBtn.textContent = 'حفظ المصروف';
         cancelBtn.classList.add('hidden');
         detailsInput.style.height = 'auto';
@@ -57,6 +68,12 @@
     function startEdit(expense, { returnTo: back = null } = {}) {
         returnTo = back;
         editingId = expense.id;
+
+        // سجل قديم قد يستخدم جهة أو مصدراً محذوفاً: نُبقيه في القائمة أثناء هذا التعديل
+        spenderSelect.dataset.keep = expense.spender_id ?? '';
+        sourceSelect.dataset.keep = expense.source_id ?? '';
+        fillLists();
+
         amountInput.value = formatAmount(expense.amount);
         paidInput.value = formatAmount(round2(expense.paid));
         receiptInput.value = expense.receipt_no || '';
@@ -103,8 +120,8 @@
         if (!missing.length) return true;
 
         let message = `الرجاء إكمال الحقول التالية: ${missing.join('، ')}`;
-        if (!App.lists.spenders.length) message += ' — أضف جهة قائمة بالصرف من صفحة «الجهات القائمة بالصرف»';
-        if (!App.lists.sources.length) message += ' — أضف مصدراً من صفحة «المقبوضات»';
+        if (!activeOnly(App.lists.spenders).length) message += ' — أضف جهة قائمة بالصرف من صفحة «الجهات القائمة بالصرف»';
+        if (!activeOnly(App.lists.sources).length) message += ' — أضف مصدراً من صفحة «المقبوضات»';
 
         bad.forEach(el => el.classList.add('invalid'));
         showError(message);
@@ -176,14 +193,6 @@
     async function load() {
         items = await window.api.getExpenses();
         render();
-    }
-
-    function fillLists() {
-        const hadDestination = destinationSelect.value;
-        fillSelect(destinationSelect, App.lists.destinations);
-        if (!hadDestination) setDefaultDestination();
-        fillSelect(spenderSelect, App.lists.spenders, 'اختر الجهة القائمة بالصرف');
-        fillSelect(sourceSelect, App.lists.sources, 'اختر مصدر الاستقطاع');
     }
 
     App.registerPage('expenses', { refresh: load, fillLists, startEdit, onDeleted });

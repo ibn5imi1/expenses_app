@@ -1,4 +1,4 @@
-// صفحة المقبوضات: الإضافة والتعديل وإضافة مصدر وآخر 100 مقبوض
+// صفحة المقبوضات: الإضافة والتعديل وإدارة المصادر وآخر 100 مقبوض
 (() => {
     const form = $('loan-form');
     const amountInput = $('loan-amount');
@@ -8,6 +8,7 @@
     const submitBtn = $('loan-submit');
     const cancelBtn = $('loan-cancel');
     const body = $('loans-body');
+    const sourcesBody = $('sources-body');
 
     attachAmountFormat(amountInput);
     const datePicker = createDatePicker(dateInput);
@@ -26,10 +27,44 @@
         errorBox.classList.remove('hidden');
     }
 
+    /* ---------- جدول المصادر (مع الحذف) ---------- */
+    async function removeSource(s) {
+        if (!confirm(`هل تريد حذف المصدر «${s.name}»؟`)) return;
+        try {
+            await window.api.deleteSource(s.id);
+            await App.refreshAll({ silent: true });
+        } catch (err) {
+            console.error(err);
+            showProblem(cleanError(err));   // مثلاً: لا يمكن حذف المصدر لأن منه مقبوضات هذا الشهر
+        }
+    }
+
+    function renderSources() {
+        sourcesBody.innerHTML = '';
+        const list = activeOnly(App.lists.sources);
+        if (!list.length) return emptyRow(sourcesBody, 'لا توجد مصادر، أضف مصدراً من الحقل أعلاه', 3);
+
+        list.forEach(s => {
+            const tr = document.createElement('tr');
+            tr.appendChild(createCell(s.name));
+            tr.appendChild(createCell(String(s.month_count)));
+            tr.appendChild(createDeleteCell(() => removeSource(s)));
+            sourcesBody.appendChild(tr);
+        });
+    }
+
+    function fillLists() {
+        fillSelect(sourceSelect, App.lists.sources, 'اختر المصدر');
+        renderSources();
+    }
+
+    /* ---------- النموذج ---------- */
     function reset() {
         form.reset();
         editingId = null;
         returnTo = null;
+        delete sourceSelect.dataset.keep;
+        fillLists();
         submitBtn.textContent = 'حفظ المقبوض';
         cancelBtn.classList.add('hidden');
         datePicker.setDate(new Date());
@@ -40,6 +75,11 @@
     function startEdit(loan, { returnTo: back = null } = {}) {
         returnTo = back;
         editingId = loan.id;
+
+        // مقبوض قديم قد يستخدم مصدراً محذوفاً: نُبقيه في القائمة أثناء هذا التعديل
+        sourceSelect.dataset.keep = String(loan.source_id);
+        fillLists();
+
         // نعدّل على المبلغ الأصلي، أما الجدول فيعرض المبلغ بعد خصم غير المصروف
         amountInput.value = formatAmount(loan.raw_amount ?? loan.amount);
         if (loan.carry_deduct > 0) {
@@ -70,7 +110,7 @@
         if (!missing.length) return true;
 
         let message = `الرجاء إكمال الحقول التالية: ${missing.join('، ')}`;
-        if (!App.lists.sources.length) message += ' — أضف مصدراً من الصندوق أدناه';
+        if (!activeOnly(App.lists.sources).length) message += ' — أضف مصدراً من الصندوق أدناه';
 
         bad.forEach(el => el.classList.add('invalid'));
         showError(message);
@@ -114,7 +154,7 @@
     createAddBox({
         form: $('source-add-form'),
         input: $('source-add-name'),
-        existing: () => App.lists.sources,
+        existing: () => activeOnly(App.lists.sources),
         emptyMessage: 'اكتب اسم المصدر',
         add: name => window.api.addSource(name),
         onAdded: async (id, name) => {
@@ -124,6 +164,7 @@
         },
     });
 
+    /* ---------- آخر 100 مقبوض ---------- */
     async function remove(id) {
         if (!confirm('هل تريد حذف هذا المقبوض؟')) return;
         try {
@@ -150,8 +191,6 @@
         items = await window.api.getLoans();
         render();
     }
-
-    const fillLists = () => fillSelect(sourceSelect, App.lists.sources, 'اختر المصدر');
 
     App.registerPage('loans', { refresh: load, fillLists, startEdit, onDeleted });
 })();

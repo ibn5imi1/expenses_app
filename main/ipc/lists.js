@@ -11,10 +11,12 @@ function register() {
     // الجهات القائمة بالصرف
     handle('getSpenders', () => db.getSpenders());
     handle('addSpender', (e, name) => db.addSpender(name));
+    handle('deleteSpender', (e, id) => db.deleteSpender(id));
 
     // المصادر
     handle('getSources', () => db.getSources());
     handle('addSource', (e, name) => db.addSource(name));
+    handle('deleteSource', (e, id) => db.deleteSource(id));
 }
 
 module.exports = { register };

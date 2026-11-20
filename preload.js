@@ -12,8 +12,9 @@ contextBridge.exposeInMainWorld('api', {
     getDestinations: call('getDestinations'), addDestination: call('addDestination'),
     updateDestination: call('updateDestination'), deleteDestination: call('deleteDestination'),
 
-    getSpenders: call('getSpenders'), addSpender: call('addSpender'), getSpendersReport: call('getSpendersReport'),
-    getSources: call('getSources'), addSource: call('addSource'),
+    getSpenders: call('getSpenders'), addSpender: call('addSpender'),
+    deleteSpender: call('deleteSpender'), getSpendersReport: call('getSpendersReport'),
+    getSources: call('getSources'), addSource: call('addSource'), deleteSource: call('deleteSource'),
 
     getExpenses: call('getExpenses'), addExpense: call('addExpense'),
     updateExpense: call('updateExpense'), deleteExpense: call('deleteExpense'),

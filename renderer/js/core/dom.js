@@ -1,6 +1,9 @@
 // المحاسب: من أضاف، وعند التعديل من عدّل فقط
 const accountantOf = row => row.updated_by || row.created_by;
 
+// العناصر المحذوفة (is_active = 0) تُخفى من القوائم لكنها تبقى في السجلات القديمة
+const activeOnly = list => list.filter(i => i.is_active !== 0);
+
 // تلميح عند وقوف المؤشر: من أضاف ومن عدّل
 function auditTitle(row) {
     const lines = [`تمت الإضافة بواسطة ${row.created_by} — ${formatDateTime(row.created_at)}`];
@@ -74,6 +77,17 @@ function createActionsCell(onEdit, onDelete, className = '') {
     return td;
 }
 
+// خلية زر حذف فقط
+function createDeleteCell(onDelete, className = '') {
+    const td = document.createElement('td');
+    td.className = `actions-cell ${className}`.trim();
+    const box = document.createElement('div');
+    box.className = 'row-actions';
+    box.appendChild(createButton('حذف', 'btn btn-danger btn-small', onDelete));
+    td.appendChild(box);
+    return td;
+}
+
 function emptyRow(body, text, columns) {
     const tr = document.createElement('tr');
     const td = createCell(text, 'empty-cell');
@@ -83,9 +97,12 @@ function emptyRow(body, text, columns) {
 }
 
 /* ---------- القوائم المنسدلة وقوائم الاختيار ---------- */
-// يملأ قائمة منسدلة ويحافظ على الاختيار الحالي
+// يملأ قائمة منسدلة ويحافظ على الاختيار الحالي.
+// العناصر المحذوفة لا تظهر، إلا العنصر المحدد في select.dataset.keep (سجل قديم يجري تعديله)
 function fillSelect(select, items, placeholder = null) {
     const current = select.value;
+    const keep = select.dataset.keep;
+    const visible = items.filter(i => i.is_active !== 0 || String(i.id) === keep);
     select.innerHTML = '';
 
     if (placeholder) {
@@ -94,18 +111,19 @@ function fillSelect(select, items, placeholder = null) {
         option.textContent = placeholder;
         select.appendChild(option);
     }
-    items.forEach(item => {
+    visible.forEach(item => {
         const option = document.createElement('option');
         option.value = item.id;
-        option.textContent = item.name;
+        option.textContent = item.is_active === 0 ? `${item.name} (محذوف)` : item.name;
         select.appendChild(option);
     });
 
-    const exists = items.some(i => String(i.id) === current);
-    select.value = exists ? current : (placeholder ? '' : (items[0] ? items[0].id : ''));
+    const exists = visible.some(i => String(i.id) === current);
+    select.value = exists ? current : (placeholder ? '' : (visible[0] ? visible[0].id : ''));
 }
 
-// قائمة اختيارات تحافظ على ما حدده المستخدم، والعناصر الجديدة تظهر محددة
+// قائمة اختيارات تحافظ على ما حدده المستخدم، والعناصر الجديدة تظهر محددة.
+// العناصر المحذوفة تظهر هنا بعلامة (محذوف) حتى تبقى سجلاتها القديمة قابلة للكشف
 function fillCheckList(container, items) {
     const known = new Set((container.dataset.known || '').split(',').filter(Boolean));
     const checked = new Set([...container.querySelectorAll('input:checked')].map(i => i.value));
@@ -121,7 +139,7 @@ function fillCheckList(container, items) {
         box.checked = !known.has(String(item.id)) || checked.has(String(item.id));
 
         const text = document.createElement('span');
-        text.textContent = item.name;
+        text.textContent = item.is_active === 0 ? `${item.name} (محذوف)` : item.name;
 
         label.append(box, text);
         container.appendChild(label);

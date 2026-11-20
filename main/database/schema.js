@@ -8,10 +8,12 @@ function createTables() {
             id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, is_fixed INTEGER NOT NULL DEFAULT 0
         );
         CREATE TABLE IF NOT EXISTS spenders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, is_fixed INTEGER NOT NULL DEFAULT 0
+            id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE,
+            is_fixed INTEGER NOT NULL DEFAULT 0, is_active INTEGER NOT NULL DEFAULT 1
         );
         CREATE TABLE IF NOT EXISTS loan_types (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, is_fixed INTEGER NOT NULL DEFAULT 0
+            id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE,
+            is_fixed INTEGER NOT NULL DEFAULT 0, is_active INTEGER NOT NULL DEFAULT 1
         );
         CREATE TABLE IF NOT EXISTS expenses (
             id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -73,7 +75,7 @@ function seed() {
             ).run('admin', 'الأدمن', bcrypt.hashSync('admin', 10), new Date().toISOString());
         }
 
-        setSetting('schema_version', '10');
+        setSetting('schema_version', '11');
     })();
 }
 
@@ -85,6 +87,10 @@ function migrate() {
     const addColumn = (table, column, def) => {
         if (!hasColumn(table, column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${def}`);
     };
+
+    // إخفاء الأسماء المحذوفة بدل حذفها (لحماية السجلات القديمة)
+    addColumn('spenders', 'is_active', 'INTEGER NOT NULL DEFAULT 1');
+    addColumn('loan_types', 'is_active', 'INTEGER NOT NULL DEFAULT 1');
 
     addColumn('expenses', 'loan_type_id', 'INTEGER REFERENCES loan_types(id)');
     addColumn('expenses', 'spender_id', 'INTEGER REFERENCES spenders(id)');

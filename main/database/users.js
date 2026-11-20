@@ -19,8 +19,8 @@ function cleanUsername(name) {
 
 function cleanDisplayName(name) {
     const clean = String(name || '').replace(/\s+/g, ' ').trim();
-    if (clean.length < 2) throw new Error('اسم المحاسب مطلوب');
-    if (clean.length > 40 || !/^[\p{L}\p{N} ._-]+$/u.test(clean)) throw new Error('اسم المحاسب: حروف وأرقام ومسافات فقط');
+    if (clean.length < 2) throw new Error('الاسم مطلوب');
+    if (clean.length > 40 || !/^[\p{L}\p{N} ._-]+$/u.test(clean)) throw new Error('الاسم: حروف وأرقام ومسافات فقط');
     return clean;
 }
 
@@ -44,8 +44,9 @@ function changePassword(userId, oldPassword, newPassword) {
         .run(bcrypt.hashSync(String(newPassword), 10), userId);
 }
 
+// كل المستخدمين (الأدمن أولاً) مع الصلاحية
 const getAccountants = () => conn.db.prepare(
-    "SELECT id, username, display_name FROM users WHERE role = 'accountant' ORDER BY id",
+    "SELECT id, username, display_name, role FROM users ORDER BY CASE role WHEN 'admin' THEN 0 ELSE 1 END, id",
 ).all();
 
 function addAccountant(displayName, username, password) {
@@ -54,7 +55,7 @@ function addAccountant(displayName, username, password) {
     assertPassword(password);
 
     if (conn.db.prepare('SELECT 1 FROM users WHERE display_name = ?').get(name)) {
-        throw new Error('هذا الاسم مستخدم لمحاسب آخر');
+        throw new Error('هذا الاسم مستخدم لمستخدم آخر');
     }
     try {
         return conn.db.prepare(
@@ -67,17 +68,20 @@ function addAccountant(displayName, username, password) {
     }
 }
 
+// تعديل الاسم واسم المستخدم لأي مستخدم (محاسب أو أدمن). كلمة مرور المحاسب اختيارية،
+// أما الأدمن فكلمة مروره تُغيَّر من صفحة الإعدادات فقط.
 function updateAccountant(id, displayName, username, newPassword) {
     const name = cleanDisplayName(displayName);
     const clean = cleanUsername(username);
     const hasPassword = String(newPassword || '').length > 0;
+
+    const user = conn.db.prepare('SELECT id, role FROM users WHERE id = ?').get(id);
+    if (!user) throw new Error('المستخدم غير موجود');
+    if (user.role === 'admin' && hasPassword) throw new Error('كلمة مرور الأدمن تُغيَّر من صفحة «الاعدادات»');
     if (hasPassword) assertPassword(newPassword);
 
-    if (!conn.db.prepare("SELECT id FROM users WHERE id = ? AND role = 'accountant'").get(id)) {
-        throw new Error('المحاسب غير موجود');
-    }
     if (conn.db.prepare('SELECT 1 FROM users WHERE display_name = ? AND id <> ?').get(name, id)) {
-        throw new Error('هذا الاسم مستخدم لمحاسب آخر');
+        throw new Error('هذا الاسم مستخدم لمستخدم آخر');
     }
 
     try {
@@ -92,11 +96,14 @@ function updateAccountant(id, displayName, username, newPassword) {
         if (isConstraintError(err)) throw new Error('اسم المستخدم موجود مسبقاً');
         throw err;
     }
+    return { displayName: name, username: clean };
 }
 
 function deleteAccountant(id) {
-    const result = conn.db.prepare("DELETE FROM users WHERE id = ? AND role = 'accountant'").run(id);
-    if (result.changes === 0) throw new Error('المحاسب غير موجود');
+    const user = conn.db.prepare('SELECT role FROM users WHERE id = ?').get(id);
+    if (!user) throw new Error('المحاسب غير موجود');
+    if (user.role === 'admin') throw new Error('لا يمكن حذف حساب الأدمن');
+    conn.db.prepare("DELETE FROM users WHERE id = ? AND role = 'accountant'").run(id);
 }
 
 // استرجاع كلمة مرور الأدمن: يتطلب مفتاحاً يطابق البصمة المحفوظة في recovery.js
