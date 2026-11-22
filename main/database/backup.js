@@ -218,13 +218,12 @@ function mergeTables(src) {
         )
       : new Map();
 
-  const stats = {
-    destinations: 0,
-    spenders: 0,
-    sources: 0,
-    expenses: { added: 0, skipped: 0, invalid: 0 },
-    loans: { added: 0, skipped: 0, invalid: 0 },
-  };
+    const stats = {
+        destinations: 0, spenders: 0, sources: 0,
+        users: { added: 0, skipped: 0 },
+        expenses: { added: 0, skipped: 0, invalid: 0 },
+        loans: { added: 0, skipped: 0, invalid: 0 },
+    };
 
   const srcDest = byId("destinations");
   const srcSpn = byId("spenders");
@@ -273,6 +272,34 @@ function mergeTables(src) {
   srcSrc.forEach((r) => {
     if (r.is_active !== 0) srcId(r);
   });
+
+      /* --- المستخدمون: يُضاف المحاسبون الجدد فقط (بحسب اسم المستخدم) --- */
+    if (has('users')) {
+        const usernames = new Set(db.prepare('SELECT username FROM users').pluck().all().map(u => u.toLowerCase()));
+        const names = new Set(db.prepare('SELECT display_name FROM users').pluck().all().filter(Boolean));
+        const insertUser = db.prepare(
+            `INSERT INTO users (username, display_name, password_hash, role, created_at)
+             VALUES (?, ?, ?, 'accountant', ?)`,
+        );
+
+        for (const u of src.prepare("SELECT * FROM users WHERE role = 'accountant' ORDER BY id").all()) {
+            const username = clean(u.username);
+            if (!username || !u.password_hash) continue;
+
+            if (usernames.has(username.toLowerCase())) {
+                stats.users.skipped++;
+                continue;
+            }
+
+            let display = clean(u.display_name) || username;
+            if (names.has(display)) display = `${display} (${username})`;
+
+            insertUser.run(username, display, u.password_hash, u.created_at || new Date().toISOString());
+            usernames.add(username.toLowerCase());
+            names.add(display);
+            stats.users.added++;
+        }
+    }
 
   /* --- المصروفات --- */
   if (has("expenses")) {
