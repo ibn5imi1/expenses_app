@@ -198,3 +198,21 @@
 .toast-error {
     background: var(--red);
 }
+
+/* لودر العمليات الطويلة */
+.loader {
+    position: fixed; inset: 0; z-index: 300;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(238, 241, 237, .8);
+}
+.loader-box {
+    display: grid; justify-items: center; gap: 16px; min-width: 260px; padding: 28px 38px;
+    background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-l); box-shadow: var(--shadow);
+}
+.spinner {
+    width: 46px; height: 46px; border-radius: 50%;
+    border: 5px solid var(--green-soft); border-top-color: var(--green);
+    animation: spin .8s linear infinite;
+}
+.loader-text { font-size: 17px; font-weight: 600; color: var(--green-dark); }
+@keyframes spin { to { transform: rotate(360deg); } }

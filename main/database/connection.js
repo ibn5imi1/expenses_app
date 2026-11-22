@@ -1,12 +1,20 @@
-const Database = require('better-sqlite3');
+const Database = require("better-sqlite3");
 
-// المقبض المشترك: بقية الملفات تقرأ conn.db
-const conn = { db: null };
+// المقبض المشترك: بقية الملفات تقرأ conn.db، و conn.file مسار ملف القاعدة
+const conn = { db: null, file: null };
 
 function open(file) {
-    conn.db = new Database(file);
-    conn.db.pragma('journal_mode = WAL');
-    conn.db.pragma('foreign_keys = ON');
+  conn.db = new Database(file);
+  conn.file = file;
+  conn.db.pragma("journal_mode = WAL");
+  conn.db.pragma("foreign_keys = ON");
 }
 
-module.exports = { conn, open };
+function close() {
+  if (conn.db) {
+    conn.db.close();
+    conn.db = null;
+  }
+}
+
+module.exports = { conn, open, close };

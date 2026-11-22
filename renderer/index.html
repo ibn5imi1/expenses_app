@@ -29,6 +29,7 @@
             <label for="login-username">اسم المستخدم</label>
             <input type="text" id="login-username" autocomplete="username" />
           </div>
+
           <div class="field">
             <label for="login-password">كلمة المرور</label>
             <input
@@ -1043,11 +1044,50 @@
               </table>
             </div>
           </div>
+
+          <div class="card medium">
+            <h2>النسخ الاحتياطي ونقل البيانات</h2>
+            <p class="backup-info" id="backup-info"></p>
+            <div class="backup-grid">
+              <div class="backup-box">
+                <h3>حفظ نسخة احتياطية</h3>
+                <p class="hint">
+                  يحفظ كل البيانات (المصروفات والمقبوضات والديون والجهات
+                  والمستخدمين) في ملف واحد داخل مجلد أو فلاشة تختارها.
+                </p>
+                <button type="button" class="btn" id="backup-save">
+                  حفظ نسخة احتياطية
+                </button>
+              </div>
+              <div class="backup-box">
+                <h3>استيراد بيانات جديدة</h3>
+                <p class="hint">
+                  اختر ملف نسخة احتياطية (من هذا الجهاز أو من جهاز آخر)، ثم
+                  اختر: إضافتها فوق البيانات الحالية، أو حذف القديم واستبداله
+                  بها.
+                </p>
+                <button type="button" class="btn btn-light" id="backup-import">
+                  استيراد بيانات جديدة
+                </button>
+              </div>
+            </div>
+          </div>
         </section>
       </main>
     </div>
 
     <div class="toast noprint" id="toast" role="status"></div>
+    <div
+      class="loader hidden noprint"
+      id="loader"
+      role="status"
+      aria-live="polite"
+    >
+      <div class="loader-box">
+        <div class="spinner"></div>
+        <div class="loader-text" id="loader-text">جارٍ التحميل...</div>
+      </div>
+    </div>
 
     <script src="lib/flatpickr.js"></script>
 
@@ -1072,6 +1112,7 @@
     <script src="js/pages/loans-report.js"></script>
     <script src="js/pages/settings.js"></script>
     <script src="js/pages/admin.js"></script>
+    <script src="js/pages/backup.js"></script>
 
     <!-- التشغيل (يجب أن تبقى الأخيرة) -->
     <script src="js/app/nav.js"></script>

@@ -105,3 +105,14 @@
 @media print {
     .col-spn-name { width: 45%; } .col-spn-count { width: 25%; } .col-spn-total { width: 30%; }
 }
+
+/* النسخ الاحتياطي ونقل البيانات */
+.backup-info { margin: 0 0 16px; color: var(--muted); }
+.backup-info.backup-old { color: var(--red); font-weight: 700; }
+.backup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.backup-box {
+    display: grid; gap: 12px; align-content: start; padding: 16px;
+    background: var(--head); border: 1px solid var(--line); border-radius: var(--radius-s);
+}
+.backup-box h3 { margin: 0; font-size: 15px; color: var(--green-dark); }
+.hint { margin: 0; font-size: 13px; line-height: 1.7; color: var(--muted); }

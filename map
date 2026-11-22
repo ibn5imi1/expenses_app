@@ -8,15 +8,15 @@ college-expenses/
 │   ├── session.js
 │   ├── admin-recovery.js
 │   ├── export/excel.js     ← هو export.js القديم، انقله كما هو بدون تعديل
-│   ├── ipc/                ← index, auth, accounts, lists, expenses, debts, loans, reports, files
+│   ├── ipc/                ← index, auth, accounts, lists, expenses, debts, loans, reports, files, backup.js
 │   └── database/           ← index, connection, schema, helpers, queries, cash-sync,
-│                             lists, expenses, debts, loans, reports, users
+│                             lists, expenses, debts, loans, reports, users, backup.js
 └── renderer/
     ├── index.html
     ├── css/                ← base, navbar, forms, components, tables, pages, login, print
     ├── js/
     │   ├── core/           ← app, utils, dates, dom, rows, add-box, lists
     │   ├── pages/          ← expenses, loans, debts, cash, destinations, spenders,
-    │   │                     summary, expenses-report, loans-report, settings, admin
+    │   │                     summary, expenses-report, loans-report, settings, admin, backup.js
     │   └── app/            ← nav, auth, main
     └── lib/

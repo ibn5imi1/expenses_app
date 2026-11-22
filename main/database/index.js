@@ -12,7 +12,7 @@ function init() {
     syncCash();
 }
 
-// كل ما تحتاجه بقية البرنامج يُؤخذ من هنا: require('./database')
+// كل ما تحتاجه بقية البرنامج يُؤخذ من هنا: require('../database')
 module.exports = {
     init,
     ...require('./lists'),
@@ -21,4 +21,5 @@ module.exports = {
     ...require('./loans'),
     ...require('./reports'),
     ...require('./users'),
+    ...require('./backup'),
 };

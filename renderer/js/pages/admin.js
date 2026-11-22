@@ -143,6 +143,10 @@
     cancelBtn.addEventListener('click', reset);
 
     App.registerPage('admin', {
-        refresh: async () => { if (App.user && App.user.role === 'admin') await load(); },
+        refresh: async () => {
+            if (!App.user || App.user.role !== 'admin') return;
+            await load();
+            if (App.loadBackupInfo) await App.loadBackupInfo();
+        },
     });
 })();

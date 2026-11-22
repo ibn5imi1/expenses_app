@@ -81,3 +81,30 @@ function autoGrow(el) {
     el.style.height = 'auto';
     el.style.height = el.scrollHeight + 'px';
 }
+
+/* ---------- لودر العمليات الطويلة (جارٍ التصدير / جارٍ الاستيراد) ---------- */
+const loaderEl = $('loader');
+const loaderText = $('loader-text');
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const nextFrame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+function showLoader(text) {
+    loaderText.textContent = text;
+    loaderEl.classList.remove('hidden');
+}
+
+function hideLoader() {
+    loaderEl.classList.add('hidden');
+}
+
+// يشغّل عملية مع لودر، ويبقيه ظاهراً 0.7 ثانية على الأقل حتى يُرى حتى لو كانت العملية سريعة
+async function withLoader(text, task) {
+    showLoader(text);
+    await nextFrame();   // ننتظر أن يُرسم اللودر قبل بدء العمل
+    try {
+        const [result] = await Promise.all([task(), sleep(700)]);
+        return result;
+    } finally {
+        hideLoader();
+    }
+}

@@ -28,5 +28,10 @@ contextBridge.exposeInMainWorld('api', {
     getMonthCashReport: call('getMonthCashReport'), getMonthSummary: call('getMonthSummary'),
     getExpensesReport: call('getExpensesReport'), getLoansReport: call('getLoansReport'),
 
+    // النسخ الاحتياطي والاستيراد (الأدمن)
+    getBackupInfo: call('getBackupInfo'),
+    chooseBackupFolder: call('chooseBackupFolder'), runBackup: call('runBackup'),
+    chooseImportFile: call('chooseImportFile'), runImport: call('runImport'),
+
     exportReport: call('exportReport'), printPage: call('printPage'),
 });
