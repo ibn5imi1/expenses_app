@@ -107,14 +107,31 @@ function deleteAccountant(id) {
 }
 
 // استرجاع كلمة مرور الأدمن: يتطلب مفتاحاً يطابق البصمة المحفوظة في recovery.js
-function recoverAdmin(key, newPassword, keyHash) {
+// newUsername اختياري: لإرجاع اسم مستخدم الأدمن إن نسيه. تُرجع اسم (أو أسماء) مستخدم الأدمن
+function recoverAdmin(key, newPassword, keyHash, newUsername) {
     if (!keyHash) throw new Error('الاسترجاع غير مفعّل');
     if (!bcrypt.compareSync(String(key || ''), keyHash)) throw new Error('مفتاح الاسترجاع غير صحيح');
     assertPassword(newPassword);
 
-    const result = conn.db.prepare("UPDATE users SET password_hash = ? WHERE role = 'admin'")
-        .run(bcrypt.hashSync(String(newPassword), 10));
-    if (result.changes === 0) throw new Error('لا يوجد حساب أدمن');
+    const admins = conn.db.prepare("SELECT id FROM users WHERE role = 'admin' ORDER BY id").all();
+    if (!admins.length) throw new Error('لا يوجد حساب أدمن');
+
+    const hash = bcrypt.hashSync(String(newPassword), 10);
+    const username = String(newUsername || '').trim() ? cleanUsername(newUsername) : null;
+
+    try {
+        conn.db.transaction(() => {
+            conn.db.prepare("UPDATE users SET password_hash = ? WHERE role = 'admin'").run(hash);
+            if (username) conn.db.prepare('UPDATE users SET username = ? WHERE id = ?').run(username, admins[0].id);
+        })();
+    } catch (err) {
+        if (isConstraintError(err)) throw new Error('اسم المستخدم هذا مستخدم لحساب آخر');
+        throw err;
+    }
+
+    return {
+        usernames: conn.db.prepare("SELECT username FROM users WHERE role = 'admin' ORDER BY id").pluck().all(),
+    };
 }
 
 module.exports = {
