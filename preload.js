@@ -34,4 +34,10 @@ contextBridge.exposeInMainWorld('api', {
     chooseImportFile: call('chooseImportFile'), runImport: call('runImport'),
 
     exportReport: call('exportReport'), printPage: call('printPage'),
+
+    // الاتصال بالإنترنت
+    getConnectivity: call('getConnectivity'),
+    recheckConnectivity: call('recheckConnectivity'),
+    onConnectivity: callback => { ipcRenderer.on('connectivity', (e, state) => callback(state)); },
+    quitApp: call('quitApp'),
 });

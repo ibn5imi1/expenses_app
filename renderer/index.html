@@ -12,10 +12,12 @@
     <link rel="stylesheet" href="css/navbar.css" />
     <link rel="stylesheet" href="css/forms.css" />
     <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/network.css" />
     <link rel="stylesheet" href="css/tables.css" />
     <link rel="stylesheet" href="css/pages.css" />
     <link rel="stylesheet" href="css/login.css" />
     <link rel="stylesheet" href="css/print.css" />
+
     <title>مصروفات كلية العمارة</title>
   </head>
   <body>
@@ -1078,6 +1080,48 @@
 
     <div class="toast noprint" id="toast" role="status"></div>
     <div
+      class="net-overlay hidden noprint"
+      id="net-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="net-title"
+    >
+      <div class="net-box">
+        <div class="net-icon">
+          <svg
+            width="46"
+            height="46"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="1" y1="1" x2="23" y2="23"></line>
+            <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+            <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+            <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+            <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+            <line x1="12" y1="20" x2="12.01" y2="20"></line>
+          </svg>
+        </div>
+        <h2 id="net-title">فقد الاتصال بالإنترنت</h2>
+        <p>
+          يحتاج البرنامج إلى الإنترنت ليعمل. سيعود للعمل تلقائياً عند عودة
+          الاتصال، وبياناتك المحفوظة آمنة.
+        </p>
+        <div class="net-wait">
+          <div class="net-spinner"></div>
+          <span>بانتظار الاتصال بالإنترنت...</span>
+        </div>
+        <button type="button" class="btn btn-danger" id="net-quit">
+          خروج من التطبيق
+        </button>
+      </div>
+    </div>
+    <div
       class="loader hidden noprint"
       id="loader"
       role="status"
@@ -1094,6 +1138,7 @@
     <!-- المشترك -->
     <script src="js/core/app.js"></script>
     <script src="js/core/utils.js"></script>
+    <script src="js/app/network.js"></script>
     <script src="js/core/dates.js"></script>
     <script src="js/core/dom.js"></script>
     <script src="js/core/rows.js"></script>

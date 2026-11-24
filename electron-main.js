@@ -1,11 +1,12 @@
-// نقطة البداية: قاعدة البيانات ثم القنوات ثم النافذة
+// نقطة البداية: قاعدة البيانات ثم القنوات ثم فحص الإنترنت ثم النافذة
 const { app, dialog, session } = require('electron');
 const db = require('./main/database');
 const { registerIpc } = require('./main/ipc');
 const { createWindow } = require('./main/window');
 const { runAdminRecovery } = require('./main/admin-recovery');
+const connectivity = require('./main/connectivity');
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
     try {
         db.init();
     } catch (err) {
@@ -19,7 +20,9 @@ app.whenReady().then(() => {
     if (resetArg) return runAdminRecovery(resetArg);
 
     session.defaultSession.setPermissionRequestHandler((wc, permission, cb) => cb(false));
+
     registerIpc();
+    await connectivity.start();   // أول فحص قبل فتح النافذة (حتى 4 ثوان إن كان الإنترنت مقطوعاً)
     createWindow();
 });
 

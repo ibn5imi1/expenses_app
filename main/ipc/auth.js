@@ -1,5 +1,6 @@
 const { ipcMain } = require('electron');
 const db = require('../database');
+const connectivity = require('../connectivity');
 const { getSession, setSession } = require('../session');
 
 // قفل مؤقت بعد محاولات دخول خاطئة
@@ -9,6 +10,8 @@ const LOCK_MS = 30 * 1000;
 
 function register() {
     ipcMain.handle('login', (e, username, password) => {
+        if (!connectivity.isOnline()) throw new Error('لا يوجد اتصال بالإنترنت');
+
         const key = String(username || '').trim().toLowerCase();
         const record = failedLogins.get(key) || { count: 0, lockedUntil: 0 };
 
