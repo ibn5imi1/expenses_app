@@ -5,9 +5,9 @@ const PROBES = [
     'https://www.gstatic.com/generate_204',
     'https://cp.cloudflare.com/generate_204',
 ];
-const PROBE_TIMEOUT_MS = 4000;
-const ONLINE_EVERY_MS = 10000;     // فحص دوري أثناء وجود الاتصال
-const OFFLINE_EVERY_MS = 3000;     // فحص أسرع أثناء الانقطاع أو الشك
+const PROBE_TIMEOUT_MS = 1000;
+const ONLINE_EVERY_MS = 1000;     // فحص دوري أثناء وجود الاتصال
+const OFFLINE_EVERY_MS = 1000;     // فحص أسرع أثناء الانقطاع أو الشك
 const FAILS_TO_GO_OFFLINE = 2;     // لا نعتبره منقطعاً إلا بعد فحصين فاشلين متتاليين
 
 // يُطبَّق دائماً في النسخة المبنية. وفي التطوير يُطبَّق أيضاً إلا إذا ضبطت SKIP_ONLINE_CHECK=1
