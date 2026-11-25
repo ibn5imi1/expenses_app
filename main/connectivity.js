@@ -10,8 +10,8 @@ const ONLINE_EVERY_MS = 10000;     // فحص دوري أثناء وجود الا
 const OFFLINE_EVERY_MS = 3000;     // فحص أسرع أثناء الانقطاع أو الشك
 const FAILS_TO_GO_OFFLINE = 2;     // لا نعتبره منقطعاً إلا بعد فحصين فاشلين متتاليين
 
-// في التطوير لا يُطبَّق الفحص إلا عند ضبط FORCE_ONLINE_CHECK=1
-const enforced = () => app.isPackaged || String(process.env.FORCE_ONLINE_CHECK || '').trim() === '1';
+// يُطبَّق دائماً في النسخة المبنية. وفي التطوير يُطبَّق أيضاً إلا إذا ضبطت SKIP_ONLINE_CHECK=1
+const enforced = () => app.isPackaged || String(process.env.SKIP_ONLINE_CHECK || '').trim() !== '1';
 
 let online = true;
 let failures = 0;
