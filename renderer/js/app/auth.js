@@ -1,3 +1,4 @@
+// start auth.js
 // تسجيل الدخول والخروج وأيقونة إظهار كلمة المرور
 (() => {
     const EYE_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
@@ -46,6 +47,9 @@
         loginScreen.classList.add('hidden');
         appShell.classList.remove('hidden');
         App.showPage('expenses');
+
+        // شاشة البداية: تبقى حتى يضغط المستخدم على صفحة في شريط التنقل
+        if (window.playSplash) playSplash();
     }
 
     $('login-form').addEventListener('submit', async e => {
@@ -79,3 +83,4 @@
     App.enterApp = enterApp;
     App.showLogin = showLogin;
 })();
+// end auth.js

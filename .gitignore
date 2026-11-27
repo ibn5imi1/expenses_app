@@ -3,6 +3,12 @@ node_modules/
 
 # ملفات البناء (ناتج npm run dist)
 dist/
+*.db
+*.db-wal
+*.db-shm
+*.bak
+recovery.js
+.env
 out/
 
 # قواعد البيانات: لا ترفع بيانات حقيقية أبداً

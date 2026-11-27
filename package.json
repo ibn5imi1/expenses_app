@@ -1,18 +1,12 @@
 {
-  "dependencies": {
-    "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^13.0.3",
-    "exceljs": "^4.4.0",
-    "flatpickr": "^4.6.13"
-  },
   "name": "expenses_app",
   "version": "1.0.0",
-  "description": "",
+  "description": "برنامج مصروفات كلية العمارة",
   "main": "electron-main.js",
   "scripts": {
     "start": "electron .",
     "postinstall": "electron-builder install-app-deps",
-    "dist": "electron-builder",
+    "dist": "electron-builder --win nsis",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -20,15 +14,60 @@
     "url": "git+https://github.com/ibn5imi1/expenses_app.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "Mohammed Ahmed Kadhim",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/ibn5imi1/expenses_app/issues"
   },
   "homepage": "https://github.com/ibn5imi1/expenses_app#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^13.0.3",
+    "exceljs": "^4.4.0",
+    "flatpickr": "^4.6.13"
+  },
   "devDependencies": {
     "electron": "^45.2.2",
     "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "iq.college.expenses",
+    "productName": "CollegeExpenses",
+    "asar": true,
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron-main.js",
+      "preload.js",
+      "recovery.js",
+      "main/**/*",
+      "renderer/**/*",
+      "package.json",
+      "!**/*.db",
+      "!**/*.db-wal",
+      "!**/*.db-shm"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "createDesktopShortcut": true,
+      "deleteAppDataOnUninstall": false
+    }
   }
 }

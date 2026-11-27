@@ -1,22 +1,94 @@
-college-expenses/
-├── electron-main.js        ← نقطة البداية فقط
-├── preload.js
-├── recovery.js             ← كما هو
-├── package.json
-├── main/
-│   ├── window.js
-│   ├── session.js
-│   ├── admin-recovery.js
-│   ├── export/excel.js     ← هو export.js القديم، انقله كما هو بدون تعديل
-│   ├── ipc/                ← index, auth, accounts, lists, expenses, debts, loans, reports, files, backup.js
-│   └── database/           ← index, connection, schema, helpers, queries, cash-sync,
-│                             lists, expenses, debts, loans, reports, users, backup.js
-└── renderer/
-    ├── index.html
-    ├── css/                ← base, navbar, forms, components, tables, pages, login, print
+expenses_app/
+├── electron-main.js            ← نقطة البداية: يفتح القاعدة، يسجّل الأوامر، يشغّل فحص الإنترنت، ينشئ النافذة
+├── preload.js                  ← الجسر الآمن بين الواجهة والنظام (يعرّف window.api)
+├── recovery.js                 ← هاش مفتاح استرجاع الأدمن (غيّره قبل التسليم)
+├── package.json                ← اسم التطبيق والحزم وسكربتات start وdist وإعدادات البناء
+├── build/ 🆕
+│   └── icon.ico                ← أيقونة التطبيق (للمثبّت وملف exe)
+├── dist/ 🆕                    ← ناتج البناء (CollegeExpenses Setup 1.0.0.exe) — لا يُرفع على GitHub
+│
+├── main/                       ← الجزء الخلفي (يعمل داخل Electron وليس في الصفحة)
+│   ├── window.js               ← إنشاء نافذة البرنامج وإعداداتها
+│   ├── session.js              ← حفظ المستخدم الحالي المسجّل دخوله (الجلسة)
+│   ├── admin-recovery.js       ← استرجاع كلمة سر الأدمن من سطر الأوامر
+│   ├── connectivity.js 🆕      ← فحص الاتصال بالإنترنت وحجب البرنامج عند انقطاعه
+│   │
+│   ├── export/
+│   │   └── excel.js            ← تصدير التقارير إلى ملفات Excel (exceljs)
+│   │
+│   ├── ipc/                    ← "أوامر" تستقبلها الواجهة وتمررها لقاعدة البيانات مع فحص الصلاحيات
+│   │   ├── index.js            ← يجمع كل ملفات ipc ويسجّلها
+│   │   ├── auth.js             ← تسجيل الدخول والخروج وتغيير كلمة السر
+│   │   ├── accounts.js         ← إدارة حسابات المحاسبين (للأدمن)
+│   │   ├── lists.js            ← الجهات المستفيدة والمنفقون ومصادر التمويل
+│   │   ├── expenses.js         ← إضافة وتعديل وحذف المصروفات
+│   │   ├── debts.js            ← الديون والتسديد
+│   │   ├── loans.js            ← القبوضات (الاستلامات)
+│   │   ├── reports.js          ← التقارير والملخص الشهري والصندوق
+│   │   ├── files.js            ← فتح وحفظ الملفات والطباعة
+│   │   ├── backup.js           ← النسخ الاحتياطي والاستيراد
+│   │   └── connectivity.js 🆕  ← أوامر فحص الاتصال بين الواجهة والـ main
+│   │
+│   └── database/               ← كل ما يخص قاعدة البيانات SQLite (college.db)
+│       ├── index.js            ← واجهة واحدة تجمع كل دوال القاعدة
+│       ├── connection.js       ← فتح الملف وإعداداته (مكانه %APPDATA%\expenses_app)
+│       ├── schema.js           ← إنشاء الجداول والترقيات (migrations)
+│       ├── helpers.js          ← دوال مساعدة مشتركة (تواريخ، تحقق، أخطاء)
+│       ├── queries.js          ← استعلامات عامة مشتركة
+│       ├── cash-sync.js        ← حساب الصندوق وتصفير الرصيد آخر الشهر لكل مصدر
+│       ├── lists.js            ← الجهات والمنفقون والمصادر (حذف ناعم)
+│       ├── expenses.js         ← جدول المصروفات
+│       ├── debts.js            ← جدول الديون
+│       ├── loans.js            ← جدول القبوضات
+│       ├── reports.js          ← استعلامات التقارير والملخصات
+│       ├── users.js            ← المستخدمون وكلمات السر (bcrypt)
+│       └── backup.js           ← تصدير واستيراد النسخ الاحتياطية (دمج أو استبدال)
+│
+└── renderer/                   ← الواجهة التي يراها المستخدم
+    ├── index.html              ← الصفحة الوحيدة: الدخول، الشريط، كل الصفحات، شاشة البداية
+    │
+    ├── css/
+    │   ├── base.css            ← الألوان والخطوط والإعدادات العامة
+    │   ├── navbar.css          ← شريط التنقل العلوي
+    │   ├── forms.css           ← الحقول والأزرار والنماذج
+    │   ├── components.css      ← مكونات مشتركة (نوافذ، تنبيهات، أزرار صغيرة)
+    │   ├── tables.css          ← تنسيق الجداول
+    │   ├── pages.css           ← تنسيقات خاصة بكل صفحة
+    │   ├── login.css           ← شاشة تسجيل الدخول
+    │   ├── print.css           ← تنسيق الطباعة
+    │   ├── network.css 🆕      ← شاشة "لا يوجد اتصال بالإنترنت"
+    │   └── splash.css 🆕       ← شاشة البداية والحركة
+    │
     ├── js/
-    │   ├── core/           ← app, utils, dates, dom, rows, add-box, lists
-    │   ├── pages/          ← expenses, loans, debts, cash, destinations, spenders,
-    │   │                     summary, expenses-report, loans-report, settings, admin, backup.js
-    │   └── app/            ← nav, auth, main
+    │   ├── core/               ← أدوات أساسية مشتركة
+    │   │   ├── app.js          ← الكائن العام App وحالة البرنامج
+    │   │   ├── utils.js        ← دوال عامة (تنسيق أرقام، رسائل خطأ، تنبيهات)
+    │   │   ├── dates.js        ← التواريخ (flatpickr) والتنسيق
+    │   │   ├── dom.js          ← اختصارات التعامل مع عناصر الصفحة
+    │   │   ├── rows.js         ← بناء صفوف الجداول والأزرار
+    │   │   ├── add-box.js      ← صندوق "إضافة جديد" داخل القوائم
+    │   │   └── lists.js        ← تحميل القوائم المنسدلة (جهات، منفقون، مصادر)
+    │   │
+    │   ├── pages/              ← منطق كل صفحة
+    │   │   ├── expenses.js         ← صفحة المصروفات
+    │   │   ├── loans.js            ← صفحة القبوضات
+    │   │   ├── debts.js            ← صفحة الديون
+    │   │   ├── cash.js             ← صفحة الصندوق (الرصيد حسب السنة والشهر)
+    │   │   ├── destinations.js     ← إدارة الجهات المستفيدة
+    │   │   ├── spenders.js         ← إدارة المنفقين
+    │   │   ├── summary.js          ← الملخص الشهري والتصدير
+    │   │   ├── expenses-report.js  ← تقرير المصروفات
+    │   │   ├── loans-report.js     ← تقرير القبوضات
+    │   │   ├── settings.js         ← الإعدادات وتغيير كلمة السر
+    │   │   ├── admin.js            ← إدارة المحاسبين (للأدمن فقط)
+    │   │   └── backup.js           ← واجهة النسخ الاحتياطي والاستيراد
+    │   │
+    │   └── app/                ← تشغيل البرنامج وربط الأجزاء
+    │       ├── nav.js              ← التنقل بين الصفحات
+    │       ├── auth.js             ← الدخول والخروج وإظهار كلمة السر (ويستدعي شاشة البداية)
+    │       ├── network.js 🆕       ← عرض شاشة انقطاع الإنترنت وزر الخروج
+    │       ├── splash.js 🆕        ← تشغيل شاشة البداية حتى الضغط على صفحة
+    │       └── main.js             ← نقطة بدء الواجهة بعد التحميل
+    │
     └── lib/
+        └── flatpickr.*         ← مكتبة اختيار التاريخ (ملفات js وcss وlocale)

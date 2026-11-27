@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="css/pages.css" />
     <link rel="stylesheet" href="css/login.css" />
     <link rel="stylesheet" href="css/print.css" />
+    <link rel="stylesheet" href="css/splash.css" />
 
     <title>مصروفات كلية العمارة</title>
   </head>
@@ -84,6 +85,124 @@
       </nav>
 
       <main>
+        <!-- ضع هذا الكتلة داخل <body> في index.html، مباشرة بعد وسم <body> -->
+        <div class="splash hidden" id="splash" aria-label="شاشة البداية">
+          <svg
+            class="splash-logo"
+            viewBox="0 0 1024 1024"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <defs>
+              <linearGradient id="sp-green" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#247060" />
+                <stop offset="1" stop-color="#17463a" />
+              </linearGradient>
+              <filter
+                id="sp-shadow"
+                x="-30%"
+                y="-30%"
+                width="160%"
+                height="170%"
+              >
+                <feDropShadow
+                  dx="6"
+                  dy="18"
+                  stdDeviation="14"
+                  flood-color="#000"
+                  flood-opacity="0.35"
+                />
+              </filter>
+            </defs>
+            <rect
+              class="splash-tile"
+              x="0"
+              y="0"
+              width="1024"
+              height="1024"
+              rx="230"
+              fill="url(#sp-green)"
+            />
+            <rect
+              class="splash-bar b1"
+              x="190"
+              y="550"
+              width="130"
+              height="210"
+              rx="26"
+              fill="#fff"
+            />
+            <rect
+              class="splash-bar b2"
+              x="372"
+              y="430"
+              width="130"
+              height="330"
+              rx="26"
+              fill="#fff"
+            />
+            <rect
+              class="splash-bar b3"
+              x="554"
+              y="290"
+              width="130"
+              height="470"
+              rx="26"
+              fill="#fff"
+            />
+            <rect
+              class="splash-line"
+              x="150"
+              y="788"
+              width="724"
+              height="24"
+              rx="12"
+              fill="#fff"
+              fill-opacity="0.8"
+            />
+            <g class="splash-coin" filter="url(#sp-shadow)">
+              <g class="splash-coin-inner">
+                <circle cx="700" cy="330" r="170" fill="#a07618" />
+                <circle cx="700" cy="330" r="156" fill="#dbaa3a" />
+                <circle
+                  cx="700"
+                  cy="330"
+                  r="126"
+                  fill="none"
+                  stroke="#a07618"
+                  stroke-width="10"
+                />
+                <rect
+                  x="688"
+                  y="252"
+                  width="24"
+                  height="156"
+                  rx="10"
+                  fill="#a07618"
+                />
+                <polygon
+                  points="638,300 762,278 762,306 638,328"
+                  fill="#a07618"
+                />
+                <polygon
+                  points="638,358 762,336 762,364 638,386"
+                  fill="#a07618"
+                />
+              </g>
+            </g>
+          </svg>
+
+          <h1 class="splash-title">مصروفات كلية العمارة</h1>
+
+          <div class="splash-credit">
+            <div class="by">برمجة وتطوير: محمد أحمد</div>
+            <div class="contact">
+              <span>mohammedahmedkadhim@gmail.com</span>
+              <span>07770860343</span>
+            </div>
+          </div>
+        </div>
+
         <!-- ===== المصروفات ===== -->
         <section class="page" id="page-expenses">
           <div class="card">
@@ -1160,6 +1279,7 @@
     <script src="js/pages/backup.js"></script>
 
     <!-- التشغيل (يجب أن تبقى الأخيرة) -->
+    <script src="js/app/splash.js"></script>
     <script src="js/app/nav.js"></script>
     <script src="js/app/auth.js"></script>
     <script src="js/app/main.js"></script>
